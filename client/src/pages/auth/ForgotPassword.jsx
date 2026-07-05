@@ -1,12 +1,13 @@
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, ArrowLeft } from 'lucide-react';
 import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
 
   const onSubmit = async ({ email }) => {
@@ -21,9 +22,13 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+        <button onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#003580] transition-colors mb-6">
+          <ArrowLeft className="h-4 w-4" /> Retour
+        </button>
         <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center mb-3">
-            <GraduationCap className="h-7 w-7 text-white" />
+          <div className="h-12 w-12 bg-[#003580] rounded-xl flex items-center justify-center mb-3">
+            <GraduationCap className="h-7 w-7 text-[#0ea5e9]" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Mot de passe oublié</h1>
           <p className="text-sm text-gray-500 mt-1 text-center">Saisissez votre email pour recevoir un lien de réinitialisation</p>

@@ -1,5 +1,6 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
+const { getFileUrl } = require('../middlewares/upload');
 
 const checkOwner = async (lessonId, userId, userRole) => {
   const lesson = await Lesson.findById(lessonId);
@@ -19,17 +20,17 @@ exports.create = async (req, res) => {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
-  const { title, type, moduleId, order, duration, isFreePreview, content } = req.body;
+  const { title, moduleId, order, duration, isFreePreview, content, videoUrl, pdfUrl } = req.body;
   const lesson = await Lesson.create({
     course: course._id,
-    moduleId,
+    moduleId: moduleId || null,
     title,
-    type,
     order: order || 0,
     duration: duration || 0,
     isFreePreview: isFreePreview === 'true' || isFreePreview === true,
     content: content || '',
-    contentUrl: req.file ? (req.file.path || req.file.secure_url) : (req.body.contentUrl || ''),
+    videoUrl: videoUrl || '',
+    pdfUrl: pdfUrl || '',
   });
   res.status(201).json({ success: true, data: lesson });
 };
@@ -38,9 +39,10 @@ exports.update = async (req, res) => {
   const { lesson, error } = await checkOwner(req.params.id, req.user._id, req.user.role);
   if (error) return res.status(404).json({ success: false, message: error });
 
-  const allowed = ['title', 'type', 'order', 'duration', 'isFreePreview', 'content', 'contentUrl'];
+  const allowed = ['title', 'order', 'duration', 'isFreePreview', 'content', 'videoUrl', 'pdfUrl', 'moduleId'];
   allowed.forEach((f) => { if (req.body[f] !== undefined) lesson[f] = req.body[f]; });
-  if (req.file) lesson.contentUrl = req.file.path || req.file.secure_url;
+  // If a PDF file was uploaded, override pdfUrl with the stored file URL
+  if (req.file) lesson.pdfUrl = getFileUrl(req.file);
   await lesson.save();
   res.json({ success: true, data: lesson });
 };

@@ -2,6 +2,7 @@ const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Notification = require('../models/Notification');
+const certificateService = require('../services/certificateService');
 
 exports.enroll = async (req, res) => {
   const { courseId } = req.body;
@@ -52,12 +53,31 @@ exports.markLesson = async (req, res) => {
     ? Math.round((enrollment.completedLessons.length / totalLessons) * 100)
     : 0;
 
-  if (enrollment.progress === 100 && !enrollment.completedAt) {
+  const justCompleted = enrollment.progress === 100 && !enrollment.completedAt;
+  if (justCompleted) {
     enrollment.completedAt = new Date();
   }
 
   await enrollment.save();
-  res.json({ success: true, data: enrollment });
+
+  // Auto-generate completion attestation when course is finished
+  if (justCompleted) {
+    try {
+      const course = await Course.findById(enrollment.course);
+      await certificateService.generateCompletion(enrollment.student, course);
+      await Notification.create({
+        user: enrollment.student,
+        type: 'certificate',
+        title: 'Attestation disponible !',
+        message: `Vous avez terminé le cours "${course.title}". Votre attestation est prête.`,
+        link: `/student`,
+      });
+    } catch (e) {
+      console.error('Attestation generation error:', e.message);
+    }
+  }
+
+  res.json({ success: true, data: enrollment, attestationGenerated: justCompleted });
 };
 
 exports.getEnrollment = async (req, res) => {

@@ -26,6 +26,8 @@ const CertificateVerify = lazy(() => import('../pages/certificates/CertificateVe
 const Notifications = lazy(() => import('../pages/Notifications'));
 
 const EditCourse = lazy(() => import('../pages/dashboard/instructor/EditCourse'));
+const Home = lazy(() => import('../pages/Home'));
+const Landing = lazy(() => import('../pages/Landing'));
 
 function Layout({ children }) {
   return (
@@ -36,28 +38,37 @@ function Layout({ children }) {
   );
 }
 
-function HomeRedirect() {
+/* Root: landing page for visitors, home for logged-in users */
+function RootRoute() {
   const { user } = useAuthStore();
-  if (!user) return <Navigate to="/catalog" replace />;
+  if (!user) return <Landing />;
   if (user.role === 'admin') return <Navigate to="/admin" replace />;
   if (user.role === 'instructor') return <Navigate to="/instructor" replace />;
-  return <Navigate to="/student" replace />;
+  return <Navigate to="/home" replace />;
 }
 
 export default function AppRouter() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>}>
       <Routes>
-        {/* Public */}
+        {/* Public — no Navbar */}
+        <Route path="/" element={<RootRoute />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Public with Navbar */}
-        <Route path="/catalog" element={<Layout><Catalog /></Layout>} />
-        <Route path="/courses/:id" element={<Layout><CourseDetail /></Layout>} />
+        {/* Public — certificate verification only */}
         <Route path="/certificates/verify/:hash" element={<Layout><CertificateVerify /></Layout>} />
+
+        {/* Protected — all logged-in users */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/home" element={<Layout><Home /></Layout>} />
+          <Route path="/catalog" element={<Layout><Catalog /></Layout>} />
+          <Route path="/courses/:id" element={<Layout><CourseDetail /></Layout>} />
+          <Route path="/notifications" element={<Layout><Notifications /></Layout>} />
+          <Route path="/profile" element={<Layout><StudentDashboard /></Layout>} />
+        </Route>
 
         {/* Protected — Student */}
         <Route element={<ProtectedRoute roles={['student']} />}>
@@ -80,14 +91,7 @@ export default function AppRouter() {
           <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
         </Route>
 
-        {/* Protected — All roles */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/notifications" element={<Layout><Notifications /></Layout>} />
-          <Route path="/profile" element={<Layout><StudentDashboard /></Layout>} />
-        </Route>
-
-        <Route path="/" element={<HomeRedirect />} />
-        <Route path="*" element={<Navigate to="/catalog" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );

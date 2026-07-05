@@ -4,6 +4,7 @@ const Result = require('../models/Result');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
 const Exam = require('../models/Exam');
+const Lesson = require('../models/Lesson');
 
 exports.student = async (req, res) => {
   const [enrollments, results, certificates] = await Promise.all([
@@ -62,6 +63,32 @@ exports.instructor = async (req, res) => {
       courses: courseStats,
       pendingGrading,
     },
+  });
+};
+
+exports.courseStats = async (req, res) => {
+  const course = await Course.findById(req.params.id).lean();
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+
+  // Only the instructor of the course or an admin may access this
+  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+
+  const [enrollments, lessonsCount] = await Promise.all([
+    Enrollment.find({ course: course._id }).lean(),
+    Lesson.countDocuments({ course: course._id }),
+  ]);
+
+  const enrollmentCount = enrollments.length;
+  const completedCount = enrollments.filter((e) => e.progress === 100).length;
+  const avgProgress = enrollmentCount
+    ? Math.round(enrollments.reduce((s, e) => s + e.progress, 0) / enrollmentCount)
+    : 0;
+
+  res.json({
+    success: true,
+    data: { enrollmentCount, completedCount, avgProgress, lessonsCount },
   });
 };
 

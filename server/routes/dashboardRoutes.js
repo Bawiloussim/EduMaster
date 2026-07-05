@@ -7,5 +7,6 @@ const requireRole = require('../middlewares/role');
 router.get('/student', protect, requireRole('student'), dc.student);
 router.get('/instructor', protect, requireRole('instructor', 'admin'), dc.instructor);
 router.get('/admin', protect, requireRole('admin'), dc.admin);
+router.get('/course/:id/stats', protect, requireRole('instructor', 'admin'), dc.courseStats);
 
 module.exports = router;

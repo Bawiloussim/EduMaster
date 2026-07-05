@@ -3,10 +3,10 @@ const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 
 exports.list = async (req, res) => {
-  const { search, category, level, page = 1, limit = 12 } = req.query;
+  const { search, classe, serie, page = 1, limit = 12 } = req.query;
   const filter = { status: 'published' };
-  if (category) filter.category = category;
-  if (level) filter.level = level;
+  if (classe) filter.classe = classe;
+  if (serie) filter.serie = serie;
   if (search) filter.$text = { $search: search };
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -27,7 +27,7 @@ exports.getOne = async (req, res) => {
   const course = await Course.findById(req.params.id).populate('instructor', 'name avatar bio');
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
 
-  const lessons = await Lesson.find({ course: course._id }).sort({ moduleId: 1, order: 1 }).lean();
+  const lessons = await Lesson.find({ course: course._id }).sort({ order: 1 }).lean();
 
   let isEnrolled = false;
   let enrollment = null;
@@ -46,11 +46,16 @@ exports.getOne = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { title, description, category, level, price, tags, language, estimatedDuration } = req.body;
+  const { title, description, subject, classe, serie, price, tags, language, estimatedDuration } = req.body;
   const course = await Course.create({
-    title, description, category, level,
-    price: price || 0, tags: tags ? JSON.parse(tags) : [],
-    language, estimatedDuration,
+    title, description,
+    subject: subject || 'Général',
+    classe: classe || 'Seconde',
+    serie: serie || 'D',
+    price: 0,
+    tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
+    language: language || 'fr',
+    estimatedDuration: estimatedDuration || 0,
     instructor: req.user._id,
     coverImage: req.file ? (req.file.path || req.file.secure_url) : '',
   });
@@ -63,7 +68,7 @@ exports.update = async (req, res) => {
   if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
-  const allowed = ['title', 'description', 'category', 'level', 'tags', 'language', 'estimatedDuration'];
+  const allowed = ['title', 'description', 'subject', 'classe', 'serie', 'tags', 'language', 'estimatedDuration'];
   allowed.forEach((f) => { if (req.body[f] !== undefined) course[f] = req.body[f]; });
   if (req.body.tags) course.tags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
   if (req.file) course.coverImage = req.file.path || req.file.secure_url;
@@ -100,7 +105,7 @@ exports.addModule = async (req, res) => {
   if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
-  course.modules.push({ title, order: order || course.modules.length });
+  course.modules.push({ title, order: order !== undefined ? order : course.modules.length });
   await course.save();
   res.json({ success: true, data: course });
 };

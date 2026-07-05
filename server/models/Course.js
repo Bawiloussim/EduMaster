@@ -7,10 +7,11 @@ const moduleSchema = new mongoose.Schema({
 
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
-  description: { type: String, required: true },
+  description: { type: String, default: '' },
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  category: { type: String, required: true },
-  level: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
+  subject: { type: String, required: true },
+  classe: { type: String, enum: ['Seconde', 'Première', 'Terminale'], required: true },
+  serie: { type: String, enum: ['A4', 'D'], required: true },
   coverImage: { type: String, default: '' },
   status: { type: String, enum: ['draft', 'published'], default: 'draft' },
   price: { type: Number, default: 0 },
@@ -24,6 +25,6 @@ const courseSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 courseSchema.index({ title: 'text', description: 'text', tags: 'text' });
-courseSchema.index({ category: 1, status: 1, level: 1 });
+courseSchema.index({ classe: 1, serie: 1, status: 1 });
 
 module.exports = mongoose.model('Course', courseSchema);

@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/auth');
 
 router.get('/verify/:hash', cc.verify);
 router.get('/me', protect, cc.mine);
-router.get('/:id/download', protect, cc.download);
+router.get('/course/:courseId', protect, cc.forCourse);
+router.get('/:id/download', protect, cc.downloadAttestation);
 
 module.exports = router;

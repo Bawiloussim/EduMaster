@@ -2,11 +2,12 @@ const mongoose = require('mongoose');
 
 const lessonSchema = new mongoose.Schema({
   course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
-  moduleId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  moduleId: { type: mongoose.Schema.Types.ObjectId, default: null },
   title: { type: String, required: true, trim: true },
-  type: { type: String, enum: ['video', 'pdf', 'text', 'exercise'], required: true },
-  contentUrl: { type: String, default: '' },
-  content: { type: String, default: '' },
+  // Multiple content types can coexist on the same lesson
+  videoUrl: { type: String, default: '' },
+  pdfUrl:   { type: String, default: '' },
+  content:  { type: String, default: '' },  // text / markdown
   order: { type: Number, default: 0 },
   duration: { type: Number, default: 0 },
   isFreePreview: { type: Boolean, default: false },

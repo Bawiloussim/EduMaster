@@ -1,0 +1,20 @@
+const express = require('express');
+const router = express.Router();
+const ec = require('../controllers/exerciseController');
+const { protect } = require('../middlewares/auth');
+const requireRole = require('../middlewares/role');
+
+// Instructor
+router.post('/lessons/:lessonId', protect, requireRole('instructor', 'admin'), ec.createForLesson);
+router.get('/lessons/:lessonId', protect, ec.listForLesson);
+router.put('/:id', protect, requireRole('instructor', 'admin'), ec.update);
+router.delete('/:id', protect, requireRole('instructor', 'admin'), ec.delete);
+
+// Student
+router.post('/:id/answer', protect, requireRole('student'), ec.submitAnswer);
+router.get('/lessons/:lessonId/my-answers', protect, requireRole('student'), ec.myAnswersForLesson);
+
+// Instructor grades open answers
+router.patch('/answers/:answerId/grade', protect, requireRole('instructor', 'admin'), ec.gradeAnswer);
+
+module.exports = router;

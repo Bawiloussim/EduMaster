@@ -3,9 +3,9 @@ const router = express.Router();
 const lc = require('../controllers/lessonController');
 const { protect } = require('../middlewares/auth');
 const requireRole = require('../middlewares/role');
-const { upload } = require('../middlewares/upload');
+const { optionalUpload } = require('../middlewares/upload');
 
-router.put('/:id', protect, requireRole('instructor', 'admin'), upload.single('file'), lc.update);
+router.put('/:id', protect, requireRole('instructor', 'admin'), optionalUpload('pdfFile'), lc.update);
 router.delete('/:id', protect, requireRole('instructor', 'admin'), lc.delete);
 router.patch('/reorder', protect, requireRole('instructor', 'admin'), lc.reorder);
 

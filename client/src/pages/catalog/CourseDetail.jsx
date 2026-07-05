@@ -9,7 +9,6 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import PageWrapper from '../../components/layout/PageWrapper';
 
-const LEVEL_LABELS = { beginner: 'Débutant', intermediate: 'Intermédiaire', advanced: 'Avancé' };
 const TYPE_ICONS = { video: Play, pdf: FileText, text: BookOpen, exercise: BookOpen };
 
 export default function CourseDetail() {
@@ -57,7 +56,9 @@ export default function CourseDetail() {
             <div className="flex items-center gap-2 mb-4">
               <Link to="/catalog" className="text-blue-200 hover:text-white text-sm">Catalogue</Link>
               <ChevronRight className="h-4 w-4 text-blue-300" />
-              <span className="text-sm text-blue-100">{data.category}</span>
+              <span className="text-sm text-blue-100">{data.classe}</span>
+              <ChevronRight className="h-4 w-4 text-blue-300" />
+              <span className="text-sm text-blue-100">{data.subject}</span>
             </div>
             <h1 className="text-3xl font-bold mb-4">{data.title}</h1>
             <p className="text-blue-100 mb-6 max-w-2xl">{data.description}</p>
@@ -65,7 +66,8 @@ export default function CourseDetail() {
               <span className="flex items-center gap-1"><Users className="h-4 w-4" />{data.enrollmentCount || 0} inscrits</span>
               <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" />{lessons.length} leçons</span>
               {data.estimatedDuration > 0 && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{data.estimatedDuration}h estimées</span>}
-              <Badge color="blue">{LEVEL_LABELS[data.level] || data.level}</Badge>
+              <span className="bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold">{data.classe}</span>
+              <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-blue-500' : 'bg-purple-500'}`}>Série {data.serie}</span>
             </div>
           </div>
         </PageWrapper>
@@ -127,7 +129,10 @@ export default function CourseDetail() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-24">
               {data.coverImage && <img src={data.coverImage} alt="" className="w-full h-40 object-cover rounded-xl mb-5" />}
-              <div className="text-3xl font-bold text-gray-900 mb-5">{data.price === 0 ? 'Gratuit' : `${data.price}€`}</div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl font-extrabold text-green-600">100% Gratuit</span>
+                <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">Toujours gratuit</span>
+              </div>
               {isEnrolled ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
@@ -138,13 +143,21 @@ export default function CourseDetail() {
                   </Button>
                 </div>
               ) : (
-                <Button className="w-full" size="lg" loading={enrollMutation.isPending} onClick={handleEnroll}>
-                  {user ? 'S\'inscrire gratuitement' : 'Se connecter pour s\'inscrire'}
-                </Button>
+                <div className="space-y-2">
+                  <Button className="w-full" size="lg" loading={enrollMutation.isPending} onClick={handleEnroll}>
+                    {user ? 'S\'inscrire gratuitement' : 'Se connecter pour accéder'}
+                  </Button>
+                  {!user && (
+                    <p className="text-xs text-center text-gray-400">
+                      Une inscription gratuite est requise pour accéder aux leçons, bulletins et attestations.
+                    </p>
+                  )}
+                </div>
               )}
               <div className="mt-5 space-y-2 text-sm text-gray-500">
                 <div className="flex items-center gap-2"><BookOpen className="h-4 w-4" />{lessons.length} leçon{lessons.length > 1 ? 's' : ''}</div>
-                <div className="flex items-center gap-2"><Award className="h-4 w-4" />Certificat de réussite</div>
+                <div className="flex items-center gap-2"><Award className="h-4 w-4" />Attestation gratuite incluse</div>
+                <div className="flex items-center gap-2"><span className="h-4 w-4 text-center text-xs font-bold">📋</span>Bulletins trimestriels gratuits</div>
                 <div className="flex items-center gap-2"><Users className="h-4 w-4" />Formateur : {data.instructor?.name}</div>
               </div>
             </div>
