@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const Certificate = require('../models/Certificate');
 const User = require('../models/User');
+const Enrollment = require('../models/Enrollment');
+const Lesson = require('../models/Lesson');
 
 // Generate a course-completion attestation (no exam required)
 exports.generateCompletion = async (studentId, course) => {
@@ -12,6 +14,13 @@ exports.generateCompletion = async (studentId, course) => {
   const student = await User.findById(studentId);
   if (!student) throw new Error('Étudiant introuvable');
 
+  const enrollment = await Enrollment.findOne({ student: studentId, course: course._id }).lean();
+  const completedLessons = enrollment?.completedLessons || [];
+  const lessons = completedLessons.length
+    ? await Lesson.find({ _id: { $in: completedLessons } }).sort({ order: 1 }).select('title').lean()
+    : [];
+  const lessonTitles = lessons.map((l) => l.title);
+
   // The DB record (and any Cloudinary upload) only needs to happen once, but the
   // PDF bytes must be rebuilt on every call — the caller always needs them to
   // stream back a download, whether or not a Certificate row already exists.
@@ -19,7 +28,10 @@ exports.generateCompletion = async (studentId, course) => {
   const verifyHash = existing?.verifyHash || crypto.createHash('sha256').update(uniqueId).digest('hex');
   const verifyUrl = `${process.env.CLIENT_URL}/certificates/verify/${verifyHash}`;
 
-  const pdfBuffer = await generateCompletionPDF(student.name, course.title, course.subject, existing?.issuedAt || new Date(), uniqueId, verifyUrl);
+  const pdfBuffer = await generateCompletionPDF(
+    student.name, course.title, course.subject, course.classe, course.serie, lessonTitles,
+    existing?.issuedAt || new Date(), uniqueId, verifyUrl
+  );
 
   if (existing) {
     existing._pdfBuffer = pdfBuffer;
@@ -99,7 +111,7 @@ exports.generate = async (userRef, course, exam, result) => {
   return cert;
 };
 
-function generateCompletionPDF(studentName, courseTitle, subject, date, certId, verifyUrl) {
+function generateCompletionPDF(studentName, courseTitle, subject, classe, serie, lessonTitles, date, certId, verifyUrl) {
   return new Promise(async (resolve, reject) => {
     try {
       const qrBuffer = await QRCode.toBuffer(verifyUrl, { width: 100 });
@@ -136,13 +148,40 @@ function generateCompletionPDF(studentName, courseTitle, subject, date, certId, 
       doc.fillColor('#111827').fontSize(23).font('Helvetica-Bold')
         .text(`"${courseTitle}"`, 0, 286, { align: 'center' });
 
+      let y = 320;
       if (subject && subject !== courseTitle) {
         doc.fillColor('#0ea5e9').fontSize(14).font('Helvetica')
-          .text(`Matière : ${subject}`, 0, 320, { align: 'center' });
+          .text(`Matière : ${subject}`, 0, y, { align: 'center' });
+        y += 22;
+      }
+
+      if (classe) {
+        doc.fillColor('#0ea5e9').fontSize(13).font('Helvetica-Bold')
+          .text(`${classe}${serie ? ' — Série ' + serie : ''}`, 0, y, { align: 'center' });
+        y += 20;
       }
 
       doc.fillColor('#374151').fontSize(13).font('Helvetica')
-        .text(`Délivrée le : ${date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, 0, 348, { align: 'center' });
+        .text(`Délivrée le : ${date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, 0, y, { align: 'center' });
+      y += 24;
+
+      if (lessonTitles.length) {
+        doc.fillColor('#6b7280').fontSize(11).font('Helvetica-Bold')
+          .text('Leçons complétées', 0, y, { align: 'center' });
+        y += 15;
+
+        const maxShown = 4;
+        doc.fillColor('#374151').fontSize(9).font('Helvetica');
+        lessonTitles.slice(0, maxShown).forEach((title) => {
+          doc.text(`• ${title}`, 100, y, { width: W - 200, align: 'center' });
+          y += 13;
+        });
+        if (lessonTitles.length > maxShown) {
+          doc.fillColor('#9ca3af').fontSize(8).font('Helvetica-Oblique')
+            .text(`+ ${lessonTitles.length - maxShown} autre(s)`, 0, y, { align: 'center' });
+          y += 13;
+        }
+      }
 
       doc.fillColor('#6b7280').fontSize(9)
         .text(`ID : ${certId}`, 0, H - 78, { align: 'center' });

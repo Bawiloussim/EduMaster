@@ -17,7 +17,7 @@ exports.forCourse = async (req, res) => {
     student: req.user._id,
     course: req.params.courseId,
     type: 'completion',
-  }).populate('course', 'title subject').lean();
+  }).populate('course', 'title subject classe serie').lean();
   if (!cert) return res.status(404).json({ success: false, message: 'Attestation non disponible' });
   res.json({ success: true, data: cert });
 };
@@ -26,7 +26,7 @@ exports.forCourse = async (req, res) => {
 exports.downloadAttestation = async (req, res) => {
   const cert = await Certificate.findById(req.params.id)
     .populate('student', 'name')
-    .populate('course', 'title subject');
+    .populate('course', 'title subject classe serie');
 
   if (!cert) return res.status(404).json({ success: false, message: 'Attestation introuvable' });
   if (cert.student._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
