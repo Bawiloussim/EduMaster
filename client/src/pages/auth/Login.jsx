@@ -24,7 +24,7 @@ export default function Login() {
     try {
       const user = await login(data.email, data.password);
       toast.success(`Bienvenue, ${user.name} !`);
-      const defaultRedirects = { admin: '/admin', instructor: '/instructor', student: '/home' };
+      const defaultRedirects = { admin: '/admin', superadmin: '/admin', instructor: '/instructor', student: '/home' };
       navigate(from || defaultRedirects[user.role] || '/home');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Identifiants incorrects');

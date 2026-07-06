@@ -8,9 +8,9 @@ const Lesson = require('../models/Lesson');
 
 exports.student = async (req, res) => {
   const [enrollments, results, certificates] = await Promise.all([
-    Enrollment.find({ student: req.user._id }).populate('course', 'title coverImage').lean(),
+    Enrollment.find({ student: req.user._id }).populate('course', 'title coverImage classe serie').lean(),
     Result.find({ student: req.user._id }).populate('exam', 'title passingScore').sort({ createdAt: -1 }).limit(10).lean(),
-    Certificate.find({ student: req.user._id }).populate('course', 'title').lean(),
+    Certificate.find({ student: req.user._id }).populate('course', 'title classe serie').lean(),
   ]);
 
   res.json({
