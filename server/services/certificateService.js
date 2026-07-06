@@ -21,6 +21,9 @@ exports.generateCompletion = async (studentId, course) => {
     : [];
   const lessonTitles = lessons.map((l) => l.title);
 
+  const instructorId = course.instructor?._id || course.instructor;
+  const instructor = instructorId ? await User.findById(instructorId).select('name email').lean() : null;
+
   // The DB record (and any Cloudinary upload) only needs to happen once, but the
   // PDF bytes must be rebuilt on every call — the caller always needs them to
   // stream back a download, whether or not a Certificate row already exists.
@@ -30,7 +33,7 @@ exports.generateCompletion = async (studentId, course) => {
 
   const pdfBuffer = await generateCompletionPDF(
     student.name, course.title, course.subject, course.classe, course.serie, lessonTitles,
-    existing?.issuedAt || new Date(), uniqueId, verifyUrl
+    instructor, existing?.issuedAt || new Date(), uniqueId, verifyUrl
   );
 
   if (existing) {
@@ -111,7 +114,7 @@ exports.generate = async (userRef, course, exam, result) => {
   return cert;
 };
 
-function generateCompletionPDF(studentName, courseTitle, subject, classe, serie, lessonTitles, date, certId, verifyUrl) {
+function generateCompletionPDF(studentName, courseTitle, subject, classe, serie, lessonTitles, instructor, date, certId, verifyUrl) {
   return new Promise(async (resolve, reject) => {
     try {
       const qrBuffer = await QRCode.toBuffer(verifyUrl, { width: 100 });
@@ -170,7 +173,7 @@ function generateCompletionPDF(studentName, courseTitle, subject, classe, serie,
           .text('Leçons complétées', 0, y, { align: 'center' });
         y += 15;
 
-        const maxShown = 4;
+        const maxShown = 3;
         doc.fillColor('#374151').fontSize(9).font('Helvetica');
         lessonTitles.slice(0, maxShown).forEach((title) => {
           doc.text(`• ${title}`, 100, y, { width: W - 200, align: 'center' });
@@ -181,6 +184,12 @@ function generateCompletionPDF(studentName, courseTitle, subject, classe, serie,
             .text(`+ ${lessonTitles.length - maxShown} autre(s)`, 0, y, { align: 'center' });
           y += 13;
         }
+      }
+
+      if (instructor) {
+        y += 6;
+        doc.fillColor('#9ca3af').fontSize(9).font('Helvetica')
+          .text(`Formateur : ${instructor.name}${instructor.email ? ' — ' + instructor.email : ''}`, 0, y, { align: 'center' });
       }
 
       doc.fillColor('#6b7280').fontSize(9)

@@ -26,7 +26,7 @@ exports.forCourse = async (req, res) => {
 exports.downloadAttestation = async (req, res) => {
   const cert = await Certificate.findById(req.params.id)
     .populate('student', 'name')
-    .populate('course', 'title subject classe serie');
+    .populate('course', 'title subject classe serie instructor');
 
   if (!cert) return res.status(404).json({ success: false, message: 'Attestation introuvable' });
   if (cert.student._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
