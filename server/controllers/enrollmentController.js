@@ -94,7 +94,7 @@ exports.markLesson = async (req, res) => {
       await certificateService.generateCompletion(enrollment.student, course);
       await Notification.create({
         user: enrollment.student,
-        type: 'certificate',
+        type: 'certificate_ready',
         title: 'Attestation disponible !',
         message: `Vous avez terminé le cours "${course.title}". Votre attestation est prête.`,
         link: `/student`,

@@ -8,16 +8,23 @@ const User = require('../models/User');
 // Generate a course-completion attestation (no exam required)
 exports.generateCompletion = async (studentId, course) => {
   const existing = await Certificate.findOne({ student: studentId, course: course._id, type: 'completion' });
-  if (existing) return existing;
 
   const student = await User.findById(studentId);
   if (!student) throw new Error('Étudiant introuvable');
 
-  const uniqueId = uuidv4();
-  const verifyHash = crypto.createHash('sha256').update(uniqueId).digest('hex');
+  // The DB record (and any Cloudinary upload) only needs to happen once, but the
+  // PDF bytes must be rebuilt on every call — the caller always needs them to
+  // stream back a download, whether or not a Certificate row already exists.
+  const uniqueId = existing?.uniqueId || uuidv4();
+  const verifyHash = existing?.verifyHash || crypto.createHash('sha256').update(uniqueId).digest('hex');
   const verifyUrl = `${process.env.CLIENT_URL}/certificates/verify/${verifyHash}`;
 
-  const pdfBuffer = await generateCompletionPDF(student.name, course.title, course.subject, new Date(), uniqueId, verifyUrl);
+  const pdfBuffer = await generateCompletionPDF(student.name, course.title, course.subject, existing?.issuedAt || new Date(), uniqueId, verifyUrl);
+
+  if (existing) {
+    existing._pdfBuffer = pdfBuffer;
+    return existing;
+  }
 
   let pdfUrl = '';
   try {
@@ -48,16 +55,20 @@ exports.generateCompletion = async (studentId, course) => {
 
 exports.generate = async (userRef, course, exam, result) => {
   const existing = await Certificate.findOne({ student: result.student, exam: exam._id });
-  if (existing) return existing;
 
   const student = await User.findById(result.student);
   if (!student) throw new Error('Étudiant introuvable');
 
-  const uniqueId = uuidv4();
-  const verifyHash = crypto.createHash('sha256').update(uniqueId).digest('hex');
+  const uniqueId = existing?.uniqueId || uuidv4();
+  const verifyHash = existing?.verifyHash || crypto.createHash('sha256').update(uniqueId).digest('hex');
   const verifyUrl = `${process.env.CLIENT_URL}/certificates/verify/${verifyHash}`;
 
-  const pdfBuffer = await generatePDF(student.name, course.title, exam.title, result.score, new Date(), uniqueId, verifyUrl);
+  const pdfBuffer = await generatePDF(student.name, course.title, exam.title, result.score, existing?.issuedAt || new Date(), uniqueId, verifyUrl);
+
+  if (existing) {
+    existing._pdfBuffer = pdfBuffer;
+    return existing;
+  }
 
   let pdfUrl = '';
   try {
