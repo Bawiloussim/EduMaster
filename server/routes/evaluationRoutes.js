@@ -8,6 +8,7 @@ const { optionalUpload } = require('../middlewares/upload');
 // Per course
 router.get('/course/:courseId', protect, ec.listForCourse);
 router.post('/course/:courseId', protect, requireRole('instructor', 'admin'), ec.create);
+router.get('/course/:courseId/students-overview/:trimestre', protect, requireRole('instructor', 'admin'), ec.getStudentsOverview);
 
 // Specific evaluation
 router.delete('/:id', protect, requireRole('instructor', 'admin'), ec.delete);

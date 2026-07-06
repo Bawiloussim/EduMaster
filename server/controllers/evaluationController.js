@@ -3,6 +3,8 @@ const Grade = require('../models/Grade');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
+const Exercise = require('../models/Exercise');
+const ExerciseAnswer = require('../models/ExerciseAnswer');
 const { getFileUrl, optionalUpload } = require('../middlewares/upload');
 const bulletinService = require('../services/bulletinService');
 
@@ -12,6 +14,59 @@ exports.listForCourse = async (req, res) => {
   const evaluations = await Evaluation.find({ course: req.params.courseId })
     .sort({ trimestre: 1, type: 1, sequence: 1 }).lean();
   res.json({ success: true, data: evaluations });
+};
+
+// Instructor: for every student enrolled in the course — exercises answered/graded
+// count, plus their interrogation/devoir/composition grades for one trimestre.
+exports.getStudentsOverview = async (req, res) => {
+  const course = await Course.findById(req.params.courseId);
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  const trimestre = parseInt(req.params.trimestre);
+
+  const [enrollments, exercises, evaluations] = await Promise.all([
+    Enrollment.find({ course: course._id }).populate('student', 'name email avatar').sort({ enrolledAt: 1 }).lean(),
+    Exercise.find({ course: course._id }).select('_id').lean(),
+    Evaluation.find({ course: course._id, trimestre }).sort({ type: 1, sequence: 1 }).lean(),
+  ]);
+
+  const exerciseIds = exercises.map((e) => e._id);
+  const [answers, grades] = await Promise.all([
+    exerciseIds.length ? ExerciseAnswer.find({ exercise: { $in: exerciseIds } }).lean() : [],
+    Grade.find({ course: course._id, trimestre }).lean(),
+  ]);
+
+  const students = enrollments.map((enr) => {
+    const studentId = enr.student._id.toString();
+    const studentAnswers = answers.filter((a) => a.student.toString() === studentId);
+    const gradeMap = Object.fromEntries(
+      grades.filter((g) => g.student.toString() === studentId).map((g) => [g.evaluation.toString(), g])
+    );
+
+    return {
+      student: enr.student,
+      exercises: {
+        total: exercises.length,
+        answered: studentAnswers.length,
+        graded: studentAnswers.filter((a) => a.grade !== null).length,
+      },
+      evaluations: evaluations.map((ev) => {
+        const g = gradeMap[ev._id.toString()];
+        return {
+          _id: ev._id,
+          type: ev.type,
+          sequence: ev.sequence,
+          maxScore: ev.maxScore,
+          score: g?.score ?? null,
+          absent: g?.absent ?? false,
+        };
+      }),
+    };
+  });
+
+  res.json({ success: true, data: { trimestre, evaluations, students } });
 };
 
 exports.create = async (req, res) => {

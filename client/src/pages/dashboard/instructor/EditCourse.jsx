@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Plus, Trash2, Save, ChevronLeft, BookOpen, HelpCircle,
   ChevronDown, ChevronUp, Video, FileText, AlignLeft,
-  ClipboardList, BarChart2, Upload, Check, X, Eye, Pencil
+  ClipboardList, BarChart2, Upload, Check, X, Eye, Pencil, Users
 } from 'lucide-react';
 import api from '../../../services/api';
 import Spinner from '../../../components/ui/Spinner';
@@ -21,6 +21,7 @@ const pdfHref = (url) => url?.startsWith('/uploads/') ? `${API_BASE}${url}` : ur
 const TABS = [
   { id: 'lessons', label: 'Leçons & Exercices', icon: BookOpen },
   { id: 'evals', label: 'Évaluations', icon: ClipboardList },
+  { id: 'students', label: 'Élèves', icon: Users },
   { id: 'bulletin', label: 'Bulletin', icon: BarChart2 },
 ];
 
@@ -605,6 +606,73 @@ function BulletinTab({ courseId }) {
   );
 }
 
+// ─── Students tab ─────────────────────────────────────────────────────────────
+function StudentsTab({ courseId }) {
+  const [trimestre, setTrimestre] = useState(1);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['students-overview', courseId, trimestre],
+    queryFn: () => api.get(`/evaluations/course/${courseId}/students-overview/${trimestre}`).then(r => r.data.data),
+  });
+
+  const students = data?.students || [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {[1, 2, 3].map(t => (
+          <button key={t} onClick={() => setTrimestre(t)}
+            className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${trimestre === t ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+            Trimestre {t}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="py-8 flex justify-center"><Spinner /></div>
+      ) : students.length === 0 ? (
+        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-400">
+          <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Aucun élève inscrit</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {students.map(({ student, exercises, evaluations }) => (
+            <div key={student._id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
+                    {student.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">{student.name}</p>
+                    <p className="text-xs text-gray-400">{student.email}</p>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-500">
+                  Exercices : {exercises.answered}/{exercises.total} répondu{exercises.answered > 1 ? 's' : ''}, {exercises.graded} noté{exercises.graded > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {EVAL_TYPES.map(({ type, seq, label }) => {
+                  const ev = evaluations.find(e => e.type === type && e.sequence === seq);
+                  const display = !ev ? '—' : ev.absent ? 'ABS' : ev.score !== null ? `${ev.score}/${ev.maxScore}` : '—';
+                  return (
+                    <span key={`${type}-${seq}`} className="text-xs bg-gray-50 border border-gray-100 rounded-lg px-2 py-1">
+                      <span className="text-gray-400">{label} : </span>
+                      <span className="font-semibold text-gray-700">{display}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function EditCourse() {
   const { id } = useParams();
@@ -734,6 +802,7 @@ export default function EditCourse() {
           )}
 
           {activeTab === 'evals' && <EvaluationsTab courseId={id} />}
+          {activeTab === 'students' && <StudentsTab courseId={id} />}
           {activeTab === 'bulletin' && <BulletinTab courseId={id} />}
         </div>
       </div>

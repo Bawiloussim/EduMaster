@@ -63,6 +63,20 @@ exports.myEnrollments = async (req, res) => {
   res.json({ success: true, data: enrollments });
 };
 
+// Instructor: every student enrolled in one of their courses
+exports.listForCourse = async (req, res) => {
+  const course = await Course.findById(req.query.course);
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  const enrollments = await Enrollment.find({ course: course._id })
+    .populate('student', 'name email avatar')
+    .sort({ enrolledAt: 1 })
+    .lean();
+  res.json({ success: true, data: enrollments });
+};
+
 exports.markLesson = async (req, res) => {
   const { lessonId } = req.body;
   const enrollment = await Enrollment.findById(req.params.id);
