@@ -18,6 +18,7 @@ const ExamStart = lazy(() => import('../pages/exam/ExamStart'));
 const ExamSession = lazy(() => import('../pages/exam/ExamSession'));
 const ExamResult = lazy(() => import('../pages/exam/ExamResult'));
 
+const ChooseClass = lazy(() => import('../pages/auth/ChooseClass'));
 const StudentDashboard = lazy(() => import('../pages/dashboard/student/StudentDashboard'));
 const InstructorDashboard = lazy(() => import('../pages/dashboard/instructor/InstructorDashboard'));
 const AdminDashboard = lazy(() => import('../pages/dashboard/admin/AdminDashboard'));
@@ -42,7 +43,7 @@ function Layout({ children }) {
 function RootRoute() {
   const { user } = useAuthStore();
   if (!user) return <Landing />;
-  if (user.role === 'admin') return <Navigate to="/admin" replace />;
+  if (user.role === 'admin' || user.role === 'superadmin') return <Navigate to="/admin" replace />;
   if (user.role === 'instructor') return <Navigate to="/instructor" replace />;
   return <Navigate to="/home" replace />;
 }
@@ -72,6 +73,7 @@ export default function AppRouter() {
 
         {/* Protected — Student */}
         <Route element={<ProtectedRoute roles={['student']} />}>
+          <Route path="/choose-class" element={<ChooseClass />} />
           <Route path="/courses/:id/learn" element={<CoursePlayer />} />
           <Route path="/exams/:examId" element={<Layout><ExamStart /></Layout>} />
           <Route path="/exams/:examId/session/:attemptId" element={<ExamSession />} />

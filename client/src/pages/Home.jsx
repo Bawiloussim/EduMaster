@@ -129,30 +129,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Quick filters ─────────────────────────────────────────────────── */}
-      <section className="bg-[#003580] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-blue-200 mr-2">Parcourir par classe :</span>
-          {CLASSES.map(c => (
-            <Link key={c} to={`/home?classe=${encodeURIComponent(c)}`}
-              className="text-sm px-4 py-1.5 rounded-full bg-white/10 hover:bg-[#0ea5e9] transition-colors font-medium">
-              {c}
+      {/* ── Quick filters — hidden for students, they only see their own classe ── */}
+      {!(user?.role === 'student' && user?.classe) && (
+        <section className="bg-[#003580] text-white">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-blue-200 mr-2">Parcourir par classe :</span>
+            {CLASSES.map(c => (
+              <Link key={c} to={`/home?classe=${encodeURIComponent(c)}`}
+                className="text-sm px-4 py-1.5 rounded-full bg-white/10 hover:bg-[#0ea5e9] transition-colors font-medium">
+                {c}
+              </Link>
+            ))}
+            <div className="w-px bg-white/20 mx-1 h-5" />
+            <Link to="/home?serie=D"
+              className="text-sm px-4 py-1.5 rounded-full bg-[#0ea5e9]/30 hover:bg-[#0ea5e9] border border-[#0ea5e9] transition-colors font-medium">
+              Série D — Scientifique
             </Link>
-          ))}
-          <div className="w-px bg-white/20 mx-1 h-5" />
-          <Link to="/home?serie=D"
-            className="text-sm px-4 py-1.5 rounded-full bg-[#0ea5e9]/30 hover:bg-[#0ea5e9] border border-[#0ea5e9] transition-colors font-medium">
-            Série D — Scientifique
-          </Link>
-          <Link to="/home?serie=A4"
-            className="text-sm px-4 py-1.5 rounded-full bg-purple-500/30 hover:bg-purple-500 border border-purple-400 transition-colors font-medium">
-            Série A4 — Littéraire
-          </Link>
-          <Link to="/catalog" className="ml-auto text-sm text-blue-200 hover:text-white flex items-center gap-1">
-            Tous les cours <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
+            <Link to="/home?serie=A4"
+              className="text-sm px-4 py-1.5 rounded-full bg-purple-500/30 hover:bg-purple-500 border border-purple-400 transition-colors font-medium">
+              Série A4 — Littéraire
+            </Link>
+            <Link to="/catalog" className="ml-auto text-sm text-blue-200 hover:text-white flex items-center gap-1">
+              Tous les cours <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ── Recent courses ────────────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 py-10">

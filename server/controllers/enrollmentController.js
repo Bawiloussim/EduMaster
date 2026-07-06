@@ -2,7 +2,34 @@ const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const certificateService = require('../services/certificateService');
+
+// Enroll a student in every published course matching their classe/serie
+// (called when a student picks their classe, and covers courses that already exist)
+exports.syncClassEnrollments = async (studentId, classe, serie) => {
+  if (!classe || !serie) return;
+  const courses = await Course.find({ status: 'published', classe, serie }).select('_id').lean();
+  await Promise.all(courses.map(async (course) => {
+    const existing = await Enrollment.findOne({ student: studentId, course: course._id });
+    if (existing) return;
+    await Enrollment.create({ student: studentId, course: course._id });
+    await Course.findByIdAndUpdate(course._id, { $inc: { enrollmentCount: 1 } });
+  }));
+};
+
+// Enroll every student of a classe/serie into a course that just got published
+// (called when an instructor publishes a course, so existing students of that class get it too)
+exports.syncCourseEnrollments = async (course) => {
+  if (course.status !== 'published') return;
+  const students = await User.find({ role: 'student', classe: course.classe, serie: course.serie }).select('_id').lean();
+  await Promise.all(students.map(async (student) => {
+    const existing = await Enrollment.findOne({ student: student._id, course: course._id });
+    if (existing) return;
+    await Enrollment.create({ student: student._id, course: course._id });
+    await Course.findByIdAndUpdate(course._id, { $inc: { enrollmentCount: 1 } });
+  }));
+};
 
 exports.enroll = async (req, res) => {
   const { courseId } = req.body;

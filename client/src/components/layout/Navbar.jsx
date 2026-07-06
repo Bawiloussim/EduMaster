@@ -27,7 +27,7 @@ export default function Navbar() {
     refetchInterval: 30000,
   });
   const unread = notifData?.unreadCount || 0;
-  const dashLink = user?.role === 'admin' ? '/admin' : user?.role === 'instructor' ? '/instructor' : '/student';
+  const dashLink = ['admin', 'superadmin'].includes(user?.role) ? '/admin' : user?.role === 'instructor' ? '/instructor' : '/student';
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -137,8 +137,8 @@ export default function Navbar() {
                       <div className="px-4 py-2 border-b border-gray-50 mb-1">
                         <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
                         <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${user.role === 'instructor' ? 'bg-purple-100 text-purple-700' : user.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {user.role === 'instructor' ? 'Formateur' : user.role === 'admin' ? 'Admin' : 'Élève'}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${user.role === 'superadmin' ? 'bg-red-100 text-red-700' : user.role === 'admin' ? 'bg-orange-100 text-orange-700' : user.role === 'instructor' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : user.role === 'instructor' ? 'Formateur' : 'Élève'}
                         </span>
                       </div>
                       <Link to={dashLink} onClick={() => setUserMenuOpen(false)}

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   BookOpen, Award, TrendingUp, Clock, Download, FileText,
-  CheckCircle, BarChart2, GraduationCap,
+  CheckCircle, BarChart2, GraduationCap, ClipboardList,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -23,6 +23,13 @@ const APPRECIATION_COLOR = {
   'Assez bien': 'text-sky-600 bg-sky-50',
   Passable: 'text-orange-600 bg-orange-50',
   Insuffisant: 'text-red-600 bg-red-50',
+};
+
+const TYPE_LABELS = { interrogation: 'Interrogation', devoir: 'Devoir', composition: 'Composition' };
+const TYPE_COLORS = {
+  interrogation: 'bg-blue-50 text-blue-700 border-blue-200',
+  devoir: 'bg-orange-50 text-orange-700 border-orange-200',
+  composition: 'bg-red-50 text-red-700 border-red-200',
 };
 
 function fmt(v) {
@@ -274,6 +281,93 @@ function BulletinTab() {
   );
 }
 
+/* ── Évaluations tab (interrogations / devoirs / compositions) ──────── */
+function EvaluationsTab() {
+  const [tri, setTri] = useState(1);
+  const { user } = useAuthStore();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['my-evaluations', tri],
+    queryFn: () => api.get('/evaluations/me', { params: { trimestre: tri } }).then(r => r.data.data),
+  });
+
+  const bySubject = {};
+  (data || []).forEach((ev) => {
+    const subject = ev.course?.subject || 'Autre';
+    (bySubject[subject] ||= []).push(ev);
+  });
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <span className="text-sm font-medium text-gray-600">Trimestre :</span>
+        {[1, 2, 3].map((t) => (
+          <button key={t} onClick={() => setTri(t)}
+            className={`px-5 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${
+              tri === t ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-600 hover:border-[#003580]'
+            }`}>
+            Trimestre {t}
+          </button>
+        ))}
+        {user?.classe && (
+          <span className="ml-auto text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+            {user.classe} · Série {user.serie}
+          </span>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Spinner /></div>
+      ) : !Object.keys(bySubject).length ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-gray-400">
+          <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p>Aucune interrogation, devoir ou composition pour ce trimestre</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(bySubject).map(([subject, evals]) => (
+            <div key={subject} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 font-semibold text-sm text-gray-800">{subject}</div>
+              <div className="divide-y divide-gray-50">
+                {evals.map((ev) => {
+                  const score20 = ev.grade && !ev.grade.absent && ev.grade.score !== null
+                    ? (ev.grade.score / ev.maxScore) * 20 : null;
+                  return (
+                    <div key={ev._id} className="px-4 py-3 flex items-center gap-3">
+                      <span className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border ${TYPE_COLORS[ev.type]}`}>
+                        {TYPE_LABELS[ev.type]}{ev.type === 'interrogation' ? ` ${ev.sequence}` : ''}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{ev.title || TYPE_LABELS[ev.type]}</p>
+                        {ev.date && (
+                          <p className="text-xs text-gray-400">
+                            {new Date(ev.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {ev.grade?.absent ? (
+                          <span className="text-xs font-bold text-orange-500">Absent</span>
+                        ) : score20 !== null ? (
+                          <span className={`text-sm font-bold ${score20 >= 10 ? 'text-gray-800' : 'text-red-600'}`}>
+                            {score20.toFixed(2)}/20
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-300">Pas encore noté</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Attestations tab ────────────────────────────────────────────── */
 function AttestationsTab() {
   const { data, isLoading } = useQuery({
@@ -336,9 +430,16 @@ export default function StudentDashboard() {
 
   return (
     <PageWrapper>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Bonjour, {user?.name} 👋</h1>
-        <p className="text-gray-500 mt-1">Suivez votre progression et accédez à vos ressources</p>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bonjour, {user?.name} 👋</h1>
+          <p className="text-gray-500 mt-1">Suivez votre progression et accédez à vos ressources</p>
+        </div>
+        {user?.classe && (
+          <span className="text-sm font-bold px-4 py-2 rounded-full bg-[#003580] text-white">
+            {user.classe} · Série {user.serie}
+          </span>
+        )}
       </div>
 
       {/* Stats */}
@@ -352,6 +453,7 @@ export default function StudentDashboard() {
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <Tab active={tab === 'courses'} onClick={() => setTab('courses')} icon={BookOpen}>Mes cours</Tab>
+        <Tab active={tab === 'evaluations'} onClick={() => setTab('evaluations')} icon={ClipboardList}>Évaluations</Tab>
         <Tab active={tab === 'bulletin'} onClick={() => setTab('bulletin')} icon={FileText}>Bulletin</Tab>
         <Tab active={tab === 'attestations'} onClick={() => setTab('attestations')} icon={GraduationCap}>Attestations</Tab>
       </div>
@@ -402,6 +504,7 @@ export default function StudentDashboard() {
         </div>
       )}
 
+      {tab === 'evaluations' && <EvaluationsTab />}
       {tab === 'bulletin' && <BulletinTab />}
       {tab === 'attestations' && <AttestationsTab />}
     </PageWrapper>

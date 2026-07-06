@@ -7,6 +7,7 @@ import api from '../../services/api';
 import Spinner from '../../components/ui/Spinner';
 import Badge from '../../components/ui/Badge';
 import PageWrapper from '../../components/layout/PageWrapper';
+import { useAuthStore } from '../../store/useAuthStore';
 import { CLASSES, SERIES, SERIE_COLORS, CLASSE_COLORS } from '../../utils/schoolData';
 
 function CourseCard({ course }) {
@@ -49,6 +50,8 @@ function CourseCard({ course }) {
 }
 
 export default function Catalog() {
+  const { user } = useAuthStore();
+  const isStudent = user?.role === 'student' && user?.classe && user?.serie;
   const [urlParams] = useSearchParams();
   const [search, setSearch] = useState(urlParams.get('search') || '');
   const [classe, setClasse] = useState(urlParams.get('classe') || '');
@@ -81,32 +84,40 @@ export default function Catalog() {
         <p className="text-gray-500">Cours du secondaire — Séries A4 et D</p>
       </div>
 
-      {/* Filtres par classe */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => { setClasse(''); setPage(1); }}
-          className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${!classe ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
-          Toutes les classes
-        </button>
-        {CLASSES.map(c => (
-          <button key={c} onClick={() => { setClasse(c); setPage(1); }}
-            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${classe === c ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
-            {c}
+      {/* Filtres par classe — masqués pour les élèves : ils ne voient que leur classe */}
+      {isStudent ? (
+        <div className="mb-4">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#003580] text-white">
+            Cours de ta classe : {user.classe} — Série {user.serie}
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button onClick={() => { setClasse(''); setPage(1); }}
+            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${!classe ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+            Toutes les classes
           </button>
-        ))}
-        <div className="w-px bg-gray-200 mx-1" />
-        <button onClick={() => { setSerie(''); setPage(1); }}
-          className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${!serie ? 'bg-white text-gray-600 border-gray-200' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
-          Toutes séries
-        </button>
-        <button onClick={() => { setSerie('A4'); setPage(1); }}
-          className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${serie === 'A4' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-600 border-purple-200 hover:bg-purple-50'}`}>
-          Série A4 — Littéraire
-        </button>
-        <button onClick={() => { setSerie('D'); setPage(1); }}
-          className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${serie === 'D' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}>
-          Série D — Scientifique
-        </button>
-      </div>
+          {CLASSES.map(c => (
+            <button key={c} onClick={() => { setClasse(c); setPage(1); }}
+              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${classe === c ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+              {c}
+            </button>
+          ))}
+          <div className="w-px bg-gray-200 mx-1" />
+          <button onClick={() => { setSerie(''); setPage(1); }}
+            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${!serie ? 'bg-white text-gray-600 border-gray-200' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
+            Toutes séries
+          </button>
+          <button onClick={() => { setSerie('A4'); setPage(1); }}
+            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${serie === 'A4' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-purple-600 border-purple-200 hover:bg-purple-50'}`}>
+            Série A4 — Littéraire
+          </button>
+          <button onClick={() => { setSerie('D'); setPage(1); }}
+            className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors ${serie === 'D' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}>
+            Série D — Scientifique
+          </button>
+        </div>
+      )}
 
       {/* Barre de recherche */}
       <div className="relative mb-8">

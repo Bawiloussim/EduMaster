@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const emailService = require('../services/emailService');
+const { syncClassEnrollments } = require('./enrollmentController');
 
 const signAccess = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' });
@@ -35,7 +36,7 @@ exports.register = async (req, res) => {
   res.cookie('refreshToken', refreshToken, cookieOpts);
   res.status(201).json({
     success: true,
-    data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar },
+    data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, classe: user.classe, serie: user.serie },
     accessToken,
   });
 };
@@ -58,7 +59,7 @@ exports.login = async (req, res) => {
   res.cookie('refreshToken', refreshToken, cookieOpts);
   res.json({
     success: true,
-    data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar },
+    data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, classe: user.classe, serie: user.serie },
     accessToken,
   });
 };
@@ -96,7 +97,27 @@ exports.getMe = async (req, res) => {
       role: req.user.role,
       avatar: req.user.avatar,
       bio: req.user.bio,
+      classe: req.user.classe,
+      serie: req.user.serie,
     },
+  });
+};
+
+// Student picks their classe/serie (once) — auto-enrolls them in every matching published course
+exports.setClasse = async (req, res) => {
+  const { classe, serie } = req.body;
+  const validClasses = ['Seconde', 'Première', 'Terminale'];
+  const validSeries = ['A4', 'D'];
+  if (!validClasses.includes(classe) || !validSeries.includes(serie)) {
+    return res.status(422).json({ success: false, message: 'Classe ou série invalide' });
+  }
+
+  const user = await User.findByIdAndUpdate(req.user._id, { classe, serie }, { new: true });
+  await syncClassEnrollments(user._id, classe, serie);
+
+  res.json({
+    success: true,
+    data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, classe: user.classe, serie: user.serie },
   });
 };
 

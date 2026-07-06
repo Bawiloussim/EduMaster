@@ -17,6 +17,9 @@ router.post('/:id/correction', protect, requireRole('instructor', 'admin'), opti
 router.get('/:id/grades', protect, requireRole('instructor', 'admin'), ec.getGrades);
 router.post('/:id/grades', protect, requireRole('instructor', 'admin'), ec.saveGrades);
 
+// Student: all my evaluations (interrogations/devoirs/compositions) for my classe
+router.get('/me', protect, requireRole('student'), ec.myEvaluations);
+
 // Bulletin
 router.get('/bulletin/:trimestre/me', protect, requireRole('student'), ec.myBulletin);
 router.get('/bulletin/:trimestre/student/:studentId', protect, requireRole('instructor', 'admin'), ec.getBulletin);

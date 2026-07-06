@@ -32,10 +32,23 @@ exports.adminList = async (req, res) => {
 
 exports.updateUserRole = async (req, res) => {
   const { role } = req.body;
-  if (!['student', 'instructor', 'admin'].includes(role)) {
+  const isSuperAdmin = req.user.role === 'superadmin';
+  const assignableRoles = isSuperAdmin
+    ? ['student', 'instructor', 'admin', 'superadmin']
+    : ['student', 'instructor']; // regular admins cannot grant admin/superadmin privileges
+
+  if (!assignableRoles.includes(role)) {
     return res.status(422).json({ success: false, message: 'Rôle invalide' });
   }
+
+  const existing = await User.findById(req.params.id).lean();
+  if (!existing) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+
+  // Only a superadmin may change another superadmin's role
+  if (existing.role === 'superadmin' && !isSuperAdmin) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+
   const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).lean();
-  if (!user) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
   res.json({ success: true, data: user });
 };

@@ -1,9 +1,16 @@
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
+const { syncCourseEnrollments } = require('./enrollmentController');
 
 exports.list = async (req, res) => {
-  const { search, classe, serie, page = 1, limit = 12 } = req.query;
+  const { search, page = 1, limit = 12 } = req.query;
+  let { classe, serie } = req.query;
+  // Students only ever see their own classe/serie, no matter what's requested
+  if (req.user?.role === 'student' && req.user.classe && req.user.serie) {
+    classe = req.user.classe;
+    serie = req.user.serie;
+  }
   const filter = { status: 'published' };
   if (classe) filter.classe = classe;
   if (serie) filter.serie = serie;
@@ -95,6 +102,9 @@ exports.publish = async (req, res) => {
   }
   course.status = course.status === 'published' ? 'draft' : 'published';
   await course.save();
+  if (course.status === 'published') {
+    await syncCourseEnrollments(course);
+  }
   res.json({ success: true, data: course });
 };
 

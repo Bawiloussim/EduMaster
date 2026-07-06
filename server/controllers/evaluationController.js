@@ -113,6 +113,49 @@ exports.saveGrades = async (req, res) => {
   res.json({ success: true, message: 'Notes enregistrées' });
 };
 
+// ─── Student: all my evaluations by class ────────────────────────────────────
+
+// Interrogations / devoirs / compositions for every course the student has
+// access to (auto-enrolled based on their classe/serie), optionally filtered by trimestre
+exports.myEvaluations = async (req, res) => {
+  const { trimestre } = req.query;
+  const COEFF = { interrogation: 1, devoir: 2, composition: 3 };
+
+  const enrollments = await Enrollment.find({ student: req.user._id })
+    .populate('course', 'subject classe serie').lean();
+  const courseIds = enrollments.map(e => e.course._id);
+  const courseMap = Object.fromEntries(enrollments.map(e => [e.course._id.toString(), e.course]));
+
+  const filter = { course: { $in: courseIds } };
+  if (trimestre) filter.trimestre = parseInt(trimestre);
+
+  const evaluations = await Evaluation.find(filter)
+    .sort({ trimestre: 1, 'course.subject': 1, type: 1, sequence: 1 }).lean();
+
+  const grades = await Grade.find({ student: req.user._id, evaluation: { $in: evaluations.map(e => e._id) } }).lean();
+  const gradeMap = Object.fromEntries(grades.map(g => [g.evaluation.toString(), g]));
+
+  const data = evaluations.map(ev => {
+    const g = gradeMap[ev._id.toString()];
+    return {
+      _id: ev._id,
+      course: courseMap[ev.course.toString()],
+      trimestre: ev.trimestre,
+      type: ev.type,
+      sequence: ev.sequence,
+      title: ev.title,
+      date: ev.date,
+      maxScore: ev.maxScore,
+      coefficient: COEFF[ev.type] || 1,
+      correctionUrl: ev.correctionUrl,
+      isGraded: ev.isGraded,
+      grade: g ? { score: g.score, absent: g.absent, comment: g.comment } : null,
+    };
+  });
+
+  res.json({ success: true, data });
+};
+
 // ─── Bulletin ────────────────────────────────────────────────────────────────
 
 // Compute a student's bulletin for a trimestre

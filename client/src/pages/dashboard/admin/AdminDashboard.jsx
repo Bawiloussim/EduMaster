@@ -5,9 +5,10 @@ import api from '../../../services/api';
 import Spinner from '../../../components/ui/Spinner';
 import Badge from '../../../components/ui/Badge';
 import PageWrapper from '../../../components/layout/PageWrapper';
+import { useAuthStore } from '../../../store/useAuthStore';
 
-const ROLE_COLORS = { admin: 'red', instructor: 'purple', student: 'blue' };
-const ROLE_LABELS = { admin: 'Admin', instructor: 'Formateur', student: 'Étudiant' };
+const ROLE_COLORS = { superadmin: 'red', admin: 'yellow', instructor: 'purple', student: 'blue' };
+const ROLE_LABELS = { superadmin: 'Super Admin', admin: 'Admin', instructor: 'Formateur', student: 'Étudiant' };
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   const colors = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', orange: 'bg-orange-50 text-orange-600' };
@@ -21,6 +22,8 @@ function StatCard({ icon: Icon, label, value, color = 'blue' }) {
 
 export default function AdminDashboard() {
   const qc = useQueryClient();
+  const { user: currentUser } = useAuthStore();
+  const isSuperAdmin = currentUser?.role === 'superadmin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-admin'],
@@ -88,15 +91,21 @@ export default function AdminDashboard() {
                     <div className="text-sm font-medium text-gray-900 truncate">{u.name}</div>
                     <div className="text-xs text-gray-400 truncate">{u.email}</div>
                   </div>
-                  <select
-                    value={u.role}
-                    onChange={(e) => roleMutation.mutate({ id: u._id, role: e.target.value })}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="student">Étudiant</option>
-                    <option value="instructor">Formateur</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  {u.role === 'superadmin' ? (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-800">Super Admin</span>
+                  ) : (
+                    <select
+                      value={u.role}
+                      disabled={!isSuperAdmin && u.role === 'admin'}
+                      onChange={(e) => roleMutation.mutate({ id: u._id, role: e.target.value })}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="student">Étudiant</option>
+                      <option value="instructor">Formateur</option>
+                      <option value="admin" disabled={!isSuperAdmin}>Admin</option>
+                      {isSuperAdmin && <option value="superadmin">Super Admin</option>}
+                    </select>
+                  )}
                 </div>
               ))}
             </div>
