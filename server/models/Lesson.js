@@ -6,7 +6,7 @@ const lessonSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   // Multiple content types can coexist on the same lesson
   videoUrl: { type: String, default: '' },
-  pdfUrl:   { type: String, default: '' },
+  pdfUrls: [{ url: { type: String, required: true }, name: { type: String, default: '' } }],
   content:  { type: String, default: '' },  // text / markdown
   order: { type: Number, default: 0 },
   duration: { type: Number, default: 0 },

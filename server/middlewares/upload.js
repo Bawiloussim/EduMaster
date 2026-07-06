@@ -63,4 +63,15 @@ const optionalUpload = (field) => (req, res, next) => {
   next();
 };
 
-module.exports = { upload, cloudinary, getFileUrl, optionalUpload };
+// Same, but accepts several files under one field name
+const optionalUploadMultiple = (field, maxCount = 10) => (req, res, next) => {
+  if (req.is('multipart/form-data')) {
+    return upload.array(field, maxCount)(req, res, (err) => {
+      if (err) return next(err);
+      next();
+    });
+  }
+  next();
+};
+
+module.exports = { upload, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple };

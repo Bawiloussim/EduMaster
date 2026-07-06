@@ -164,8 +164,8 @@ const PLATFORM_LABELS = {
 // ─── Lesson content viewer ────────────────────────────────────────────────────
 function LessonContent({ lesson }) {
   const video = parseVideoUrl(lesson.videoUrl);
-  const pdfUrl = getPdfUrl(lesson.pdfUrl);
-  const hasContent = video || pdfUrl;
+  const pdfs = (lesson.pdfUrls || []).map(p => ({ ...p, href: getPdfUrl(p.url) })).filter(p => p.href);
+  const hasContent = video || pdfs.length > 0;
 
   if (!hasContent) {
     return (
@@ -225,14 +225,14 @@ function LessonContent({ lesson }) {
         </div>
       )}
 
-      {/* PDF */}
-      {pdfUrl && (
-        <div>
+      {/* PDF(s) */}
+      {pdfs.map((pdf, i) => (
+        <div key={pdf.href}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1">
-              <FileText className="h-3.5 w-3.5" /> Document PDF
+              <FileText className="h-3.5 w-3.5" /> {pdf.name || (pdfs.length > 1 ? `Document PDF ${i + 1}` : 'Document PDF')}
             </h3>
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+            <a href={pdf.href} target="_blank" rel="noopener noreferrer"
               className="text-xs text-blue-600 hover:underline flex items-center gap-1">
               Ouvrir dans un nouvel onglet <ExternalLink className="h-3 w-3" />
             </a>
@@ -240,16 +240,16 @@ function LessonContent({ lesson }) {
           {/* <object> est plus fiable qu'<iframe> pour les PDFs cross-origin */}
           <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-gray-100" style={{ height: '80vh' }}>
             <object
-              data={pdfUrl}
+              data={pdf.href}
               type="application/pdf"
               className="w-full h-full"
-              title={`PDF — ${lesson.title}`}
+              title={pdf.name || `PDF — ${lesson.title}`}
             >
               {/* Fallback si le navigateur ne peut pas afficher le PDF intégré */}
               <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
                 <FileText className="h-16 w-16 opacity-30" />
                 <p className="text-sm">Votre navigateur ne peut pas afficher le PDF directement.</p>
-                <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+                <a href={pdf.href} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                   <ExternalLink className="h-4 w-4" /> Télécharger / Ouvrir le PDF
                 </a>
@@ -257,7 +257,7 @@ function LessonContent({ lesson }) {
             </object>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -324,7 +324,7 @@ export default function CoursePlayer() {
             const done = enrollment?.completedLessons?.includes(lesson._id);
             const active = lesson._id === currentLesson?._id;
             const hasVideo = !!lesson.videoUrl;
-            const hasPdf = !!lesson.pdfUrl;
+            const hasPdf = lesson.pdfUrls?.length > 0;
             return (
               <button key={lesson._id} onClick={() => setParams({ lesson: lesson._id })}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${active ? 'bg-blue-50 border-r-2 border-blue-500' : 'hover:bg-gray-50'}`}>

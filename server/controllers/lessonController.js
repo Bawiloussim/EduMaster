@@ -20,7 +20,7 @@ exports.create = async (req, res) => {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
-  const { title, moduleId, order, duration, isFreePreview, content, videoUrl, pdfUrl } = req.body;
+  const { title, moduleId, order, duration, isFreePreview, content, videoUrl } = req.body;
   const lesson = await Lesson.create({
     course: course._id,
     moduleId: moduleId || null,
@@ -30,7 +30,6 @@ exports.create = async (req, res) => {
     isFreePreview: isFreePreview === 'true' || isFreePreview === true,
     content: content || '',
     videoUrl: videoUrl || '',
-    pdfUrl: pdfUrl || '',
   });
   res.status(201).json({ success: true, data: lesson });
 };
@@ -39,10 +38,20 @@ exports.update = async (req, res) => {
   const { lesson, error } = await checkOwner(req.params.id, req.user._id, req.user.role);
   if (error) return res.status(404).json({ success: false, message: error });
 
-  const allowed = ['title', 'order', 'duration', 'isFreePreview', 'content', 'videoUrl', 'pdfUrl', 'moduleId'];
+  const allowed = ['title', 'order', 'duration', 'isFreePreview', 'content', 'videoUrl', 'moduleId'];
   allowed.forEach((f) => { if (req.body[f] !== undefined) lesson[f] = req.body[f]; });
-  // If a PDF file was uploaded, override pdfUrl with the stored file URL
-  if (req.file) lesson.pdfUrl = getFileUrl(req.file);
+
+  // pdfUrls carries the surviving list (after any removals) — sent as a JSON
+  // string in multipart requests, or a plain array in JSON requests.
+  if (req.body.pdfUrls !== undefined) {
+    lesson.pdfUrls = typeof req.body.pdfUrls === 'string' ? JSON.parse(req.body.pdfUrls) : req.body.pdfUrls;
+  }
+  // Newly uploaded PDF files are appended to whatever survived above
+  if (req.files?.length) {
+    const uploaded = req.files.map((f) => ({ url: getFileUrl(f), name: f.originalname }));
+    lesson.pdfUrls = [...(lesson.pdfUrls || []), ...uploaded];
+  }
+
   await lesson.save();
   res.json({ success: true, data: lesson });
 };

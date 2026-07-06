@@ -28,16 +28,19 @@ const TABS = [
 function LessonRow({ lesson, courseId, onDelete, onSaved }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('content'); // 'content' | 'exercises'
-  const [form, setForm] = useState({ videoUrl: lesson.videoUrl || '', pdfUrl: lesson.pdfUrl || '', content: lesson.content || '', isFreePreview: lesson.isFreePreview || false });
-  const [pdfFile, setPdfFile] = useState(null);
+  const [form, setForm] = useState({ videoUrl: lesson.videoUrl || '', pdfUrls: lesson.pdfUrls || [], content: lesson.content || '', isFreePreview: lesson.isFreePreview || false });
+  const [pdfFiles, setPdfFiles] = useState([]);
   const qc = useQueryClient();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const removeExistingPdf = (i) => set('pdfUrls', form.pdfUrls.filter((_, idx) => idx !== i));
+  const removePendingPdf = (i) => setPdfFiles(fs => fs.filter((_, idx) => idx !== i));
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (pdfFile) {
+      if (pdfFiles.length) {
         const fd = new FormData();
-        fd.append('pdfFile', pdfFile);
+        pdfFiles.forEach((f) => fd.append('pdfFiles', f));
+        fd.append('pdfUrls', JSON.stringify(form.pdfUrls));
         fd.append('videoUrl', form.videoUrl);
         fd.append('content', form.content);
         fd.append('isFreePreview', form.isFreePreview);
@@ -47,14 +50,14 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
     },
     onSuccess: (res) => {
       toast.success('Leçon sauvegardée');
-      if (res.data?.data?.pdfUrl) set('pdfUrl', res.data.data.pdfUrl);
-      setPdfFile(null);
+      if (res.data?.data?.pdfUrls) set('pdfUrls', res.data.data.pdfUrls);
+      setPdfFiles([]);
       onSaved();
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-blue-500" />, (form.pdfUrl || pdfFile) && <FileText key="p" className="h-3 w-3 text-red-400" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-green-500" />].filter(Boolean);
+  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-blue-500" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-red-400" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-green-500" />].filter(Boolean);
 
   return (
     <div className={`rounded-xl border transition-colors ${open ? 'border-blue-200 bg-blue-50/20' : 'border-gray-100 bg-white hover:bg-gray-50'}`}>
@@ -87,30 +90,29 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><FileText className="h-3.5 w-3.5 text-red-400" /> PDF / Document</label>
-                {form.pdfUrl && !pdfFile && (
-                  <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><FileText className="h-3.5 w-3.5 text-red-400" /> PDF / Documents</label>
+                {form.pdfUrls.map((pdf, i) => (
+                  <div key={pdf.url} className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                     <FileText className="h-4 w-4 text-red-500 shrink-0" />
-                    <span className="text-xs text-red-700 flex-1">PDF enregistré</span>
-                    <a href={pdfHref(form.pdfUrl)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Voir</a>
-                    <button onClick={() => set('pdfUrl', '')} className="text-gray-400 hover:text-red-500">✕</button>
+                    <span className="text-xs text-red-700 flex-1 truncate">{pdf.name || 'PDF enregistré'}</span>
+                    <a href={pdfHref(pdf.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Voir</a>
+                    <button onClick={() => removeExistingPdf(i)} className="text-gray-400 hover:text-red-500">✕</button>
                   </div>
-                )}
-                {pdfFile && (
-                  <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                ))}
+                {pdfFiles.map((f, i) => (
+                  <div key={`${f.name}-${i}`} className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
                     <FileText className="h-4 w-4 text-orange-500" />
-                    <span className="text-xs text-orange-700 flex-1 truncate">{pdfFile.name}</span>
-                    <span className="text-xs text-orange-400">{(pdfFile.size / 1024 / 1024).toFixed(1)} Mo</span>
-                    <button onClick={() => setPdfFile(null)} className="text-gray-400 hover:text-red-500">✕</button>
+                    <span className="text-xs text-orange-700 flex-1 truncate">{f.name}</span>
+                    <span className="text-xs text-orange-400">{(f.size / 1024 / 1024).toFixed(1)} Mo</span>
+                    <button onClick={() => removePendingPdf(i)} className="text-gray-400 hover:text-red-500">✕</button>
                   </div>
-                )}
-                {!pdfFile && (
-                  <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-red-300 hover:text-red-500 cursor-pointer transition-colors">
-                    <FileText className="h-4 w-4" />
-                    {form.pdfUrl ? 'Remplacer le PDF' : 'Importer un fichier PDF'}
-                    <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={e => { if (e.target.files[0]) setPdfFile(e.target.files[0]); }} />
-                  </label>
-                )}
+                ))}
+                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-red-300 hover:text-red-500 cursor-pointer transition-colors">
+                  <FileText className="h-4 w-4" />
+                  Importer un ou plusieurs fichiers PDF
+                  <input type="file" accept=".pdf,application/pdf" multiple className="hidden"
+                    onChange={e => { if (e.target.files.length) setPdfFiles(fs => [...fs, ...Array.from(e.target.files)]); e.target.value = ''; }} />
+                </label>
               </div>
 
               <div className="space-y-1">
