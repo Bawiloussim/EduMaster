@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Plus, Trash2, Save, ChevronLeft, BookOpen, HelpCircle,
   ChevronDown, ChevronUp, Video, FileText, AlignLeft,
-  ClipboardList, BarChart2, Upload, Check, X, Eye
+  ClipboardList, BarChart2, Upload, Check, X, Eye, Pencil
 } from 'lucide-react';
 import api from '../../../services/api';
 import Spinner from '../../../components/ui/Spinner';
@@ -139,6 +139,7 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
 function ExercisesTab({ lessonId, courseId }) {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newEx, setNewEx] = useState({ statement: '', type: 'open', options: ['', '', '', ''], correctOption: 0 });
 
   const { data, isLoading } = useQuery({
@@ -155,6 +156,12 @@ function ExercisesTab({ lessonId, courseId }) {
     onError: e => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }) => api.put(`/exercises/${id}`, body),
+    onSuccess: () => { toast.success('Exercice modifié'); qc.invalidateQueries(['exercises', lessonId]); setEditingId(null); },
+    onError: e => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/exercises/${id}`),
     onSuccess: () => { toast.success('Exercice supprimé'); qc.invalidateQueries(['exercises', lessonId]); },
@@ -167,54 +174,40 @@ function ExercisesTab({ lessonId, courseId }) {
       {data?.length === 0 && !adding && <p className="text-xs text-gray-400 text-center py-4">Aucun exercice — ajoutez-en un ci-dessous</p>}
 
       {data?.map((ex, i) => (
-        <div key={ex._id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <span className="text-xs font-bold text-gray-400 mr-2">Q{i + 1}</span>
-              <span className="text-sm text-gray-800">{ex.statement}</span>
-              {ex.type === 'qcm' && (
-                <div className="mt-2 space-y-1">
-                  {ex.options.map((opt, oi) => (
-                    <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === ex.correctOption ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}>
-                      {oi === ex.correctOption ? '✓ ' : '◦ '}{opt}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className={`text-xs px-1.5 py-0.5 rounded ${ex.type === 'qcm' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{ex.type === 'qcm' ? 'QCM' : 'Ouvert'}</span>
-              <button onClick={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ex._id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></button>
+        editingId === ex._id ? (
+          <EditExerciseForm key={ex._id} exercise={ex}
+            saving={updateMutation.isPending}
+            onCancel={() => setEditingId(null)}
+            onSave={(body) => updateMutation.mutate({ id: ex._id, body })} />
+        ) : (
+          <div key={ex._id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <span className="text-xs font-bold text-gray-400 mr-2">Q{i + 1}</span>
+                <span className="text-sm text-gray-800">{ex.statement}</span>
+                {ex.type === 'qcm' && (
+                  <div className="mt-2 space-y-1">
+                    {ex.options.map((opt, oi) => (
+                      <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === ex.correctOption ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}>
+                        {oi === ex.correctOption ? '✓ ' : '◦ '}{opt}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className={`text-xs px-1.5 py-0.5 rounded ${ex.type === 'qcm' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{ex.type === 'qcm' ? 'QCM' : 'Ouvert'}</span>
+                <button onClick={() => setEditingId(ex._id)} className="p-1 text-blue-400 hover:text-blue-600"><Pencil className="h-3 w-3" /></button>
+                <button onClick={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ex._id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></button>
+              </div>
             </div>
           </div>
-        </div>
+        )
       ))}
 
       {adding && (
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
-          <div className="flex gap-2">
-            <select value={newEx.type} onChange={e => setNewEx(f => ({ ...f, type: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-              <option value="open">Question ouverte</option>
-              <option value="qcm">QCM</option>
-            </select>
-          </div>
-          <textarea rows={3} value={newEx.statement} onChange={e => setNewEx(f => ({ ...f, statement: e.target.value }))}
-            placeholder="Énoncé de l'exercice…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-          {newEx.type === 'qcm' && (
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500">Propositions (cochez la bonne réponse) :</p>
-              {newEx.options.map((opt, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input type="radio" name="correct" checked={newEx.correctOption === i} onChange={() => setNewEx(f => ({ ...f, correctOption: i }))} className="accent-green-600" />
-                  <input value={opt} onChange={e => { const o = [...newEx.options]; o[i] = e.target.value; setNewEx(f => ({ ...f, options: o })); }}
-                    placeholder={`Option ${i + 1}…`}
-                    className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-              ))}
-            </div>
-          )}
+          <ExerciseFormFields value={newEx} onChange={setNewEx} />
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={() => setAdding(false)}>Annuler</Button>
             <Button size="sm" disabled={!newEx.statement.trim()} loading={addMutation.isPending} onClick={() => addMutation.mutate()}>Ajouter</Button>
@@ -227,6 +220,60 @@ function ExercisesTab({ lessonId, courseId }) {
           + Ajouter un exercice
         </button>
       )}
+    </div>
+  );
+}
+
+// Shared editable fields for an exercise (statement, type, QCM options)
+function ExerciseFormFields({ value, onChange }) {
+  const set = (k, v) => onChange(f => ({ ...f, [k]: v }));
+  return (
+    <>
+      <div className="flex gap-2">
+        <select value={value.type} onChange={e => set('type', e.target.value)}
+          className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+          <option value="open">Question ouverte</option>
+          <option value="qcm">QCM</option>
+        </select>
+      </div>
+      <textarea rows={3} value={value.statement} onChange={e => set('statement', e.target.value)}
+        placeholder="Énoncé de l'exercice…"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+      {value.type === 'qcm' && (
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500">Propositions (cochez la bonne réponse) :</p>
+          {value.options.map((opt, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input type="radio" name="correct" checked={value.correctOption === i} onChange={() => set('correctOption', i)} className="accent-green-600" />
+              <input value={opt} onChange={e => { const o = [...value.options]; o[i] = e.target.value; set('options', o); }}
+                placeholder={`Option ${i + 1}…`}
+                className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function EditExerciseForm({ exercise, onSave, onCancel, saving }) {
+  const [ex, setEx] = useState({
+    statement: exercise.statement || '',
+    type: exercise.type || 'open',
+    options: exercise.type === 'qcm' && exercise.options?.length ? exercise.options : ['', '', '', ''],
+    correctOption: exercise.correctOption ?? 0,
+  });
+
+  return (
+    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+      <ExerciseFormFields value={ex} onChange={setEx} />
+      <div className="flex gap-2">
+        <Button size="sm" variant="secondary" onClick={onCancel}>Annuler</Button>
+        <Button size="sm" disabled={!ex.statement.trim()} loading={saving}
+          onClick={() => onSave({ ...ex, options: ex.type === 'qcm' ? ex.options.filter(o => o.trim()) : [] })}>
+          Enregistrer
+        </Button>
+      </div>
     </div>
   );
 }
