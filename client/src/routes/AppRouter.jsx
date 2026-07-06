@@ -27,6 +27,7 @@ const CertificateVerify = lazy(() => import('../pages/certificates/CertificateVe
 const Notifications = lazy(() => import('../pages/Notifications'));
 
 const EditCourse = lazy(() => import('../pages/dashboard/instructor/EditCourse'));
+const Grading = lazy(() => import('../pages/dashboard/instructor/Grading'));
 const Home = lazy(() => import('../pages/Home'));
 const Landing = lazy(() => import('../pages/Landing'));
 
@@ -86,6 +87,7 @@ export default function AppRouter() {
         <Route element={<ProtectedRoute roles={['instructor', 'admin']} />}>
           <Route path="/instructor" element={<Layout><InstructorDashboard /></Layout>} />
           <Route path="/instructor/courses/:id/edit" element={<Layout><EditCourse /></Layout>} />
+          <Route path="/instructor/grading" element={<Layout><Grading /></Layout>} />
         </Route>
 
         {/* Protected — Admin */}

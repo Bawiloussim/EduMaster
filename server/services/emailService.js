@@ -30,3 +30,11 @@ exports.sendCertificateReady = (user, course, verifyUrl) =>
 
 exports.sendNotification = (user, title, message) =>
   send(user.email, title, `<p>Bonjour ${user.name},</p><p>${message}</p>`);
+
+exports.sendGradingNeeded = (instructor, { studentName, itemTitle, courseTitle, link }) =>
+  send(instructor.email, `Copie à corriger : ${itemTitle}`,
+    `<p>Bonjour ${instructor.name},</p><p><strong>${studentName}</strong> a envoyé sa copie pour "${itemTitle}" (${courseTitle}). <a href="${link}">Corriger maintenant</a></p>`);
+
+exports.sendExerciseGraded = (student, statement, grade, feedback) =>
+  send(student.email, 'Votre exercice a été corrigé',
+    `<p>Bonjour ${student.name},</p><p>Votre réponse à l'exercice "${statement}" a été corrigée. Note : <strong>${grade}/10</strong>${feedback ? `<br/>Commentaire : ${feedback}` : ''}</p>`);

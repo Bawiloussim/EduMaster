@@ -2,6 +2,9 @@ const Exercise = require('../models/Exercise');
 const ExerciseAnswer = require('../models/ExerciseAnswer');
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const emailService = require('../services/emailService');
 
 exports.createForLesson = async (req, res) => {
   const lesson = await Lesson.findById(req.params.lessonId);
@@ -30,6 +33,21 @@ exports.listForLesson = async (req, res) => {
   res.json({ success: true, data: exercises });
 };
 
+// Instructor: see every student's answer to one exercise, to grade open ones
+exports.listAnswers = async (req, res) => {
+  const exercise = await Exercise.findById(req.params.id);
+  if (!exercise) return res.status(404).json({ success: false, message: 'Exercice introuvable' });
+  const course = await Course.findById(exercise.course);
+  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  const answers = await ExerciseAnswer.find({ exercise: exercise._id })
+    .populate('student', 'name email avatar')
+    .sort({ submittedAt: -1 })
+    .lean();
+  res.json({ success: true, data: answers });
+};
+
 exports.update = async (req, res) => {
   const exercise = await Exercise.findById(req.params.id);
   if (!exercise) return res.status(404).json({ success: false, message: 'Exercice introuvable' });
@@ -54,6 +72,28 @@ exports.delete = async (req, res) => {
   res.json({ success: true, message: 'Exercice supprimé' });
 };
 
+// Notify + email the course instructor that an open-ended exercise needs grading
+const notifyInstructorOfSubmission = async (exercise, student) => {
+  if (exercise.type !== 'open') return; // QCM is auto-graded, nothing to correct
+  const course = await Course.findById(exercise.course);
+  const instructor = await User.findById(course.instructor);
+  if (!instructor) return;
+  const lesson = await Lesson.findById(exercise.lesson).select('title').lean();
+  await Notification.create({
+    user: instructor._id,
+    type: 'grading_needed',
+    title: 'Exercice à corriger',
+    message: `${student.name} a répondu à un exercice de "${lesson?.title || course.title}".`,
+    link: `/instructor/courses/${course._id}/edit`,
+  });
+  await emailService.sendGradingNeeded(instructor, {
+    studentName: student.name,
+    itemTitle: lesson?.title || exercise.statement,
+    courseTitle: course.title,
+    link: `${process.env.CLIENT_URL}/instructor/courses/${course._id}/edit`,
+  }).catch(() => {});
+};
+
 // Student submits answer
 exports.submitAnswer = async (req, res) => {
   const exercise = await Exercise.findById(req.params.id);
@@ -71,6 +111,7 @@ exports.submitAnswer = async (req, res) => {
     existing.isCorrect = isCorrect;
     existing.submittedAt = new Date();
     await existing.save();
+    await notifyInstructorOfSubmission(exercise, req.user).catch(() => {});
     return res.json({ success: true, data: existing, isCorrect });
   }
 
@@ -81,6 +122,7 @@ exports.submitAnswer = async (req, res) => {
     isCorrect,
     submittedAt: new Date(),
   });
+  await notifyInstructorOfSubmission(exercise, req.user).catch(() => {});
   res.status(201).json({ success: true, data: a, isCorrect });
 };
 
@@ -102,5 +144,19 @@ exports.gradeAnswer = async (req, res) => {
   answer.gradedBy = req.user._id;
   answer.gradedAt = new Date();
   await answer.save();
+
+  const exercise = await Exercise.findById(answer.exercise);
+  const student = await User.findById(answer.student);
+  if (exercise && student) {
+    await Notification.create({
+      user: student._id,
+      type: 'exercise_graded',
+      title: 'Exercice corrigé',
+      message: `Votre réponse à "${exercise.statement}" a été corrigée : ${grade}/10.`,
+      link: `/courses/${exercise.course}/learn?lesson=${exercise.lesson}`,
+    });
+    await emailService.sendExerciseGraded(student, exercise.statement, grade, feedback).catch(() => {});
+  }
+
   res.json({ success: true, data: answer });
 };

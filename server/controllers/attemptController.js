@@ -3,6 +3,8 @@ const Question = require('../models/Question');
 const Result = require('../models/Result');
 const Enrollment = require('../models/Enrollment');
 const Certificate = require('../models/Certificate');
+const Course = require('../models/Course');
+const User = require('../models/User');
 const certificateService = require('../services/certificateService');
 const emailService = require('../services/emailService');
 const Notification = require('../models/Notification');
@@ -157,13 +159,32 @@ exports.submit = async (req, res) => {
     await emailService.sendCertificateReady(req.user, exam.course, `${process.env.CLIENT_URL}/certificates/verify/${certificate.verifyHash}`).catch(() => {});
   }
 
-  await Notification.create({
-    user: req.user._id,
-    type: 'exam_result',
-    title: 'Résultat d\'examen',
-    message: `Vous avez obtenu ${score}% à "${exam.title}". ${passed ? 'Félicitations !' : 'Bonne chance pour la prochaine tentative.'}`,
-    link: `/exams/${exam._id}/result/${result._id}`,
-  });
+  if (needsManualGrading) {
+    const instructor = await User.findById(exam.course.instructor);
+    if (instructor) {
+      await Notification.create({
+        user: instructor._id,
+        type: 'grading_needed',
+        title: 'Copie à corriger',
+        message: `${req.user.name} a soumis "${exam.title}" — des questions ouvertes attendent une correction.`,
+        link: `/instructor/grading`,
+      });
+      await emailService.sendGradingNeeded(instructor, {
+        studentName: req.user.name,
+        itemTitle: exam.title,
+        courseTitle: exam.course.title,
+        link: `${process.env.CLIENT_URL}/instructor/grading`,
+      }).catch(() => {});
+    }
+  } else {
+    await Notification.create({
+      user: req.user._id,
+      type: 'exam_result',
+      title: 'Résultat d\'examen',
+      message: `Vous avez obtenu ${score}% à "${exam.title}". ${passed ? 'Félicitations !' : 'Bonne chance pour la prochaine tentative.'}`,
+      link: `/exams/${exam._id}/result/${result._id}`,
+    });
+  }
 
   const questionsWithExplanations = await Question.find({ _id: { $in: result.questions } }).lean();
   res.json({
@@ -214,11 +235,31 @@ exports.gradeOpenQuestion = async (req, res) => {
     result.status = 'graded';
     result.needsManualGrading = false;
 
-    if (result.passed) {
-      await certificateService.generate(
-        { _id: result.student, name: '', email: '' },
-        result.exam.course, result.exam, result
-      ).catch(() => {});
+    const student = await User.findById(result.student);
+
+    if (result.passed && student) {
+      const certificate = await certificateService.generate(student, result.exam.course, exam, result).catch(() => null);
+      if (certificate) {
+        await Notification.create({
+          user: student._id,
+          type: 'certificate_ready',
+          title: 'Certificat disponible',
+          message: `Félicitations ! Votre certificat pour "${result.exam.course.title}" est prêt.`,
+          link: `/certificates`,
+        });
+        await emailService.sendCertificateReady(student, result.exam.course, `${process.env.CLIENT_URL}/certificates/verify/${certificate.verifyHash}`).catch(() => {});
+      }
+    }
+
+    if (student) {
+      await Notification.create({
+        user: student._id,
+        type: 'exam_result',
+        title: 'Résultat d\'examen',
+        message: `Votre copie pour "${exam.title}" a été corrigée. Vous avez obtenu ${result.score}%. ${result.passed ? 'Félicitations !' : ''}`,
+        link: `/exams/${exam._id}/result/${result._id}`,
+      });
+      await emailService.sendExamResult(student, exam, result.score, result.passed).catch(() => {});
     }
   }
 
@@ -245,4 +286,21 @@ exports.instructorResults = async (req, res) => {
     .sort({ createdAt: -1 })
     .lean();
   res.json({ success: true, data: results });
+};
+
+// All exam attempts across the instructor's courses that still need manual grading
+exports.myPendingGrading = async (req, res) => {
+  const courses = await Course.find({ instructor: req.user._id }).select('_id').lean();
+  const exams = await Exam.find({ course: { $in: courses.map((c) => c._id) } }).populate('course', 'title').lean();
+  const examIds = exams.map((e) => e._id);
+  const examById = Object.fromEntries(exams.map((e) => [e._id.toString(), e]));
+
+  const results = await Result.find({ exam: { $in: examIds }, needsManualGrading: true, status: 'submitted' })
+    .populate('student', 'name email avatar')
+    .populate('questions')
+    .sort({ submittedAt: 1 })
+    .lean();
+
+  const data = results.map((r) => ({ ...r, exam: examById[r.exam.toString()] }));
+  res.json({ success: true, data });
 };

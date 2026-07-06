@@ -182,28 +182,9 @@ function ExercisesTab({ lessonId, courseId }) {
             onCancel={() => setEditingId(null)}
             onSave={(body) => updateMutation.mutate({ id: ex._id, body })} />
         ) : (
-          <div key={ex._id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <span className="text-xs font-bold text-gray-400 mr-2">Q{i + 1}</span>
-                <span className="text-sm text-gray-800">{ex.statement}</span>
-                {ex.type === 'qcm' && (
-                  <div className="mt-2 space-y-1">
-                    {ex.options.map((opt, oi) => (
-                      <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === ex.correctOption ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}>
-                        {oi === ex.correctOption ? '✓ ' : '◦ '}{opt}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <span className={`text-xs px-1.5 py-0.5 rounded ${ex.type === 'qcm' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{ex.type === 'qcm' ? 'QCM' : 'Ouvert'}</span>
-                <button onClick={() => setEditingId(ex._id)} className="p-1 text-blue-400 hover:text-blue-600"><Pencil className="h-3 w-3" /></button>
-                <button onClick={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ex._id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></button>
-              </div>
-            </div>
-          </div>
+          <ExerciseRow key={ex._id} exercise={ex} index={i}
+            onEdit={() => setEditingId(ex._id)}
+            onDelete={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ex._id)} />
         )
       ))}
 
@@ -276,6 +257,97 @@ function EditExerciseForm({ exercise, onSave, onCancel, saving }) {
           Enregistrer
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ExerciseRow({ exercise: ex, index: i, onEdit, onDelete }) {
+  const [showAnswers, setShowAnswers] = useState(false);
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <span className="text-xs font-bold text-gray-400 mr-2">Q{i + 1}</span>
+          <span className="text-sm text-gray-800">{ex.statement}</span>
+          {ex.type === 'qcm' && (
+            <div className="mt-2 space-y-1">
+              {ex.options.map((opt, oi) => (
+                <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === ex.correctOption ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}>
+                  {oi === ex.correctOption ? '✓ ' : '◦ '}{opt}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className={`text-xs px-1.5 py-0.5 rounded ${ex.type === 'qcm' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{ex.type === 'qcm' ? 'QCM' : 'Ouvert'}</span>
+          <button onClick={onEdit} className="p-1 text-blue-400 hover:text-blue-600"><Pencil className="h-3 w-3" /></button>
+          <button onClick={onDelete} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></button>
+        </div>
+      </div>
+      {ex.type === 'open' && (
+        <div className="mt-2">
+          <button onClick={() => setShowAnswers(v => !v)} className="text-xs text-blue-600 hover:underline">
+            {showAnswers ? 'Masquer les réponses' : 'Voir les réponses des élèves'}
+          </button>
+          {showAnswers && <ExerciseAnswers exerciseId={ex._id} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExerciseAnswers({ exerciseId }) {
+  const qc = useQueryClient();
+  const [grades, setGrades] = useState({});
+  const [feedbacks, setFeedbacks] = useState({});
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['exercise-answers', exerciseId],
+    queryFn: () => api.get(`/exercises/${exerciseId}/answers`).then(r => r.data.data),
+  });
+
+  const gradeMutation = useMutation({
+    mutationFn: ({ answerId, grade, feedback }) => api.patch(`/exercises/answers/${answerId}/grade`, { grade, feedback }),
+    onSuccess: () => { toast.success('Réponse notée'); qc.invalidateQueries(['exercise-answers', exerciseId]); },
+    onError: e => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  if (isLoading) return <div className="py-2"><Spinner /></div>;
+  if (!data?.length) return <p className="text-xs text-gray-400 italic py-2">Aucune réponse pour l'instant</p>;
+
+  return (
+    <div className="space-y-2 mt-2">
+      {data.map(a => (
+        <div key={a._id} className="bg-white border border-gray-100 rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-700">{a.student?.name}</span>
+            {a.grade != null && <span className="text-xs text-green-600 font-medium">Noté : {a.grade}/10</span>}
+          </div>
+          <p className="text-sm text-gray-800 bg-gray-50 rounded-lg p-2 whitespace-pre-wrap">
+            {a.answer || <span className="text-gray-400 italic">Pas de réponse</span>}
+          </p>
+          <div className="flex items-center gap-2">
+            <input type="number" min={0} max={10} step="0.5" placeholder="Note"
+              defaultValue={a.grade ?? ''}
+              onChange={e => setGrades(g => ({ ...g, [a._id]: e.target.value }))}
+              className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <span className="text-xs text-gray-400">/10</span>
+            <input placeholder="Commentaire…" defaultValue={a.feedback || ''}
+              onChange={e => setFeedbacks(f => ({ ...f, [a._id]: e.target.value }))}
+              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <Button size="sm" loading={gradeMutation.isPending}
+              onClick={() => gradeMutation.mutate({
+                answerId: a._id,
+                grade: Number(grades[a._id] ?? a.grade ?? 0),
+                feedback: feedbacks[a._id] ?? a.feedback ?? '',
+              })}>
+              Noter
+            </Button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

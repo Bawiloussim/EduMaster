@@ -9,6 +9,7 @@ router.post('/lessons/:lessonId', protect, requireRole('instructor', 'admin'), e
 router.get('/lessons/:lessonId', protect, ec.listForLesson);
 router.put('/:id', protect, requireRole('instructor', 'admin'), ec.update);
 router.delete('/:id', protect, requireRole('instructor', 'admin'), ec.delete);
+router.get('/:id/answers', protect, requireRole('instructor', 'admin'), ec.listAnswers);
 
 // Student
 router.post('/:id/answer', protect, requireRole('student'), ec.submitAnswer);
