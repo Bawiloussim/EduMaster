@@ -62,8 +62,8 @@ describe('ClassesTab', () => {
 
     const collegeSection = screen.getByText('Collège').closest('div.bg-white');
     // total élèves collège = 3+2+0+1 = 6, total cours = 1+0+0+2 = 3
-    // (le total est rendu dans un <span>, contrairement aux valeurs de cellules du tableau, pour éviter toute ambiguïté)
-    expect(within(collegeSection).getByText('6', { selector: 'span' })).toBeInTheDocument();
-    expect(within(collegeSection).getByText('3', { selector: 'span' })).toBeInTheDocument();
+    // (le total d'en-tête a la classe text-xl, contrairement aux pastilles de valeur par ligne qui sont en text-sm, pour éviter toute ambiguïté)
+    expect(within(collegeSection).getByText('6', { selector: 'span.text-xl' })).toBeInTheDocument();
+    expect(within(collegeSection).getByText('3', { selector: 'span.text-xl' })).toBeInTheDocument();
   });
 });
