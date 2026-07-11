@@ -382,6 +382,12 @@ function EvaluationsTab({ courseId }) {
     onSuccess: () => { toast.success('Évaluation supprimée'); qc.invalidateQueries(['evaluations', courseId]); },
   });
 
+  const signMutation = useMutation({
+    mutationFn: ({ id, signed }) => api.patch(`/evaluations/${id}/signature`, { signed }),
+    onSuccess: (_res, { signed }) => { toast.success(signed ? 'Notes signées' : 'Signature retirée'); qc.invalidateQueries(['evaluations', courseId]); },
+    onError: e => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
   if (isLoading) return <div className="py-8 flex justify-center"><Spinner /></div>;
 
   const triEvals = evals?.filter(e => e.trimestre === trimestre) || [];
@@ -432,6 +438,27 @@ function EvaluationsTab({ courseId }) {
                       ? <a href={pdfHref(ev.correctionUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-current hover:underline ml-auto"><Eye className="h-3 w-3" /> Voir corrigé</a>
                       : <span className="opacity-60 ml-auto">Pas de corrigé</span>}
                   </div>
+
+                  {/* Signature */}
+                  <div className="flex items-center gap-2 text-xs">
+                    {ev.signed ? (
+                      <>
+                        <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                          <Check className="h-3 w-3" /> Signé le {new Date(ev.signedAt).toLocaleDateString('fr-FR')}
+                        </span>
+                        <button onClick={() => signMutation.mutate({ id: ev._id, signed: false })}
+                          className="ml-auto text-xs px-2 py-1 bg-white/70 rounded-lg hover:bg-white transition-colors">
+                          Délier
+                        </button>
+                      </>
+                    ) : (
+                      <button disabled={!ev.isGraded} onClick={() => signMutation.mutate({ id: ev._id, signed: true })}
+                        className="ml-auto text-xs px-3 py-1.5 bg-white/80 rounded-lg hover:bg-white transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed">
+                        Signer les notes
+                      </button>
+                    )}
+                  </div>
+
                   {/* Upload correction */}
                   <CorrectionUpload evaluationId={ev._id} onUploaded={() => qc.invalidateQueries(['evaluations', courseId])} />
                 </div>

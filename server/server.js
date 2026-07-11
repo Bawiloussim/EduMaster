@@ -53,6 +53,7 @@ app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/exercises', require('./routes/exerciseRoutes'));
 app.use('/api/evaluations', require('./routes/evaluationRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'EduMaster API running' }));
 

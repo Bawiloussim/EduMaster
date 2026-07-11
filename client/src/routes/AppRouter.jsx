@@ -3,7 +3,6 @@ import { lazy, Suspense } from 'react';
 import Spinner from '../components/ui/Spinner';
 import ProtectedRoute from '../components/shared/ProtectedRoute';
 import Navbar from '../components/layout/Navbar';
-import { useAuthStore } from '../store/useAuthStore';
 
 const Login = lazy(() => import('../pages/auth/Login'));
 const Register = lazy(() => import('../pages/auth/Register'));
@@ -40,13 +39,9 @@ function Layout({ children }) {
   );
 }
 
-/* Root: landing page for visitors, home for logged-in users */
+/* Root: always the landing page, for visitors and logged-in users alike */
 function RootRoute() {
-  const { user } = useAuthStore();
-  if (!user) return <Landing />;
-  if (user.role === 'admin' || user.role === 'superadmin') return <Navigate to="/admin" replace />;
-  if (user.role === 'instructor') return <Navigate to="/instructor" replace />;
-  return <Navigate to="/home" replace />;
+  return <Landing />;
 }
 
 export default function AppRouter() {
@@ -90,9 +85,9 @@ export default function AppRouter() {
           <Route path="/instructor/grading" element={<Layout><Grading /></Layout>} />
         </Route>
 
-        {/* Protected — Admin */}
-        <Route element={<ProtectedRoute roles={['admin']} />}>
-          <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
+        {/* Protected — Admin (own sidebar layout, no global Navbar) */}
+        <Route element={<ProtectedRoute roles={['admin', 'superadmin']} />}>
+          <Route path="/admin" element={<AdminDashboard />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

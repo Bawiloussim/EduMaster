@@ -352,6 +352,8 @@ function EvaluationsTab() {
                           <span className={`text-sm font-bold ${score20 >= 10 ? 'text-gray-800' : 'text-red-600'}`}>
                             {score20.toFixed(2)}/20
                           </span>
+                        ) : ev.pendingSignature ? (
+                          <span className="text-xs font-medium text-orange-400">En attente de validation</span>
                         ) : (
                           <span className="text-xs text-gray-300">Pas encore noté</span>
                         )}

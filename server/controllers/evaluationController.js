@@ -5,8 +5,12 @@ const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const Exercise = require('../models/Exercise');
 const ExerciseAnswer = require('../models/ExerciseAnswer');
+const Notification = require('../models/Notification');
 const { getFileUrl, optionalUpload } = require('../middlewares/upload');
 const bulletinService = require('../services/bulletinService');
+const emailService = require('../services/emailService');
+
+const EVAL_LABEL = (ev) => ev.type === 'interrogation' ? `Interrogation ${ev.sequence}` : ev.type === 'devoir' ? 'Devoir' : 'Composition';
 
 // ─── Instructor ─────────────────────────────────────────────────────────────
 
@@ -144,6 +148,9 @@ exports.saveGrades = async (req, res) => {
   if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
+  if (evaluation.signed) {
+    return res.status(409).json({ success: false, message: 'Cette évaluation est signée. Déliez-la avant de modifier les notes.' });
+  }
 
   const { grades } = req.body; // [{ studentId, score, absent, comment }]
   await Promise.all(grades.map(async (g) => {
@@ -166,6 +173,52 @@ exports.saveGrades = async (req, res) => {
   evaluation.isGraded = true;
   await evaluation.save();
   res.json({ success: true, message: 'Notes enregistrées' });
+};
+
+// Sign (or unsign) an evaluation — turns entered grades into official bulletin lines
+exports.setSignature = async (req, res) => {
+  const evaluation = await Evaluation.findById(req.params.id);
+  if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
+  const course = await Course.findById(evaluation.course);
+  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+
+  const signed = !!req.body.signed;
+
+  if (signed) {
+    if (!evaluation.isGraded) {
+      return res.status(422).json({ success: false, message: 'Saisissez les notes avant de signer' });
+    }
+    evaluation.signed = true;
+    evaluation.signedBy = req.user._id;
+    evaluation.signedAt = new Date();
+    await evaluation.save();
+
+    const grades = await Grade.find({ evaluation: evaluation._id }).populate('student', 'name email').lean();
+    await Promise.all(grades.map(async (g) => {
+      if (!g.student) return;
+      await Notification.create({
+        user: g.student._id,
+        type: 'grade_signed',
+        title: 'Note disponible',
+        message: `Votre note pour "${EVAL_LABEL(evaluation)}" (${course.title}) a été validée par ${req.user.name}.`,
+        link: '/student',
+      });
+      await emailService.sendGradeSigned(g.student, {
+        evalLabel: EVAL_LABEL(evaluation),
+        courseTitle: course.title,
+        instructorName: req.user.name,
+      }).catch(() => {});
+    }));
+  } else {
+    evaluation.signed = false;
+    evaluation.signedBy = null;
+    evaluation.signedAt = null;
+    await evaluation.save();
+  }
+
+  res.json({ success: true, data: evaluation });
 };
 
 // ─── Student: all my evaluations by class ────────────────────────────────────
@@ -204,7 +257,9 @@ exports.myEvaluations = async (req, res) => {
       coefficient: COEFF[ev.type] || 1,
       correctionUrl: ev.correctionUrl,
       isGraded: ev.isGraded,
-      grade: g ? { score: g.score, absent: g.absent, comment: g.comment } : null,
+      signed: !!ev.signed,
+      pendingSignature: !!g && !ev.signed,
+      grade: g && ev.signed ? { score: g.score, absent: g.absent, comment: g.comment } : null,
     };
   });
 
@@ -213,10 +268,9 @@ exports.myEvaluations = async (req, res) => {
 
 // ─── Bulletin ────────────────────────────────────────────────────────────────
 
-// Compute a student's bulletin for a trimestre
-exports.getBulletin = async (req, res) => {
-  const { studentId, trimestre } = req.params;
-
+// Compute a student's full bulletin (per-course weighted averages + overall average) for a trimestre.
+// Shared by the individual bulletin endpoints, the PDF export, and the Palmarès ranking.
+async function computeStudentBulletin(studentId, trimestre) {
   // All courses the student is enrolled in
   const enrollments = await Enrollment.find({ student: studentId })
     .populate('course', 'subject classe serie instructor').lean();
@@ -241,7 +295,8 @@ exports.getBulletin = async (req, res) => {
     const evalDetails = evals.map(ev => {
       const g = gradeMap[ev._id.toString()];
       const coeff = COEFF[ev.type] || 1;
-      const score20 = g && !g.absent && g.score !== null ? (g.score / ev.maxScore) * 20 : null;
+      const visible = !!(g && ev.signed && !g.absent && g.score !== null);
+      const score20 = visible ? (g.score / ev.maxScore) * 20 : null;
       if (score20 !== null) { totalWeighted += score20 * coeff; totalCoeff += coeff; }
       return {
         _id: ev._id,
@@ -252,7 +307,9 @@ exports.getBulletin = async (req, res) => {
         maxScore: ev.maxScore,
         correctionUrl: ev.correctionUrl,
         coefficient: coeff,
-        grade: g ? { score: g.score, absent: g.absent, comment: g.comment } : null,
+        signed: !!ev.signed,
+        pendingSignature: !!g && !ev.signed,
+        grade: g && ev.signed ? { score: g.score, absent: g.absent, comment: g.comment } : null,
         score20,
       };
     });
@@ -286,7 +343,14 @@ exports.getBulletin = async (req, res) => {
       && graded.composition >= REQUIRED.composition;
   });
 
-  res.json({ success: true, data: { trimestre: parseInt(trimestre), bulletin, moyenneGenerale, isComplete } });
+  return { trimestre: parseInt(trimestre), bulletin, moyenneGenerale, isComplete };
+}
+exports.computeStudentBulletin = computeStudentBulletin;
+
+exports.getBulletin = async (req, res) => {
+  const { studentId, trimestre } = req.params;
+  const data = await computeStudentBulletin(studentId, trimestre);
+  res.json({ success: true, data });
 };
 
 function getAppreciation(note) {
@@ -307,67 +371,13 @@ exports.myBulletin = async (req, res) => {
 
 // ─── Bulletin PDF ─────────────────────────────────────────────────────────────
 
-// Helper: collect bulletin data as plain object (bypasses res)
-async function collectBulletinData(studentId, trimestre) {
-  const enrollments = await Enrollment.find({ student: studentId })
-    .populate('course', 'subject classe serie instructor').lean();
-
-  const bulletin = await Promise.all(enrollments.map(async (enr) => {
-    const course = enr.course;
-    const evals = await Evaluation.find({ course: course._id, trimestre: parseInt(trimestre) })
-      .sort({ type: 1, sequence: 1 }).lean();
-
-    const grades = await Grade.find({
-      course: course._id,
-      student: studentId,
-      trimestre: parseInt(trimestre),
-    }).lean();
-    const gradeMap = Object.fromEntries(grades.map(g => [g.evaluation.toString(), g]));
-
-    const COEFF = { interrogation: 1, devoir: 2, composition: 3 };
-    let totalWeighted = 0, totalCoeff = 0;
-
-    const evalDetails = evals.map(ev => {
-      const g = gradeMap[ev._id.toString()];
-      const coeff = COEFF[ev.type] || 1;
-      const score20 = g && !g.absent && g.score !== null ? (g.score / ev.maxScore) * 20 : null;
-      if (score20 !== null) { totalWeighted += score20 * coeff; totalCoeff += coeff; }
-      return {
-        _id: ev._id,
-        type: ev.type,
-        sequence: ev.sequence,
-        title: ev.title,
-        date: ev.date,
-        maxScore: ev.maxScore,
-        coefficient: coeff,
-        grade: g ? { score: g.score, absent: g.absent, comment: g.comment } : null,
-        score20,
-      };
-    });
-
-    const moyenne = totalCoeff > 0 ? +(totalWeighted / totalCoeff).toFixed(2) : null;
-
-    return {
-      course: { _id: course._id, subject: course.subject, classe: course.classe, serie: course.serie },
-      evaluations: evalDetails,
-      moyenne,
-      appreciation: getAppreciation(moyenne),
-    };
-  }));
-
-  const notes = bulletin.filter(b => b.moyenne !== null).map(b => b.moyenne);
-  const moyenneGenerale = notes.length ? +(notes.reduce((a, b) => a + b, 0) / notes.length).toFixed(2) : null;
-
-  return { trimestre: parseInt(trimestre), bulletin, moyenneGenerale };
-}
-
 // PDF bulletin for the connected student
 exports.myBulletinPDF = async (req, res) => {
   try {
     const studentId = req.user._id.toString();
     const { trimestre } = req.params;
 
-    const data = await collectBulletinData(studentId, trimestre);
+    const data = await computeStudentBulletin(studentId, trimestre);
     data.studentName = req.user.name || req.user.email || 'Élève';
 
     const pdfBuffer = await bulletinService.generateBulletinPDF(data);
@@ -392,7 +402,7 @@ exports.getBulletinPDF = async (req, res) => {
     const student = await User.findById(studentId).select('name email').lean();
     if (!student) return res.status(404).json({ success: false, message: 'Élève introuvable' });
 
-    const data = await collectBulletinData(studentId, trimestre);
+    const data = await computeStudentBulletin(studentId, trimestre);
     data.studentName = student.name || student.email || 'Élève';
 
     const pdfBuffer = await bulletinService.generateBulletinPDF(data);

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight, Play } from 'lucide-react';
+import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight, Play, LayoutDashboard } from 'lucide-react';
 import { CLASSES } from '../utils/schoolData';
+import { useAuthStore } from '../store/useAuthStore';
 
 /* ── Diamond education pattern (same as Home) ───────────────────── */
 function EduPattern({ opacity = '0.06' }) {
@@ -40,6 +41,9 @@ function Stat({ value, label }) {
 }
 
 export default function Landing() {
+  const { user } = useAuthStore();
+  const dashLink = ['admin', 'superadmin'].includes(user?.role) ? '/admin' : user?.role === 'instructor' ? '/instructor' : '/student';
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
 
@@ -56,12 +60,20 @@ export default function Landing() {
             </div>
           </Link>
           <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-[#003580] px-3 py-1.5 rounded-lg transition-colors">
-              Connexion
-            </Link>
-            <Link to="/register" className="text-sm font-bold bg-[#0ea5e9] hover:bg-[#0284c7] text-white px-5 py-2 rounded-sm transition-colors">
-              S'inscrire gratuitement
-            </Link>
+            {user ? (
+              <Link to={dashLink} className="flex items-center gap-2 text-sm font-bold bg-[#0ea5e9] hover:bg-[#0284c7] text-white px-5 py-2 rounded-sm transition-colors">
+                <LayoutDashboard className="h-4 w-4" /> Mon espace
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-[#003580] px-3 py-1.5 rounded-lg transition-colors">
+                  Connexion
+                </Link>
+                <Link to="/register" className="text-sm font-bold bg-[#0ea5e9] hover:bg-[#0284c7] text-white px-5 py-2 rounded-sm transition-colors">
+                  S'inscrire gratuitement
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -87,11 +99,18 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-12">
-            <Link to="/register"
-              className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-8 py-3.5 rounded-sm text-sm transition-colors flex items-center gap-2">
-              Commencer gratuitement <ChevronRight className="h-4 w-4" />
-            </Link>
-            <Link to="/home"
+            {user ? (
+              <Link to={dashLink}
+                className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-8 py-3.5 rounded-sm text-sm transition-colors flex items-center gap-2">
+                Accéder à mon espace <ChevronRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link to="/register"
+                className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-8 py-3.5 rounded-sm text-sm transition-colors flex items-center gap-2">
+                Commencer gratuitement <ChevronRight className="h-4 w-4" />
+              </Link>
+            )}
+            <Link to={user ? '/catalog' : '/home'}
               className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-8 py-3.5 rounded-sm text-sm transition-colors flex items-center gap-2">
               <Play className="h-4 w-4" /> Voir les cours
             </Link>
@@ -180,22 +199,35 @@ export default function Landing() {
       <section className="relative bg-[#003580] overflow-hidden">
         <EduPattern opacity="0.05" />
         <div className="relative z-10 max-w-3xl mx-auto px-4 py-16 text-center">
-          <h2 className="text-3xl font-extrabold text-white mb-3">Prêt à commencer ?</h2>
-          <p className="text-blue-200 mb-8">Rejoignez EduMaster gratuitement et accédez à tous les cours dès aujourd'hui.</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register?role=student"
-              className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
-              Je suis élève — S'inscrire
-            </Link>
-            <Link to="/register?role=instructor"
-              className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
-              Je suis professeur — Créer mon espace
-            </Link>
-          </div>
-          <p className="mt-6 text-blue-300 text-xs">
-            Déjà inscrit ?{' '}
-            <Link to="/login" className="text-[#0ea5e9] hover:underline font-semibold">Se connecter</Link>
-          </p>
+          {user ? (
+            <>
+              <h2 className="text-3xl font-extrabold text-white mb-3">Content de vous revoir, {user.name} !</h2>
+              <p className="text-blue-200 mb-8">Retrouvez vos cours, bulletins et attestations dans votre espace.</p>
+              <Link to={dashLink}
+                className="inline-block bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
+                Accéder à mon espace
+              </Link>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-extrabold text-white mb-3">Prêt à commencer ?</h2>
+              <p className="text-blue-200 mb-8">Rejoignez EduMaster gratuitement et accédez à tous les cours dès aujourd'hui.</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/register?role=student"
+                  className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
+                  Je suis élève — S'inscrire
+                </Link>
+                <Link to="/register?role=instructor"
+                  className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
+                  Je suis professeur — Créer mon espace
+                </Link>
+              </div>
+              <p className="mt-6 text-blue-300 text-xs">
+                Déjà inscrit ?{' '}
+                <Link to="/login" className="text-[#0ea5e9] hover:underline font-semibold">Se connecter</Link>
+              </p>
+            </>
+          )}
         </div>
       </section>
 

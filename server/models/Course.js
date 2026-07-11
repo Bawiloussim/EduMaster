@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { CLASSES, SERIES } = require('../constants/academic');
 
 const moduleSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -10,8 +11,8 @@ const courseSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   subject: { type: String, required: true },
-  classe: { type: String, enum: ['Seconde', 'Première', 'Terminale'], required: true },
-  serie: { type: String, enum: ['A4', 'D'], required: true },
+  classe: { type: String, enum: CLASSES, required: true },
+  serie: { type: String, enum: SERIES, required: true },
   coverImage: { type: String, default: '' },
   status: { type: String, enum: ['draft', 'published'], default: 'draft' },
   price: { type: Number, default: 0 },

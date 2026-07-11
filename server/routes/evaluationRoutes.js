@@ -17,6 +17,7 @@ router.post('/:id/correction', protect, requireRole('instructor', 'admin'), opti
 // Grades
 router.get('/:id/grades', protect, requireRole('instructor', 'admin'), ec.getGrades);
 router.post('/:id/grades', protect, requireRole('instructor', 'admin'), ec.saveGrades);
+router.patch('/:id/signature', protect, requireRole('instructor', 'admin'), ec.setSignature);
 
 // Student: all my evaluations (interrogations/devoirs/compositions) for my classe
 router.get('/me', protect, requireRole('student'), ec.myEvaluations);

@@ -13,6 +13,9 @@ const evaluationSchema = new mongoose.Schema({
   maxScore: { type: Number, default: 20 },
   correctionUrl: { type: String, default: '' },  // PDF corrigé uploadé par le prof
   isGraded: { type: Boolean, default: false },
+  signed: { type: Boolean, default: false },
+  signedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  signedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 evaluationSchema.virtual('coefficient').get(function () {

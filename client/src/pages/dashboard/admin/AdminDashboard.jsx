@@ -1,14 +1,29 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Users, BookOpen, BarChart, Award } from 'lucide-react';
+import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../../services/api';
 import Spinner from '../../../components/ui/Spinner';
 import Badge from '../../../components/ui/Badge';
-import PageWrapper from '../../../components/layout/PageWrapper';
+import Button from '../../../components/ui/Button';
+import AdminSidebar from '../../../components/layout/AdminSidebar';
+import AdminTopbar from '../../../components/layout/AdminTopbar';
 import { useAuthStore } from '../../../store/useAuthStore';
+import PalmaresTab from './tabs/PalmaresTab';
+import ClassesTab from './tabs/ClassesTab';
+import AnnouncementsTab from './tabs/AnnouncementsTab';
+import ImportStudentsModal from './tabs/ImportStudentsModal';
 
-const ROLE_COLORS = { superadmin: 'red', admin: 'yellow', instructor: 'purple', student: 'blue' };
-const ROLE_LABELS = { superadmin: 'Super Admin', admin: 'Admin', instructor: 'Formateur', student: 'Étudiant' };
+const TAB_TITLES = {
+  overview: "Vue d'ensemble",
+  instructors: 'Formateurs',
+  students: 'Élèves',
+  courses: 'Cours',
+  classes: 'Classes',
+  palmares: 'Palmarès',
+  announcements: 'Annonces',
+};
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   const colors = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', orange: 'bg-orange-50 text-orange-600' };
@@ -20,7 +35,8 @@ function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   );
 }
 
-export default function AdminDashboard() {
+// ─── Overview tab ─────────────────────────────────────────────────────────────
+function OverviewTab() {
   const qc = useQueryClient();
   const { user: currentUser } = useAuthStore();
   const isSuperAdmin = currentUser?.role === 'superadmin';
@@ -32,24 +48,19 @@ export default function AdminDashboard() {
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users'],
-    queryFn: () => api.get('/notifications/admin/users').then(r => r.data),
+    queryFn: () => api.get('/admin/users').then(r => r.data),
   });
 
   const roleMutation = useMutation({
-    mutationFn: ({ id, role }) => api.patch(`/notifications/admin/users/${id}/role`, { role }),
+    mutationFn: ({ id, role }) => api.patch(`/admin/users/${id}/role`, { role }),
     onSuccess: () => { toast.success('Rôle mis à jour'); qc.invalidateQueries(['admin-users']); },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
+  if (isLoading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
 
   return (
-    <PageWrapper>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
-        <p className="text-gray-500 mt-1">Vue d'ensemble de la plateforme EduMaster</p>
-      </div>
-
+    <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Users} label="Utilisateurs" value={data?.usersCount || 0} color="blue" />
         <StatCard icon={BookOpen} label="Cours" value={data?.coursesCount || 0} color="green" />
@@ -112,6 +123,238 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
-    </PageWrapper>
+    </>
+  );
+}
+
+// ─── Instructors tab ──────────────────────────────────────────────────────────
+function InstructorsTab() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-instructors'],
+    queryFn: () => api.get('/admin/instructors').then(r => r.data.data),
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
+            <th className="px-4 py-3 text-left font-semibold">Formateur</th>
+            <th className="px-4 py-3 text-center font-semibold">Cours</th>
+            <th className="px-4 py-3 text-center font-semibold">Élèves</th>
+            <th className="px-4 py-3 text-center font-semibold">Taux de réussite</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {data?.map((i) => (
+            <tr key={i._id}>
+              <td className="px-4 py-3">
+                <div className="font-medium text-gray-900">{i.name}</div>
+                <div className="text-xs text-gray-400">{i.email}</div>
+              </td>
+              <td className="px-4 py-3 text-center">{i.coursesCount}</td>
+              <td className="px-4 py-3 text-center">{i.studentsCount}</td>
+              <td className="px-4 py-3 text-center">{i.avgPassRate}%</td>
+            </tr>
+          ))}
+          {data?.length === 0 && (
+            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Aucun formateur</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── Students tab ──────────────────────────────────────────────────────────────
+async function downloadStudentBulletin(studentId, studentName) {
+  try {
+    const res = await api.get(`/evaluations/bulletin/1/pdf/student/${studentId}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bulletin-${studentName || studentId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch {
+    toast.error('Bulletin non disponible');
+  }
+}
+
+function StudentsTab() {
+  const qc = useQueryClient();
+  const [importOpen, setImportOpen] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-students'],
+    queryFn: () => api.get('/admin/students').then(r => r.data.data),
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
+
+  return (
+    <>
+      <div className="flex justify-end mb-4">
+        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+          <Upload className="h-4 w-4" /> Importer CSV
+        </Button>
+      </div>
+      <ImportStudentsModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => qc.invalidateQueries(['admin-students'])}
+      />
+    <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
+            <th className="px-4 py-3 text-left font-semibold">Élève</th>
+            <th className="px-4 py-3 text-center font-semibold">Niveau</th>
+            <th className="px-4 py-3 text-center font-semibold">Cours</th>
+            <th className="px-4 py-3 text-center font-semibold">Progression</th>
+            <th className="px-4 py-3 text-center font-semibold">Bulletin</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {data?.map((s) => (
+            <tr key={s._id}>
+              <td className="px-4 py-3">
+                <div className="font-medium text-gray-900">{s.name}</div>
+                <div className="text-xs text-gray-400">{s.email}</div>
+              </td>
+              <td className="px-4 py-3 text-center">
+                {s.classe ? <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s.classe} · {s.serie}</span> : <span className="text-gray-300">—</span>}
+              </td>
+              <td className="px-4 py-3 text-center">{s.coursesCount}</td>
+              <td className="px-4 py-3 text-center">{s.avgProgress}%</td>
+              <td className="px-4 py-3 text-center">
+                <button onClick={() => downloadStudentBulletin(s._id, s.name)} className="text-blue-600 hover:underline text-xs flex items-center gap-1 justify-center w-full">
+                  <Download className="h-3 w-3" /> PDF
+                </button>
+              </td>
+            </tr>
+          ))}
+          {data?.length === 0 && (
+            <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Aucun élève</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+    </>
+  );
+}
+
+// ─── Courses tab ────────────────────────────────────────────────────────────────
+function CoursesTab() {
+  const qc = useQueryClient();
+  const [subjectFilter, setSubjectFilter] = useState('');
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-courses'],
+    queryFn: () => api.get('/courses/admin/all').then(r => r.data),
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: (id) => api.patch(`/courses/${id}/publish`),
+    onSuccess: () => { toast.success('Statut mis à jour'); qc.invalidateQueries(['admin-courses']); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/courses/${id}`),
+    onSuccess: () => { toast.success('Cours supprimé'); qc.invalidateQueries(['admin-courses']); },
+  });
+
+  if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
+
+  const subjects = [...new Set((data?.data || []).map((c) => c.subject).filter(Boolean))];
+  const rows = subjectFilter ? (data?.data || []).filter((c) => c.subject === subjectFilter) : (data?.data || []);
+
+  return (
+    <>
+      {subjects.length > 0 && (
+        <div className="mb-4">
+          <select
+            value={subjectFilter}
+            onChange={(e) => setSubjectFilter(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+          >
+            <option value="">Toutes les matières</option>
+            {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
+      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <th className="px-4 py-3 text-left font-semibold">Cours</th>
+              <th className="px-4 py-3 text-left font-semibold">Matière</th>
+              <th className="px-4 py-3 text-left font-semibold">Formateur</th>
+              <th className="px-4 py-3 text-center font-semibold">Niveau</th>
+              <th className="px-4 py-3 text-center font-semibold">Statut</th>
+              <th className="px-4 py-3 text-center font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {rows.map((c) => (
+              <tr key={c._id}>
+                <td className="px-4 py-3 font-medium text-gray-900">{c.title}</td>
+                <td className="px-4 py-3 text-gray-500">{c.subject || '—'}</td>
+                <td className="px-4 py-3 text-gray-500">{c.instructor?.name || '—'}</td>
+                <td className="px-4 py-3 text-center text-xs text-gray-500">{c.classe} · Série {c.serie}</td>
+                <td className="px-4 py-3 text-center">
+                  <Badge color={c.status === 'published' ? 'green' : 'gray'}>
+                    {c.status === 'published' ? 'Publié' : 'Brouillon'}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <Link to={`/courses/${c._id}`} target="_blank"><Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button></Link>
+                    <Button size="sm" variant={c.status === 'published' ? 'secondary' : 'outline'}
+                      loading={publishMutation.isPending} onClick={() => publishMutation.mutate(c._id)}>
+                      {c.status === 'published' ? 'Dépublier' : 'Publier'}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50"
+                      onClick={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(c._id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Aucun cours</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen flex bg-gray-50">
+      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        <AdminTopbar title={TAB_TITLES[activeTab]} onMenuClick={() => setMobileNavOpen(true)} />
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {activeTab === 'overview' && <OverviewTab />}
+          {activeTab === 'instructors' && <InstructorsTab />}
+          {activeTab === 'students' && <StudentsTab />}
+          {activeTab === 'courses' && <CoursesTab />}
+          {activeTab === 'classes' && <ClassesTab />}
+          {activeTab === 'palmares' && <PalmaresTab />}
+          {activeTab === 'announcements' && <AnnouncementsTab />}
+        </main>
+      </div>
+    </div>
   );
 }

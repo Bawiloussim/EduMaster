@@ -38,3 +38,11 @@ exports.sendGradingNeeded = (instructor, { studentName, itemTitle, courseTitle, 
 exports.sendExerciseGraded = (student, statement, grade, feedback) =>
   send(student.email, 'Votre exercice a été corrigé',
     `<p>Bonjour ${student.name},</p><p>Votre réponse à l'exercice "${statement}" a été corrigée. Note : <strong>${grade}/10</strong>${feedback ? `<br/>Commentaire : ${feedback}` : ''}</p>`);
+
+exports.sendGradeSigned = (student, { evalLabel, courseTitle, instructorName }) =>
+  send(student.email, `Note disponible : ${evalLabel} — ${courseTitle}`,
+    `<p>Bonjour ${student.name},</p><p>Votre note pour "${evalLabel}" (${courseTitle}) a été validée et signée par ${instructorName}. Consultez votre bulletin sur EduMaster.</p>`);
+
+exports.sendStudentImported = (user, tempPassword) =>
+  send(user.email, 'Votre compte EduMaster a été créé',
+    `<p>Bonjour ${user.name},</p><p>Un compte EduMaster a été créé pour vous par votre établissement.</p><p>Email : <strong>${user.email}</strong><br/>Mot de passe temporaire : <strong>${tempPassword}</strong></p><p>Merci de vous connecter et de changer votre mot de passe dès que possible.</p>`);

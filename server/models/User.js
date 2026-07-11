@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { CLASSES, SERIES } = require('../constants/academic');
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, select: false },
   role: { type: String, enum: ['superadmin', 'admin', 'instructor', 'student'], default: 'student' },
-  classe: { type: String, enum: ['Seconde', 'Première', 'Terminale', null], default: null },
-  serie: { type: String, enum: ['A4', 'D', null], default: null },
+  classe: { type: String, enum: [...CLASSES, null], default: null },
+  serie: { type: String, enum: [...SERIES, null], default: null },
   avatar: { type: String, default: '' },
   bio: { type: String, default: '' },
   isVerified: { type: Boolean, default: false },

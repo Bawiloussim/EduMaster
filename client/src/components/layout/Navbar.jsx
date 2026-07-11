@@ -62,6 +62,7 @@ export default function Navbar() {
           <Link to={user ? '/home' : '/'} className="flex items-center gap-2 shrink-0 mr-4">
             <div className="h-9 w-9 bg-[#003580] rounded-lg flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-[#0ea5e9]" />
+              
             </div>
             <div className="leading-tight hidden sm:block">
               <span className="font-extrabold text-[#003580] text-lg leading-none block">Edu</span>
