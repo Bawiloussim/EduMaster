@@ -39,7 +39,9 @@ function CourseCard({ course }) {
             </div>}
         <div className="absolute top-2 left-2 flex gap-1">
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-gray-800">{course.classe}</span>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${course.serie === 'D' ? 'bg-[#0ea5e9]' : 'bg-purple-600'}`}>Série {course.serie}</span>
+          {course.serie && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${course.serie === 'D' ? 'bg-[#0ea5e9]' : 'bg-purple-600'}`}>Série {course.serie}</span>
+          )}
         </div>
       </div>
       <div className="p-3 flex-1 flex flex-col">

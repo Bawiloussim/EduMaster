@@ -311,7 +311,7 @@ function EvaluationsTab() {
         ))}
         {user?.classe && (
           <span className="ml-auto text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
-            {user.classe} · Série {user.serie}
+            {user.classe}{user.serie ? ` · Série ${user.serie}` : ''}
           </span>
         )}
       </div>
@@ -399,7 +399,7 @@ function AttestationsTab() {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900 truncate">{c.course?.title}</p>
             <p className="text-xs text-gray-400">
-              {c.course?.classe} — Série {c.course?.serie}
+              {c.course?.classe}{c.course?.serie ? ` — Série ${c.course.serie}` : ''}
               {' · '}Délivrée le {new Date(c.issuedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
@@ -439,7 +439,7 @@ export default function StudentDashboard() {
         </div>
         {user?.classe && (
           <span className="text-sm font-bold px-4 py-2 rounded-full bg-[#003580] text-white">
-            {user.classe} · Série {user.serie}
+            {user.classe}{user.serie ? ` · Série ${user.serie}` : ''}
           </span>
         )}
       </div>
@@ -484,7 +484,7 @@ export default function StudentDashboard() {
                       {e.course?.title}
                     </Link>
                     <div className="text-xs text-gray-400 mb-1.5">
-                      {e.course?.classe} · Série {e.course?.serie}
+                      {e.course?.classe}{e.course?.serie ? ` · Série ${e.course.serie}` : ''}
                     </div>
                     <ProgressBar value={e.progress} showLabel />
                   </div>

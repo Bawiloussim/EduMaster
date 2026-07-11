@@ -3,7 +3,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Exam = require('../models/Exam');
 const Result = require('../models/Result');
-const { CLASSES, SERIES } = require('../constants/academic');
+const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
 
 // ─── Users (moved here from notificationController) ───────────────────────
 
@@ -95,12 +95,14 @@ exports.listStudents = async (req, res) => {
 // ─── Classes overview ────────────────────────────────────────────────────────
 
 exports.classesOverview = async (req, res) => {
-  const combos = CLASSES.flatMap((classe) => SERIES.map((serie) => ({ classe, serie })));
+  const combos = CLASSES.flatMap((classe) => requiresSerie(classe)
+    ? SERIES.map((serie) => ({ classe, serie }))
+    : [{ classe, serie: null }]);
 
   const data = await Promise.all(combos.map(async ({ classe, serie }) => {
     const [studentsCount, coursesCount] = await Promise.all([
-      User.countDocuments({ role: 'student', classe, serie }),
-      Course.countDocuments({ classe, serie }),
+      User.countDocuments({ role: 'student', classe, ...(serie ? { serie } : {}) }),
+      Course.countDocuments({ classe, ...(serie ? { serie } : {}) }),
     ]);
     return { classe, serie, studentsCount, coursesCount };
   }));

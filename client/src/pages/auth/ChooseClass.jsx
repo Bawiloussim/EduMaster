@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { GraduationCap } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
-import { CLASSES, SERIES, SERIE_LABELS } from '../../utils/schoolData';
+import { CLASSES, SERIES, SERIE_LABELS, requiresSerie } from '../../utils/schoolData';
 
 export default function ChooseClass() {
   const navigate = useNavigate();
@@ -12,16 +12,17 @@ export default function ChooseClass() {
   const [classe, setClasse] = useState('');
   const [serie, setSerie] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const needsSerie = classe && requiresSerie(classe);
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!classe || !serie) {
-      toast.error('Choisissez votre classe et votre série');
+    if (!classe || (needsSerie && !serie)) {
+      toast.error(needsSerie ? 'Choisissez votre classe et votre série' : 'Choisissez votre classe');
       return;
     }
     setSubmitting(true);
     try {
-      await saveClasse(classe, serie);
+      await saveClasse(classe, needsSerie ? serie : null);
       toast.success('Classe enregistrée ! Vos cours et évaluations sont prêts.');
       navigate('/student');
     } catch (err) {
@@ -63,23 +64,25 @@ export default function ChooseClass() {
             </div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Ma série</label>
-            <div className="grid grid-cols-2 gap-3">
-              {SERIES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSerie(s)}
-                  className={`border-2 rounded-lg p-3 text-sm font-semibold transition-colors ${
-                    serie === s ? 'border-[#0ea5e9] bg-[#0ea5e9] text-white' : 'border-gray-200 text-gray-600 hover:border-[#0ea5e9]'
-                  }`}
-                >
-                  {SERIE_LABELS[s]}
-                </button>
-              ))}
+          {needsSerie && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-2">Ma série</label>
+              <div className="grid grid-cols-2 gap-3">
+                {SERIES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSerie(s)}
+                    className={`border-2 rounded-lg p-3 text-sm font-semibold transition-colors ${
+                      serie === s ? 'border-[#0ea5e9] bg-[#0ea5e9] text-white' : 'border-gray-200 text-gray-600 hover:border-[#0ea5e9]'
+                    }`}
+                  >
+                    {SERIE_LABELS[s]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <Button type="submit" className="w-full" size="lg" loading={submitting}>
             Valider ma classe

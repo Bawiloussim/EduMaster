@@ -25,7 +25,7 @@ export default function ClassesTab() {
           {data?.map((c) => (
             <tr key={`${c.classe}-${c.serie}`}>
               <td className="px-4 py-3 font-medium text-gray-900">{c.classe}</td>
-              <td className="px-4 py-3 text-gray-500">{c.serie}</td>
+              <td className="px-4 py-3 text-gray-500">{c.serie || '—'}</td>
               <td className="px-4 py-3 text-center">{c.studentsCount}</td>
               <td className="px-4 py-3 text-center">{c.coursesCount}</td>
             </tr>

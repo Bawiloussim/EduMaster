@@ -35,6 +35,7 @@ export default function ImportStudentsModal({ open, onClose, onImported }) {
     <Modal open={open} onClose={close} title="Importer des élèves (CSV)" size="lg">
       <p className="text-sm text-gray-500 mb-4">
         Colonnes attendues : <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">nom, email, classe, serie</code>
+        <br />La colonne <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">serie</code> peut rester vide pour les classes de collège (6ème à 3ème) — elle n'est requise que pour le lycée (Seconde à Terminale).
       </p>
 
       <FileInput accept=".csv,text/csv" onChange={setFile} label="Fichier CSV" />

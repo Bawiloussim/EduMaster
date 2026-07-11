@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { CLASSES, SERIES } = require('../constants/academic');
+const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
 
 const moduleSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -12,7 +12,7 @@ const courseSchema = new mongoose.Schema({
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   subject: { type: String, required: true },
   classe: { type: String, enum: CLASSES, required: true },
-  serie: { type: String, enum: SERIES, required: true },
+  serie: { type: String, enum: [...SERIES, null], default: null, required: function () { return requiresSerie(this.classe); } },
   coverImage: { type: String, default: '' },
   status: { type: String, enum: ['draft', 'published'], default: 'draft' },
   price: { type: Number, default: 0 },

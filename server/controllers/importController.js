@@ -3,7 +3,7 @@ const { parse } = require('csv-parse/sync');
 const User = require('../models/User');
 const { syncClassEnrollments } = require('./enrollmentController');
 const emailService = require('../services/emailService');
-const { CLASSES, SERIES } = require('../constants/academic');
+const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,7 +31,7 @@ exports.importStudents = async (req, res) => {
     const nom = row.nom;
     const email = (row.email || '').toLowerCase().trim();
     const classe = normalizeEnum(row.classe, CLASSES);
-    const serie = normalizeEnum(row.serie, SERIES);
+    const serie = classe && requiresSerie(classe) ? normalizeEnum(row.serie, SERIES) : null;
 
     if (!nom || !email) {
       return errors.push({ row: rowNum, email, reason: 'Nom ou email manquant' });
@@ -39,8 +39,11 @@ exports.importStudents = async (req, res) => {
     if (!EMAIL_RE.test(email)) {
       return errors.push({ row: rowNum, email, reason: 'Email invalide' });
     }
-    if (!classe || !serie) {
-      return errors.push({ row: rowNum, email, reason: 'Classe ou série invalide' });
+    if (!classe) {
+      return errors.push({ row: rowNum, email, reason: 'Classe invalide' });
+    }
+    if (requiresSerie(classe) && !serie) {
+      return errors.push({ row: rowNum, email, reason: 'Série invalide' });
     }
     if (seenEmails.has(email)) {
       return errors.push({ row: rowNum, email, reason: 'Doublon dans le fichier' });

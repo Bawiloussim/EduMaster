@@ -1,13 +1,19 @@
 const User = require('../models/User');
 const { computeStudentBulletin } = require('./evaluationController');
+const { requiresSerie } = require('../constants/academic');
 
 exports.getPalmares = async (req, res) => {
   const { classe, serie, trimestre } = req.query;
-  if (!classe || !serie || !trimestre) {
-    return res.status(422).json({ success: false, message: 'classe, serie et trimestre sont requis' });
+  if (!classe || !trimestre) {
+    return res.status(422).json({ success: false, message: 'classe et trimestre sont requis' });
+  }
+  if (requiresSerie(classe) && !serie) {
+    return res.status(422).json({ success: false, message: 'serie est requise pour cette classe' });
   }
 
-  const students = await User.find({ role: 'student', classe, serie })
+  const filter = { role: 'student', classe };
+  if (requiresSerie(classe)) filter.serie = serie;
+  const students = await User.find(filter)
     .select('_id name email avatar').lean();
 
   const withAverages = await Promise.all(students.map(async (student) => {
@@ -24,6 +30,6 @@ exports.getPalmares = async (req, res) => {
 
   res.json({
     success: true,
-    data: { classe, serie, trimestre: parseInt(trimestre), ranking: [...ranked, ...unranked] },
+    data: { classe, serie: requiresSerie(classe) ? serie : null, trimestre: parseInt(trimestre), ranking: [...ranked, ...unranked] },
   });
 };

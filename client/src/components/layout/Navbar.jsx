@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
-import { CLASSES } from '../../utils/schoolData';
+import { CLASSES, requiresSerie } from '../../utils/schoolData';
 
 export default function Navbar() {
   const { user } = useAuthStore();
@@ -85,15 +85,25 @@ export default function Navbar() {
                 <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
                   {CLASSES.map(c => (
                     <div key={c}>
-                      <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">{c}</div>
-                      {['D', 'A4'].map(s => (
-                        <Link key={s} to={`/catalog?classe=${encodeURIComponent(c)}&serie=${s}`}
+                      {requiresSerie(c) ? (
+                        <>
+                          <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide">{c}</div>
+                          {['D', 'A4'].map(s => (
+                            <Link key={s} to={`/catalog?classe=${encodeURIComponent(c)}&serie=${s}`}
+                              onClick={() => setClassesOpen(false)}
+                              className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-[#003580] hover:text-white transition-colors">
+                              <span className={`h-2 w-2 rounded-full ${s === 'D' ? 'bg-[#0ea5e9]' : 'bg-purple-500'}`} />
+                              Série {s}
+                            </Link>
+                          ))}
+                        </>
+                      ) : (
+                        <Link to={`/catalog?classe=${encodeURIComponent(c)}`}
                           onClick={() => setClassesOpen(false)}
                           className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-[#003580] hover:text-white transition-colors">
-                          <span className={`h-2 w-2 rounded-full ${s === 'D' ? 'bg-[#0ea5e9]' : 'bg-purple-500'}`} />
-                          Série {s}
+                          {c}
                         </Link>
-                      ))}
+                      )}
                     </div>
                   ))}
                 </div>
@@ -202,14 +212,24 @@ export default function Navbar() {
             <Link to="/catalog" onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">Catalogue</Link>
             {CLASSES.map(c => (
               <div key={c}>
-                <p className="text-xs font-bold text-gray-400 pt-2">{c}</p>
-                {['D', 'A4'].map(s => (
-                  <Link key={s} to={`/catalog?classe=${encodeURIComponent(c)}&serie=${s}`}
+                {requiresSerie(c) ? (
+                  <>
+                    <p className="text-xs font-bold text-gray-400 pt-2">{c}</p>
+                    {['D', 'A4'].map(s => (
+                      <Link key={s} to={`/catalog?classe=${encodeURIComponent(c)}&serie=${s}`}
+                        onClick={() => setMenuOpen(false)}
+                        className="block text-sm text-gray-600 py-1.5 pl-3 hover:text-[#0ea5e9]">
+                        Série {s}
+                      </Link>
+                    ))}
+                  </>
+                ) : (
+                  <Link to={`/catalog?classe=${encodeURIComponent(c)}`}
                     onClick={() => setMenuOpen(false)}
-                    className="block text-sm text-gray-600 py-1.5 pl-3 hover:text-[#0ea5e9]">
-                    Série {s}
+                    className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">
+                    {c}
                   </Link>
-                ))}
+                )}
               </div>
             ))}
             {user && <Link to={dashLink} onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">Mon espace</Link>}

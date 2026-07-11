@@ -13,7 +13,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
 import PageWrapper from '../../../components/layout/PageWrapper';
-import { CLASSES, SERIES, SUBJECTS_BY_SERIE } from '../../../utils/schoolData';
+import { CLASSES, SERIES, SUBJECTS_BY_SERIE, SUBJECTS_COLLEGE, requiresSerie } from '../../../utils/schoolData';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 const pdfHref = (url) => url?.startsWith('/uploads/') ? `${API_BASE}${url}` : url;
@@ -716,10 +716,11 @@ export default function EditCourse() {
 
   const [form, setForm] = useState(null);
   if (!form && course) {
-    setForm({ subject: course.subject || course.title || '', description: course.description || '', classe: course.classe || 'Seconde', serie: course.serie || 'D' });
+    setForm({ subject: course.subject || course.title || '', description: course.description || '', classe: course.classe || 'Seconde', serie: course.serie ?? null });
   }
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const subjects = SUBJECTS_BY_SERIE[form?.serie || 'D'] || [];
+  const needsSerie = requiresSerie(form?.classe);
+  const subjects = needsSerie ? (SUBJECTS_BY_SERIE[form?.serie || 'D'] || []) : SUBJECTS_COLLEGE;
 
   const saveMutation = useMutation({
     mutationFn: () => api.put(`/courses/${id}`, { ...form, title: form.subject }),
@@ -757,7 +758,9 @@ export default function EditCourse() {
           <h1 className="text-xl font-bold text-gray-900">{course.subject || course.title}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{course.classe}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>Série {course.serie}</span>
+            {course.serie && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>Série {course.serie}</span>
+            )}
           </div>
         </div>
         <Button variant="secondary" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}><Save className="h-4 w-4" /> Sauvegarder</Button>
@@ -771,17 +774,19 @@ export default function EditCourse() {
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Classe</label>
               <div className="flex gap-1">
-                {CLASSES.map(c => <button key={c} type="button" onClick={() => set('classe', c)}
+                {CLASSES.map(c => <button key={c} type="button" onClick={() => { set('classe', c); if (!requiresSerie(c)) set('serie', null); }}
                   className={`flex-1 py-1 rounded-lg border text-xs font-medium transition-colors ${form.classe === c ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>{c}</button>)}
               </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Série</label>
-              <div className="flex gap-1">
-                {SERIES.map(s => <button key={s} type="button" onClick={() => set('serie', s)}
-                  className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-colors ${form.serie === s ? s === 'D' ? 'border-blue-600 bg-blue-600 text-white' : 'border-purple-600 bg-purple-600 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>Série {s}</button>)}
+            {needsSerie && (
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Série</label>
+                <div className="flex gap-1">
+                  {SERIES.map(s => <button key={s} type="button" onClick={() => set('serie', s)}
+                    className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-colors ${form.serie === s ? s === 'D' ? 'border-blue-600 bg-blue-600 text-white' : 'border-purple-600 bg-purple-600 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>Série {s}</button>)}
+                </div>
               </div>
-            </div>
+            )}
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Matière</label>
               <select value={form.subject} onChange={e => set('subject', e.target.value)}

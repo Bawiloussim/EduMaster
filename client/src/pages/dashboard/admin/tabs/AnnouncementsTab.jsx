@@ -5,7 +5,7 @@ import api from '../../../../services/api';
 import Spinner from '../../../../components/ui/Spinner';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
-import { CLASSES, SERIES } from '../../../../constants/academic';
+import { CLASSES, SERIES, requiresSerie } from '../../../../constants/academic';
 
 const selectClass = 'text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white';
 
@@ -18,6 +18,7 @@ export default function AnnouncementsTab() {
   const [audience, setAudience] = useState('all');
   const [classe, setClasse] = useState(CLASSES[0]);
   const [serie, setSerie] = useState(SERIES[0]);
+  const needsSerie = requiresSerie(classe);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-announcements'],
@@ -39,7 +40,7 @@ export default function AnnouncementsTab() {
     if (!title.trim() || !body.trim()) return;
     createMutation.mutate({
       title, body, audience,
-      ...(audience === 'classe' ? { classe, serie } : {}),
+      ...(audience === 'classe' ? { classe, ...(needsSerie ? { serie } : {}) } : {}),
     });
   };
 
@@ -69,9 +70,11 @@ export default function AnnouncementsTab() {
             <select className={selectClass} value={classe} onChange={(e) => setClasse(e.target.value)}>
               {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select className={selectClass} value={serie} onChange={(e) => setSerie(e.target.value)}>
-              {SERIES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            {needsSerie && (
+              <select className={selectClass} value={serie} onChange={(e) => setSerie(e.target.value)}>
+                {SERIES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
           </div>
         )}
         <Button type="submit" loading={createMutation.isPending}>Envoyer l'annonce</Button>
@@ -89,7 +92,7 @@ export default function AnnouncementsTab() {
                 </div>
                 <p className="text-sm text-gray-600 mt-1">{a.body}</p>
                 <div className="text-xs text-gray-400 mt-2">
-                  {AUDIENCE_LABELS[a.audience]}{a.audience === 'classe' ? ` · ${a.classe} · ${a.serie}` : ''} · par {a.createdBy?.name || '—'}
+                  {AUDIENCE_LABELS[a.audience]}{a.audience === 'classe' ? ` · ${a.classe}${a.serie ? ` · ${a.serie}` : ''}` : ''} · par {a.createdBy?.name || '—'}
                 </div>
               </div>
             ))}

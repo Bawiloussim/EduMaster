@@ -10,7 +10,7 @@ import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import PageWrapper from '../../../components/layout/PageWrapper';
-import { CLASSES, SERIES, SERIE_LABELS, SUBJECTS_BY_SERIE } from '../../../utils/schoolData';
+import { CLASSES, SERIES, SERIE_LABELS, SUBJECTS_BY_SERIE, SUBJECTS_COLLEGE, requiresSerie } from '../../../utils/schoolData';
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   const colors = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', orange: 'bg-orange-50 text-orange-600' };
@@ -30,7 +30,8 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
   const [lessons, setLessons] = useState([{ title: '' }, { title: '' }, { title: '' }]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const subjects = SUBJECTS_BY_SERIE[form.serie] || [];
+  const needsSerie = requiresSerie(form.classe);
+  const subjects = needsSerie ? (SUBJECTS_BY_SERIE[form.serie] || []) : SUBJECTS_COLLEGE;
 
   const addLesson = () => setLessons(ls => [...ls, { title: '' }]);
   const removeLesson = (i) => setLessons(ls => ls.filter((_, idx) => idx !== i));
@@ -43,7 +44,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
         description: form.description,
         subject: form.subject,
         classe: form.classe,
-        serie: form.serie,
+        serie: needsSerie ? form.serie : null,
       });
       const courseId = courseRes.data._id;
 
@@ -74,7 +75,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
             <label className="text-sm font-medium text-gray-700 block mb-2">Classe</label>
             <div className="flex gap-2">
               {CLASSES.map(c => (
-                <button key={c} type="button" onClick={() => set('classe', c)}
+                <button key={c} type="button" onClick={() => { set('classe', c); if (!requiresSerie(c)) { set('serie', ''); } set('subject', ''); }}
                   className={`flex-1 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.classe === c ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
                   {c}
                 </button>
@@ -83,20 +84,22 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
           </div>
 
           {/* Série */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Série</label>
-            <div className="flex gap-3">
-              {SERIES.map(s => (
-                <button key={s} type="button" onClick={() => { set('serie', s); set('subject', ''); }}
-                  className={`flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${form.serie === s
-                    ? s === 'D' ? 'border-blue-600 bg-blue-600 text-white' : 'border-purple-600 bg-purple-600 text-white'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
-                  <div className="font-bold">Série {s}</div>
-                  <div className="text-xs opacity-80">{s === 'D' ? 'Scientifique' : 'Littéraire'}</div>
-                </button>
-              ))}
+          {needsSerie && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-2">Série</label>
+              <div className="flex gap-3">
+                {SERIES.map(s => (
+                  <button key={s} type="button" onClick={() => { set('serie', s); set('subject', ''); }}
+                    className={`flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${form.serie === s
+                      ? s === 'D' ? 'border-blue-600 bg-blue-600 text-white' : 'border-purple-600 bg-purple-600 text-white'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                    <div className="font-bold">Série {s}</div>
+                    <div className="text-xs opacity-80">{s === 'D' ? 'Scientifique' : 'Littéraire'}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Matière = Cours */}
           <div>
@@ -119,7 +122,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
 
-          <Button className="w-full" disabled={!form.subject || !form.classe || !form.serie}
+          <Button className="w-full" disabled={!form.subject || !form.classe || (needsSerie && !form.serie)}
             onClick={() => setStep(2)}>
             Suivant — Ajouter les leçons →
           </Button>
@@ -182,9 +185,11 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-semibold text-gray-900 truncate">{course.title}</span>
             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{course.classe}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-              Série {course.serie}
-            </span>
+            {course.serie && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                Série {course.serie}
+              </span>
+            )}
             <Badge color={course.status === 'published' ? 'green' : 'gray'}>
               {course.status === 'published' ? 'Publié' : 'Brouillon'}
             </Badge>

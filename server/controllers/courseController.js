@@ -2,6 +2,7 @@ const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const { syncCourseEnrollments } = require('./enrollmentController');
+const { requiresSerie } = require('../constants/academic');
 
 exports.list = async (req, res) => {
   const { search, page = 1, limit = 12 } = req.query;
@@ -54,11 +55,12 @@ exports.getOne = async (req, res) => {
 
 exports.create = async (req, res) => {
   const { title, description, subject, classe, serie, price, tags, language, estimatedDuration } = req.body;
+  const finalClasse = classe || 'Seconde';
   const course = await Course.create({
     title, description,
     subject: subject || 'Général',
-    classe: classe || 'Seconde',
-    serie: serie || 'D',
+    classe: finalClasse,
+    serie: requiresSerie(finalClasse) ? (serie || 'D') : null,
     price: 0,
     tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
     language: language || 'fr',

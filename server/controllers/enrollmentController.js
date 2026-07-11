@@ -4,12 +4,16 @@ const Lesson = require('../models/Lesson');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const certificateService = require('../services/certificateService');
+const { requiresSerie } = require('../constants/academic');
 
 // Enroll a student in every published course matching their classe/serie
 // (called when a student picks their classe, and covers courses that already exist)
 exports.syncClassEnrollments = async (studentId, classe, serie) => {
-  if (!classe || !serie) return;
-  const courses = await Course.find({ status: 'published', classe, serie }).select('_id').lean();
+  if (!classe) return;
+  if (requiresSerie(classe) && !serie) return;
+  const filter = { status: 'published', classe };
+  if (requiresSerie(classe)) filter.serie = serie;
+  const courses = await Course.find(filter).select('_id').lean();
   await Promise.all(courses.map(async (course) => {
     const existing = await Enrollment.findOne({ student: studentId, course: course._id });
     if (existing) return;
@@ -22,7 +26,9 @@ exports.syncClassEnrollments = async (studentId, classe, serie) => {
 // (called when an instructor publishes a course, so existing students of that class get it too)
 exports.syncCourseEnrollments = async (course) => {
   if (course.status !== 'published') return;
-  const students = await User.find({ role: 'student', classe: course.classe, serie: course.serie }).select('_id').lean();
+  const filter = { role: 'student', classe: course.classe };
+  if (requiresSerie(course.classe)) filter.serie = course.serie;
+  const students = await User.find(filter).select('_id').lean();
   await Promise.all(students.map(async (student) => {
     const existing = await Enrollment.findOne({ student: student._id, course: course._id });
     if (existing) return;

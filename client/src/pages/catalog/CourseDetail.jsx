@@ -67,7 +67,9 @@ export default function CourseDetail() {
               <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" />{lessons.length} leçons</span>
               {data.estimatedDuration > 0 && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{data.estimatedDuration}h estimées</span>}
               <span className="bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold">{data.classe}</span>
-              <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-blue-500' : 'bg-purple-500'}`}>Série {data.serie}</span>
+              {data.serie && (
+                <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-blue-500' : 'bg-purple-500'}`}>Série {data.serie}</span>
+              )}
             </div>
           </div>
         </PageWrapper>

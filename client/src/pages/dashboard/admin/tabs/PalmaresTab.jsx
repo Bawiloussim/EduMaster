@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Medal } from 'lucide-react';
 import api from '../../../../services/api';
 import Spinner from '../../../../components/ui/Spinner';
-import { CLASSES, SERIES } from '../../../../constants/academic';
+import { CLASSES, SERIES, requiresSerie } from '../../../../constants/academic';
 
 const selectClass = 'text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white';
 
@@ -13,11 +13,12 @@ export default function PalmaresTab() {
   const [classe, setClasse] = useState(CLASSES[0]);
   const [serie, setSerie] = useState(SERIES[0]);
   const [trimestre, setTrimestre] = useState(1);
+  const needsSerie = requiresSerie(classe);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-palmares', classe, serie, trimestre],
-    queryFn: () => api.get('/admin/palmares', { params: { classe, serie, trimestre } }).then(r => r.data.data),
-    enabled: !!classe && !!serie,
+    queryKey: ['admin-palmares', classe, needsSerie ? serie : null, trimestre],
+    queryFn: () => api.get('/admin/palmares', { params: { classe, serie: needsSerie ? serie : undefined, trimestre } }).then(r => r.data.data),
+    enabled: !!classe && (!needsSerie || !!serie),
   });
 
   return (
@@ -26,9 +27,11 @@ export default function PalmaresTab() {
         <select className={selectClass} value={classe} onChange={(e) => setClasse(e.target.value)}>
           {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select className={selectClass} value={serie} onChange={(e) => setSerie(e.target.value)}>
-          {SERIES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        {needsSerie && (
+          <select className={selectClass} value={serie} onChange={(e) => setSerie(e.target.value)}>
+            {SERIES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
         <select className={selectClass} value={trimestre} onChange={(e) => setTrimestre(Number(e.target.value))}>
           <option value={1}>Trimestre 1</option>
           <option value={2}>Trimestre 2</option>

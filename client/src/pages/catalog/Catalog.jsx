@@ -8,7 +8,7 @@ import Spinner from '../../components/ui/Spinner';
 import Badge from '../../components/ui/Badge';
 import PageWrapper from '../../components/layout/PageWrapper';
 import { useAuthStore } from '../../store/useAuthStore';
-import { CLASSES, SERIES, SERIE_COLORS, CLASSE_COLORS } from '../../utils/schoolData';
+import { CLASSES, SERIES, SERIE_COLORS, CLASSE_COLORS, requiresSerie } from '../../utils/schoolData';
 
 function CourseCard({ course }) {
   return (
@@ -20,9 +20,11 @@ function CourseCard({ course }) {
         }
         <div className="absolute top-2 left-2 flex gap-1">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-white/90 text-gray-800`}>{course.classe}</span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${course.serie === 'D' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'}`}>
-            Série {course.serie}
-          </span>
+          {course.serie && (
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${course.serie === 'D' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'}`}>
+              Série {course.serie}
+            </span>
+          )}
         </div>
       </div>
       <div className="p-4 flex flex-col flex-1">
@@ -51,7 +53,7 @@ function CourseCard({ course }) {
 
 export default function Catalog() {
   const { user } = useAuthStore();
-  const isStudent = user?.role === 'student' && user?.classe && user?.serie;
+  const isStudent = user?.role === 'student' && user?.classe && (requiresSerie(user.classe) ? user?.serie : true);
   const [urlParams] = useSearchParams();
   const [search, setSearch] = useState(urlParams.get('search') || '');
   const [classe, setClasse] = useState(urlParams.get('classe') || '');
@@ -88,7 +90,7 @@ export default function Catalog() {
       {isStudent ? (
         <div className="mb-4">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#003580] text-white">
-            Cours de ta classe : {user.classe} — Série {user.serie}
+            Cours de ta classe : {user.classe}{user.serie ? ` — Série ${user.serie}` : ''}
           </span>
         </div>
       ) : (

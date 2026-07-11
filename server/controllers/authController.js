@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const emailService = require('../services/emailService');
 const { syncClassEnrollments } = require('./enrollmentController');
-const { CLASSES, SERIES } = require('../constants/academic');
+const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
 
 const signAccess = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' });
@@ -107,12 +107,13 @@ exports.getMe = async (req, res) => {
 // Student picks their classe/serie (once) — auto-enrolls them in every matching published course
 exports.setClasse = async (req, res) => {
   const { classe, serie } = req.body;
-  if (!CLASSES.includes(classe) || !SERIES.includes(serie)) {
+  if (!CLASSES.includes(classe) || (requiresSerie(classe) && !SERIES.includes(serie))) {
     return res.status(422).json({ success: false, message: 'Classe ou série invalide' });
   }
+  const finalSerie = requiresSerie(classe) ? serie : null;
 
-  const user = await User.findByIdAndUpdate(req.user._id, { classe, serie }, { new: true });
-  await syncClassEnrollments(user._id, classe, serie);
+  const user = await User.findByIdAndUpdate(req.user._id, { classe, serie: finalSerie }, { new: true });
+  await syncClassEnrollments(user._id, classe, finalSerie);
 
   res.json({
     success: true,

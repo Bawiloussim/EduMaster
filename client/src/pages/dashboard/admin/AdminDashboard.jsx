@@ -226,7 +226,7 @@ function StudentsTab() {
                 <div className="text-xs text-gray-400">{s.email}</div>
               </td>
               <td className="px-4 py-3 text-center">
-                {s.classe ? <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s.classe} · {s.serie}</span> : <span className="text-gray-300">—</span>}
+                {s.classe ? <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s.classe}{s.serie ? ` · ${s.serie}` : ''}</span> : <span className="text-gray-300">—</span>}
               </td>
               <td className="px-4 py-3 text-center">{s.coursesCount}</td>
               <td className="px-4 py-3 text-center">{s.avgProgress}%</td>
@@ -303,7 +303,7 @@ function CoursesTab() {
                 <td className="px-4 py-3 font-medium text-gray-900">{c.title}</td>
                 <td className="px-4 py-3 text-gray-500">{c.subject || '—'}</td>
                 <td className="px-4 py-3 text-gray-500">{c.instructor?.name || '—'}</td>
-                <td className="px-4 py-3 text-center text-xs text-gray-500">{c.classe} · Série {c.serie}</td>
+                <td className="px-4 py-3 text-center text-xs text-gray-500">{c.classe}{c.serie ? ` · Série ${c.serie}` : ''}</td>
                 <td className="px-4 py-3 text-center">
                   <Badge color={c.status === 'published' ? 'green' : 'gray'}>
                     {c.status === 'published' ? 'Publié' : 'Brouillon'}

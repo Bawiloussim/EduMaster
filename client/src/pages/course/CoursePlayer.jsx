@@ -315,7 +315,7 @@ export default function CoursePlayer() {
         <div className="p-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-sm truncate">{courseData.subject || courseData.title}</h2>
           <div className="flex items-center gap-2 mt-0.5 mb-3">
-            <span className="text-xs text-gray-400">{courseData.classe} — Série {courseData.serie}</span>
+            <span className="text-xs text-gray-400">{courseData.classe}{courseData.serie ? ` — Série ${courseData.serie}` : ''}</span>
           </div>
           <ProgressBar value={enrollment?.progress || 0} showLabel />
         </div>
