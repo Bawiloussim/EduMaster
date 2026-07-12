@@ -5,8 +5,124 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EduMaster</title>
+    <style>
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: #003580;
+        background-image:
+          url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M30 5L5 20v10l25 15 25-15V20L30 5zm0 4l21 12.5v8L30 41.5 9 29.5v-8L30 9zm0 4L13 22.5v4L30 37l17-10.5v-4L30 13z'/%3E%3C/g%3E%3C/svg%3E");
+        transition: opacity 0.5s ease, filter 0.5s ease;
+      }
+      #initial-loader.is-hidden {
+        opacity: 0;
+        filter: blur(4px);
+        pointer-events: none;
+      }
+      #initial-loader .mark {
+        height: 64px;
+        width: 64px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: loader-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      #initial-loader .mark svg {
+        height: 32px;
+        width: 32px;
+        color: #0ea5e9;
+      }
+      #initial-loader .text {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+      }
+      #initial-loader .wordmark {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-weight: 800;
+        font-size: 22px;
+        line-height: 1;
+        letter-spacing: 0.01em;
+        color: #ffffff;
+        animation: loader-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+      }
+      #initial-loader .wordmark span {
+        color: #0ea5e9;
+      }
+      #initial-loader .tagline {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 12.5px;
+        line-height: 1;
+        color: #7dd3fc;
+        letter-spacing: 0.02em;
+        animation: loader-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+      }
+      #initial-loader .track {
+        width: 132px;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+        animation: loader-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+      }
+      #initial-loader .track::after {
+        content: '';
+        display: block;
+        height: 100%;
+        width: 40%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, transparent, #0ea5e9, transparent);
+        animation: loader-sweep 1.3s ease-in-out infinite;
+      }
+      @keyframes loader-pop {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes loader-fade-up {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes loader-sweep {
+        0% { transform: translateX(-140%); }
+        100% { transform: translateX(280%); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #initial-loader .mark,
+        #initial-loader .wordmark,
+        #initial-loader .tagline,
+        #initial-loader .track,
+        #initial-loader .track::after {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="initial-loader" aria-hidden="true">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 9.5 12 5l9.5 4.5L12 14z" />
+          <path d="M6 11.8v4.2c0 1.4 2.7 2.8 6 2.8s6-1.4 6-2.8v-4.2" />
+          <path d="M21.5 9.5v5.5" />
+        </svg>
+      </div>
+      <div class="text">
+        <div class="wordmark">Edu<span>Master</span></div>
+        <div class="tagline">La plateforme scolaire du secondaire</div>
+      </div>
+      <div class="track"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
