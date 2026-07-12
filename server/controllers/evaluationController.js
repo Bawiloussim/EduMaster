@@ -249,7 +249,8 @@ exports.setSignature = async (req, res) => {
     await evaluation.save();
 
     const grades = await Grade.find({ evaluation: evaluation._id }).populate('student', 'name email').lean();
-    await Promise.all(grades.map(async (g) => {
+    // Notifications + emails for a whole class shouldn't hold up the response.
+    Promise.all(grades.map(async (g) => {
       if (!g.student) return;
       await Notification.create({
         user: g.student._id,
@@ -263,7 +264,7 @@ exports.setSignature = async (req, res) => {
         courseTitle: course.title,
         instructorName: req.user.name,
       }).catch(() => {});
-    }));
+    })).catch(() => {});
   } else {
     evaluation.signed = false;
     evaluation.signedBy = null;

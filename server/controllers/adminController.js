@@ -17,12 +17,14 @@ exports.adminList = async (req, res) => {
   res.json({ success: true, data: users, total });
 };
 
+// Only a superadmin may change a user's role — everyone else keeps the role
+// they registered (or were imported) with.
 exports.updateUserRole = async (req, res) => {
+  if (req.user.role !== 'superadmin') {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
   const { role } = req.body;
-  const isSuperAdmin = req.user.role === 'superadmin';
-  const assignableRoles = isSuperAdmin
-    ? ['student', 'instructor', 'admin', 'superadmin']
-    : ['student', 'instructor']; // regular admins cannot grant admin/superadmin privileges
+  const assignableRoles = ['student', 'instructor', 'admin', 'superadmin'];
 
   if (!assignableRoles.includes(role)) {
     return res.status(422).json({ success: false, message: 'Rôle invalide' });
@@ -30,15 +32,6 @@ exports.updateUserRole = async (req, res) => {
 
   const existing = await User.findById(req.params.id).lean();
   if (!existing) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
-
-  // Only a superadmin may change another superadmin's role
-  if (existing.role === 'superadmin' && !isSuperAdmin) {
-    return res.status(403).json({ success: false, message: 'Accès interdit' });
-  }
-  // A chef d'établissement can only manage users of their own school
-  if (!isSuperAdmin && existing.school?.toString() !== req.user.school?._id?.toString()) {
-    return res.status(403).json({ success: false, message: 'Accès interdit' });
-  }
 
   const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).lean();
   res.json({ success: true, data: user });

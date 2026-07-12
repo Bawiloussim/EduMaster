@@ -10,17 +10,15 @@ const queryClient = new QueryClient({
   },
 });
 
-// Keeps the static splash from index.html up for a minimum beat so it reads as
-// an intentional brand moment rather than a flash, then hands off to the app.
+// Removes the static splash from index.html the moment the app has mounted —
+// no artificial minimum delay, so it never adds perceived load time on top of
+// however long the bundle actually took to arrive.
 function useHideInitialLoader() {
   useEffect(() => {
     const loader = document.getElementById('initial-loader');
     if (!loader) return;
-    const timer = setTimeout(() => {
-      loader.classList.add('is-hidden');
-      loader.addEventListener('transitionend', () => loader.remove(), { once: true });
-    }, 550);
-    return () => clearTimeout(timer);
+    loader.classList.add('is-hidden');
+    loader.addEventListener('transitionend', () => loader.remove(), { once: true });
   }, []);
 }
 

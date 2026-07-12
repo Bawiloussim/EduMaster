@@ -218,9 +218,9 @@ export default function Landing() {
                   className="bg-brand hover:bg-brand-dark text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
                   Je suis élève — S'inscrire
                 </Link>
-                <Link to="/register?role=instructor"
+                <Link to="/register?role=admin"
                   className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-10 py-3.5 rounded-sm text-sm transition-colors">
-                  Je suis professeur — Créer mon espace
+                  Je suis un établissement — Inscrire mon école
                 </Link>
               </div>
               <p className="mt-6 text-brand-light text-xs">

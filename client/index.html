@@ -18,7 +18,7 @@
         background: #003580;
         background-image:
           url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M30 5L5 20v10l25 15 25-15V20L30 5zm0 4l21 12.5v8L30 41.5 9 29.5v-8L30 9zm0 4L13 22.5v4L30 37l17-10.5v-4L30 13z'/%3E%3C/g%3E%3C/svg%3E");
-        transition: opacity 0.5s ease, filter 0.5s ease;
+        transition: opacity 0.2s ease, filter 0.2s ease;
       }
       #initial-loader.is-hidden {
         opacity: 0;
@@ -34,7 +34,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        animation: loader-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation: loader-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
       }
       #initial-loader .mark svg {
         height: 32px;
@@ -55,7 +55,7 @@
         line-height: 1;
         letter-spacing: 0.01em;
         color: #ffffff;
-        animation: loader-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+        animation: loader-fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
       }
       #initial-loader .wordmark span {
         color: #0ea5e9;
@@ -66,7 +66,7 @@
         line-height: 1;
         color: #7dd3fc;
         letter-spacing: 0.02em;
-        animation: loader-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+        animation: loader-fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
       }
       #initial-loader .track {
         width: 132px;
@@ -74,7 +74,7 @@
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.12);
         overflow: hidden;
-        animation: loader-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+        animation: loader-fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.11s both;
       }
       #initial-loader .track::after {
         content: '';

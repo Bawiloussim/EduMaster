@@ -171,8 +171,8 @@ export default function Home() {
           <div className="text-center py-16 text-gray-400">
             <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>Aucun cours publié pour l'instant</p>
-            <Link to="/register" className="mt-4 inline-block text-brand hover:underline text-sm">
-              Devenir formateur →
+            <Link to="/register?role=admin" className="mt-4 inline-block text-brand hover:underline text-sm">
+              Inscrire mon établissement →
             </Link>
           </div>
         ) : (
@@ -195,11 +195,11 @@ export default function Home() {
               </Link>
             </div>
             <div className="text-white">
-              <h3 className="text-xl font-bold mb-1">Vous êtes professeur ?</h3>
-              <p className="text-brand-light text-sm">Publiez vos cours, gérez vos évaluations trimestrielles et suivez vos élèves partout dans le monde.</p>
-              <Link to="/register?role=instructor"
+              <h3 className="text-xl font-bold mb-1">Vous êtes un établissement ?</h3>
+              <p className="text-brand-light text-sm">Inscrivez votre école, ajoutez vos formateurs et publiez vos cours, évaluations et bulletins.</p>
+              <Link to="/register?role=admin"
                 className="mt-3 inline-block bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-6 py-2.5 rounded-sm text-sm transition-colors">
-                Créer mon espace formateur
+                Inscrire mon établissement
               </Link>
             </div>
           </div>

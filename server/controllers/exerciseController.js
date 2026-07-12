@@ -88,7 +88,7 @@ const notifyInstructorOfSubmission = async (exercise, student) => {
     message: `${student.name} a répondu à un exercice de "${lesson?.title || course.title}".`,
     link: `/instructor/courses/${course._id}/edit`,
   });
-  await emailService.sendGradingNeeded(instructor, {
+  emailService.sendGradingNeeded(instructor, {
     studentName: student.name,
     itemTitle: lesson?.title || exercise.statement,
     courseTitle: course.title,
@@ -166,7 +166,7 @@ exports.gradeAnswer = async (req, res) => {
       message: `Votre réponse à "${exercise.statement}" a été corrigée : ${grade}/10.`,
       link: `/courses/${exercise.course}/learn?lesson=${exercise.lesson}`,
     });
-    await emailService.sendExerciseGraded(student, exercise.statement, grade, feedback).catch(() => {});
+    emailService.sendExerciseGraded(student, exercise.statement, grade, feedback).catch(() => {});
   }
 
   res.json({ success: true, data: answer });

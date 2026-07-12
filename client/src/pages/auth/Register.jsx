@@ -15,7 +15,6 @@ import { CLASSES, SERIES, SERIE_LABELS, requiresSerie } from '../../utils/school
 
 const ROLES = [
   { value: 'student', label: 'Apprenant', emoji: '📚' },
-  { value: 'instructor', label: 'Formateur', emoji: '🎓' },
   { value: 'admin', label: "Chef d'établissement", emoji: '🏫' },
 ];
 
@@ -30,7 +29,7 @@ export default function Register() {
   const { register: signup } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const defaultRole = searchParams.get('role') === 'instructor' ? 'instructor' : 'student';
+  const defaultRole = searchParams.get('role') === 'admin' ? 'admin' : 'student';
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema) });
 
   const [role, setRole] = useState(defaultRole);
@@ -60,7 +59,7 @@ export default function Register() {
         return;
       }
       toast.success('Compte créé ! Bienvenue sur EduMaster.');
-      navigate(result.role === 'instructor' ? '/instructor?new=true' : '/home');
+      navigate('/home');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Erreur lors de la création du compte');
     }
@@ -101,7 +100,7 @@ export default function Register() {
 
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">Je suis un…</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {ROLES.map((opt) => (
                 <label key={opt.value}
                   className={`flex flex-col items-center gap-1 border rounded-lg p-2.5 cursor-pointer transition-colors text-center ${role === opt.value ? 'border-brand bg-brand/10' : 'border-gray-200 hover:bg-gray-50'}`}>

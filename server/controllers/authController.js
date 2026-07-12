@@ -28,7 +28,9 @@ exports.register = async (req, res) => {
   if (!name || !email || !password) {
     return res.status(422).json({ success: false, message: 'Tous les champs sont requis' });
   }
-  const allowedRoles = ['student', 'instructor', 'admin'];
+  // Instructors are added by their school's chef d'établissement (CSV import
+  // or a future invite flow) — not self-registered from the public form.
+  const allowedRoles = ['student', 'admin'];
   const finalRole = allowedRoles.includes(role) ? role : 'student';
 
   const school = await School.findOne({ _id: schoolId, status: 'active' });
@@ -54,8 +56,9 @@ exports.register = async (req, res) => {
   user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
   await user.save({ validateBeforeSave: false });
 
-  await emailService.sendWelcome(user).catch(() => {});
-  await emailService.sendVerificationEmail(user, verificationToken).catch(() => {});
+  // Fire-and-forget — an SMTP round trip shouldn't hold up the HTTP response.
+  emailService.sendWelcome(user).catch(() => {});
+  emailService.sendVerificationEmail(user, verificationToken).catch(() => {});
 
   if (userData.classe) await syncClassEnrollments(user._id, school._id, userData.classe, userData.serie);
 
@@ -220,7 +223,7 @@ exports.forgotPassword = async (req, res) => {
   user.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
   await user.save({ validateBeforeSave: false });
 
-  await emailService.sendPasswordReset(user, token).catch(() => {});
+  emailService.sendPasswordReset(user, token).catch(() => {});
   res.json({ success: true, message: 'Email de réinitialisation envoyé' });
 };
 

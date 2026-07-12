@@ -75,7 +75,7 @@ exports.approvePrincipal = async (req, res) => {
   if (!user) return res.status(404).json({ success: false, message: 'Demande introuvable' });
   user.status = 'active';
   await user.save({ validateBeforeSave: false });
-  await emailService.sendPrincipalApproved(user).catch(() => {});
+  emailService.sendPrincipalApproved(user).catch(() => {});
   res.json({ success: true, data: user });
 };
 
@@ -84,6 +84,6 @@ exports.rejectPrincipal = async (req, res) => {
   if (!user) return res.status(404).json({ success: false, message: 'Demande introuvable' });
   user.status = 'rejected';
   await user.save({ validateBeforeSave: false });
-  await emailService.sendPrincipalRejected(user).catch(() => {});
+  emailService.sendPrincipalRejected(user).catch(() => {});
   res.json({ success: true, data: user });
 };

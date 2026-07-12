@@ -157,7 +157,7 @@ exports.submit = async (req, res) => {
       message: `Félicitations ! Votre certificat pour "${exam.course.title}" est prêt.`,
       link: `/certificates`,
     });
-    await emailService.sendCertificateReady(req.user, exam.course, `${process.env.CLIENT_URL}/certificates/verify/${certificate.verifyHash}`).catch(() => {});
+    emailService.sendCertificateReady(req.user, exam.course, `${process.env.CLIENT_URL}/certificates/verify/${certificate.verifyHash}`).catch(() => {});
   }
 
   if (needsManualGrading) {
@@ -170,7 +170,7 @@ exports.submit = async (req, res) => {
         message: `${req.user.name} a soumis "${exam.title}" — des questions ouvertes attendent une correction.`,
         link: `/instructor/grading`,
       });
-      await emailService.sendGradingNeeded(instructor, {
+      emailService.sendGradingNeeded(instructor, {
         studentName: req.user.name,
         itemTitle: exam.title,
         courseTitle: exam.course.title,
@@ -245,7 +245,7 @@ exports.gradeOpenQuestion = async (req, res) => {
           message: `Félicitations ! Votre certificat pour "${result.exam.course.title}" est prêt.`,
           link: `/certificates`,
         });
-        await emailService.sendCertificateReady(student, result.exam.course, `${process.env.CLIENT_URL}/certificates/verify/${certificate.verifyHash}`).catch(() => {});
+        emailService.sendCertificateReady(student, result.exam.course, `${process.env.CLIENT_URL}/certificates/verify/${certificate.verifyHash}`).catch(() => {});
       }
     }
 
@@ -257,7 +257,7 @@ exports.gradeOpenQuestion = async (req, res) => {
         message: `Votre copie pour "${exam.title}" a été corrigée. Vous avez obtenu ${result.score}%. ${result.passed ? 'Félicitations !' : ''}`,
         link: `/exams/${exam._id}/result/${result._id}`,
       });
-      await emailService.sendExamResult(student, exam, result.score, result.passed).catch(() => {});
+      emailService.sendExamResult(student, exam, result.score, result.passed).catch(() => {});
     }
   }
 
