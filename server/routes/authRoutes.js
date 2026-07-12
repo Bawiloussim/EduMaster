@@ -6,6 +6,7 @@ const requireRole = require('../middlewares/role');
 const { upload } = require('../middlewares/upload');
 
 router.post('/register', auth.register);
+router.post('/google', auth.google);
 router.post('/login', auth.login);
 router.post('/logout', auth.logout);
 router.post('/refresh', auth.refresh);

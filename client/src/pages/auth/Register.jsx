@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { GraduationCap, ArrowLeft, MailCheck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
@@ -12,6 +13,8 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Footer from '../../components/layout/Footer';
 import { CLASSES, SERIES, SERIE_LABELS, requiresSerie } from '../../utils/schoolData';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const ROLES = [
   { value: 'student', label: 'Apprenant', emoji: '📚' },
@@ -26,7 +29,7 @@ const schema = z.object({
 }).refine((d) => d.password === d.confirmPassword, { message: 'Les mots de passe ne correspondent pas', path: ['confirmPassword'] });
 
 export default function Register() {
-  const { register: signup } = useAuth();
+  const { register: signup, registerWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultRole = searchParams.get('role') === 'admin' ? 'admin' : 'student';
@@ -37,6 +40,7 @@ export default function Register() {
   const [classe, setClasse] = useState('');
   const [serie, setSerie] = useState('');
   const [pending, setPending] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const needsSerie = classe && requiresSerie(classe);
 
   const { data: schools } = useQuery({
@@ -44,11 +48,17 @@ export default function Register() {
     queryFn: () => api.get('/schools/public').then((r) => r.data.data),
   });
 
-  const onSubmit = async (data) => {
-    if (!schoolId) return toast.error('Choisissez votre établissement');
+  const validatePrerequisites = () => {
+    if (!schoolId) { toast.error('Choisissez votre établissement'); return false; }
     if (role === 'student' && (!classe || (needsSerie && !serie))) {
-      return toast.error(needsSerie ? 'Choisissez votre classe et votre série' : 'Choisissez votre classe');
+      toast.error(needsSerie ? 'Choisissez votre classe et votre série' : 'Choisissez votre classe');
+      return false;
     }
+    return true;
+  };
+
+  const onSubmit = async (data) => {
+    if (!validatePrerequisites()) return;
     try {
       const result = await signup({
         ...data, role, schoolId,
@@ -62,6 +72,27 @@ export default function Register() {
       navigate('/home');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Erreur lors de la création du compte');
+    }
+  };
+
+  const onGoogleSuccess = async (credentialResponse) => {
+    if (!validatePrerequisites()) return;
+    setGoogleLoading(true);
+    try {
+      const result = await registerWithGoogle({
+        credential: credentialResponse.credential, role, schoolId,
+        ...(role === 'student' ? { classe, serie: needsSerie ? serie : null } : {}),
+      });
+      if (result.pending) {
+        setPending(result.message);
+        return;
+      }
+      toast.success('Compte créé ! Bienvenue sur EduMaster.');
+      navigate('/home');
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Erreur lors de la connexion Google');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -92,12 +123,7 @@ export default function Register() {
           <p className="text-sm text-gray-500 mt-1">Rejoignez EduMaster gratuitement</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Nom complet" placeholder="Jean Dupont" error={errors.name?.message} {...register('name')} />
-          <Input label="Email" type="email" placeholder="vous@exemple.com" error={errors.email?.message} {...register('email')} />
-          <Input label="Mot de passe" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
-          <Input label="Confirmer le mot de passe" type="password" placeholder="••••••••" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
-
+        <div className="space-y-4 mb-4">
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">Je suis un…</label>
             <div className="grid grid-cols-2 gap-2">
@@ -153,6 +179,34 @@ export default function Register() {
               Votre compte sera activé après validation par un super administrateur EduMaster.
             </p>
           )}
+        </div>
+
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+              <div className="flex justify-center [&>div]:w-full">
+                <GoogleLogin
+                  onSuccess={onGoogleSuccess}
+                  onError={() => toast.error('Connexion Google impossible')}
+                  text="signup_with"
+                  width="336"
+                />
+              </div>
+            </GoogleOAuthProvider>
+            {googleLoading && <p className="text-center text-xs text-gray-400 mt-2">Création du compte…</p>}
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">ou avec un mot de passe</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+          </>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Input label="Nom complet" placeholder="Jean Dupont" error={errors.name?.message} {...register('name')} />
+          <Input label="Email" type="email" placeholder="vous@exemple.com" error={errors.email?.message} {...register('email')} />
+          <Input label="Mot de passe" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
+          <Input label="Confirmer le mot de passe" type="password" placeholder="••••••••" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
 
           <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>
             Créer mon compte

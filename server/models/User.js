@@ -5,7 +5,12 @@ const { CLASSES, SERIES } = require('../constants/academic');
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, select: false },
+  // Not required for Google accounts (no local password to check)
+  password: { type: String, required: function () { return !this.googleId; }, select: false },
+  // No `default: null` — a sparse unique index only excludes documents where
+  // the field is genuinely absent, not ones explicitly set to null, so
+  // defaulting it would collide every non-Google account into one index entry.
+  googleId: { type: String, unique: true, sparse: true },
   role: { type: String, enum: ['superadmin', 'admin', 'instructor', 'student'], default: 'student' },
   // null only for superadmin — every other role belongs to exactly one school
   school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
@@ -30,6 +35,7 @@ userSchema.pre('save', async function () {
 });
 
 userSchema.methods.comparePassword = async function (candidate) {
+  if (!this.password) return false; // Google-only account, no local password
   return bcrypt.compare(candidate, this.password);
 };
 

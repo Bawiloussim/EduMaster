@@ -1,13 +1,16 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const School = require('../models/School');
 const Notification = require('../models/Notification');
 const emailService = require('../services/emailService');
 const { syncClassEnrollments } = require('./enrollmentController');
-const { schoolId } = require('../utils/schoolAuth');
+const { schoolId: resolveSchoolId } = require('../utils/schoolAuth');
 const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
 const { STATUS_MESSAGES } = require('../middlewares/auth');
+
+const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 
 const signAccess = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' });
@@ -23,11 +26,9 @@ const cookieOpts = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-exports.register = async (req, res) => {
-  const { name, email, password, role, schoolId, classe, serie } = req.body;
-  if (!name || !email || !password) {
-    return res.status(422).json({ success: false, message: 'Tous les champs sont requis' });
-  }
+// Shared by password registration and Google sign-up — everything past
+// "we know who this is and they don't have an account yet".
+async function createAccountAndRespond(res, { name, email, password, googleId, emailVerified, role, schoolId, classe, serie }) {
   // Instructors are added by their school's chef d'établissement (CSV import
   // or a future invite flow) — not self-registered from the public form.
   const allowedRoles = ['student', 'admin'];
@@ -35,14 +36,18 @@ exports.register = async (req, res) => {
 
   const school = await School.findOne({ _id: schoolId, status: 'active' });
   if (!school) {
-    return res.status(422).json({ success: false, message: 'Établissement invalide' });
+    res.status(422).json({ success: false, message: 'Établissement invalide' });
+    return;
   }
 
   const isPrincipal = finalRole === 'admin';
   const userData = {
-    name, email, password, role: finalRole, school: school._id,
+    name, email, role: finalRole, school: school._id,
     status: isPrincipal ? 'pending' : 'active',
+    emailVerified: !!emailVerified,
   };
+  if (password) userData.password = password;
+  if (googleId) userData.googleId = googleId;
 
   if (finalRole === 'student' && classe && CLASSES.includes(classe) && (!requiresSerie(classe) || SERIES.includes(serie))) {
     userData.classe = classe;
@@ -51,14 +56,15 @@ exports.register = async (req, res) => {
 
   const user = await User.create(userData);
 
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  user.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
-  user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
-  await user.save({ validateBeforeSave: false });
-
   // Fire-and-forget — an SMTP round trip shouldn't hold up the HTTP response.
   emailService.sendWelcome(user).catch(() => {});
-  emailService.sendVerificationEmail(user, verificationToken).catch(() => {});
+  if (!emailVerified) {
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.emailVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+    await user.save({ validateBeforeSave: false });
+    emailService.sendVerificationEmail(user, verificationToken).catch(() => {});
+  }
 
   if (userData.classe) await syncClassEnrollments(user._id, school._id, userData.classe, userData.serie);
 
@@ -71,11 +77,12 @@ exports.register = async (req, res) => {
       message: `${name} demande un compte chef d'établissement pour ${school.name}.`,
       link: '/superadmin',
     })));
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       pending: true,
       message: 'Votre demande a été envoyée. Un super administrateur doit valider votre compte avant que vous puissiez vous connecter.',
     });
+    return;
   }
 
   const accessToken = signAccess(user._id);
@@ -88,6 +95,78 @@ exports.register = async (req, res) => {
     success: true,
     data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: user.school, avatar: user.avatar, classe: user.classe, serie: user.serie },
     accessToken,
+  });
+}
+
+exports.register = async (req, res) => {
+  const { name, email, password, role, schoolId, classe, serie } = req.body;
+  if (!name || !email || !password) {
+    return res.status(422).json({ success: false, message: 'Tous les champs sont requis' });
+  }
+  await createAccountAndRespond(res, { name, email, password, emailVerified: false, role, schoolId, classe, serie });
+};
+
+// Register or log in with a Google ID token. The Google button lives on the
+// registration form (role/school/classe are chosen there first), but if the
+// verified Google email already matches an existing account, we log that
+// account in instead of erroring — same as every other "Sign in with Google".
+exports.google = async (req, res) => {
+  if (!googleClient) {
+    return res.status(500).json({ success: false, message: "Connexion Google non configurée sur le serveur" });
+  }
+  const { credential, role, schoolId, classe, serie } = req.body;
+  if (!credential) return res.status(422).json({ success: false, message: 'Jeton Google manquant' });
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    payload = ticket.getPayload();
+  } catch {
+    return res.status(401).json({ success: false, message: 'Jeton Google invalide' });
+  }
+  if (!payload.email_verified) {
+    return res.status(422).json({ success: false, message: "L'adresse email Google n'est pas vérifiée" });
+  }
+
+  const email = payload.email.toLowerCase();
+  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'status');
+
+  if (existing) {
+    if (!existing.googleId) {
+      existing.googleId = payload.sub;
+    }
+    if (!existing.emailVerified) {
+      existing.emailVerified = true; // Google already vouches for this email
+    }
+    if (existing.status !== 'active') {
+      return res.status(403).json({ success: false, message: STATUS_MESSAGES[existing.status] || 'Compte inactif' });
+    }
+    if (existing.school && existing.school.status === 'suspended') {
+      return res.status(403).json({ success: false, message: 'Votre établissement a été suspendu' });
+    }
+
+    const accessToken = signAccess(existing._id);
+    const refreshToken = signRefresh(existing._id);
+    existing.refreshToken = refreshToken;
+    await existing.save({ validateBeforeSave: false });
+
+    res.cookie('refreshToken', refreshToken, cookieOpts);
+    return res.json({
+      success: true,
+      data: { _id: existing._id, name: existing.name, email: existing.email, role: existing.role, school: existing.school, avatar: existing.avatar, classe: existing.classe, serie: existing.serie },
+      accessToken,
+    });
+  }
+
+  if (!schoolId) {
+    return res.status(422).json({ success: false, message: 'Choisissez votre établissement' });
+  }
+  await createAccountAndRespond(res, {
+    name: payload.name || email.split('@')[0],
+    email,
+    googleId: payload.sub,
+    emailVerified: true,
+    role, schoolId, classe, serie,
   });
 };
 
@@ -191,7 +270,7 @@ exports.setClasse = async (req, res) => {
   const finalSerie = requiresSerie(classe) ? serie : null;
 
   const user = await User.findByIdAndUpdate(req.user._id, { classe, serie: finalSerie }, { new: true });
-  await syncClassEnrollments(user._id, schoolId(req.user), classe, finalSerie);
+  await syncClassEnrollments(user._id, resolveSchoolId(req.user), classe, finalSerie);
 
   res.json({
     success: true,

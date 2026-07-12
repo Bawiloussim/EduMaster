@@ -17,6 +17,13 @@ export const useAuth = () => {
     return data.data;
   };
 
+  const registerWithGoogle = async (payload) => {
+    const { data } = await api.post('/auth/google', payload);
+    if (data.pending) return { pending: true, message: data.message };
+    setAuth(data.data, data.accessToken);
+    return data.data;
+  };
+
   const logout = async () => {
     await api.post('/auth/logout').catch(() => {});
     storeLogout();
@@ -32,5 +39,5 @@ export const useAuth = () => {
   const isInstructor = user?.role === 'instructor';
   const isStudent = user?.role === 'student';
 
-  return { user, accessToken, login, register, logout, setClasse, isAdmin, isInstructor, isStudent };
+  return { user, accessToken, login, register, registerWithGoogle, logout, setClasse, isAdmin, isInstructor, isStudent };
 };
