@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit');
+const { getAppreciation } = require('../utils/appreciation');
 
 /**
  * Generate a school bulletin PDF (A4 portrait).
@@ -55,7 +56,8 @@ function generateBulletinPDF(data) {
 
       // ── Table ─────────────────────────────────────────────────────────────────
       const TABLE_TOP = 162;
-      const ROW_H = 22;
+      const HEADER_ROW_H = 22;
+      const ROW_H = 34; // taller than the header — the appréciation cell stacks the formateur's name above the appréciation itself
 
       // Column widths (total = PAGE_W)
       const cols = {
@@ -69,7 +71,7 @@ function generateBulletinPDF(data) {
       };
 
       // Header row
-      doc.rect(LEFT, TABLE_TOP, PAGE_W, ROW_H).fill(NAVY);
+      doc.rect(LEFT, TABLE_TOP, PAGE_W, HEADER_ROW_H).fill(NAVY);
       doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
 
       const headers = [
@@ -87,7 +89,7 @@ function generateBulletinPDF(data) {
       });
 
       // Subject rows
-      let y = TABLE_TOP + ROW_H;
+      let y = TABLE_TOP + HEADER_ROW_H;
       bulletin.forEach((row, idx) => {
         const bg = idx % 2 === 0 ? '#ffffff' : LIGHT_BLUE;
         doc.rect(LEFT, y, PAGE_W, ROW_H).fill(bg);
@@ -108,15 +110,21 @@ function generateBulletinPDF(data) {
           { key: 'devoir',       text: getScore('devoir', 1) },
           { key: 'compos',       text: getScore('composition', 1) },
           { key: 'moyenne',      text: row.moyenne !== null && row.moyenne !== undefined ? String(row.moyenne) : '-' },
-          { key: 'appreciation', text: row.appreciation || '' },
         ];
 
         doc.fillColor(BLACK).fontSize(9).font('Helvetica');
         cells.forEach(({ key, text }) => {
           const col = cols[key];
-          const align = key === 'subject' || key === 'appreciation' ? 'left' : 'center';
-          doc.text(text, col.x + 3, y + 7, { width: col.w - 6, align });
+          const align = key === 'subject' ? 'left' : 'center';
+          doc.text(text, col.x + 3, y + (ROW_H - 9) / 2, { width: col.w - 6, align });
         });
+
+        // Appréciation cell — formateur name (signature) above the appréciation itself
+        const apprCol = cols.appreciation;
+        doc.fillColor(GRAY).fontSize(7).font('Helvetica-Oblique')
+          .text(row.instructorName ? `— ${row.instructorName}` : '', apprCol.x + 3, y + 5, { width: apprCol.w - 6, align: 'left' });
+        doc.fillColor(BLACK).fontSize(9).font('Helvetica-Bold')
+          .text(row.appreciation || '', apprCol.x + 3, y + 18, { width: apprCol.w - 6, align: 'left' });
 
         // Row bottom border
         doc.moveTo(LEFT, y + ROW_H).lineTo(LEFT + PAGE_W, y + ROW_H).lineWidth(0.3).strokeColor('#d1d5db').stroke();
@@ -125,7 +133,7 @@ function generateBulletinPDF(data) {
       });
 
       // MOYENNE GÉNÉRALE row
-      doc.rect(LEFT, y, PAGE_W, ROW_H).fill(NAVY);
+      doc.rect(LEFT, y, PAGE_W, HEADER_ROW_H).fill(NAVY);
       doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
 
       // Label spans first 5 columns
@@ -136,8 +144,12 @@ function generateBulletinPDF(data) {
       const mgText = moyenneGenerale !== null && moyenneGenerale !== undefined ? String(moyenneGenerale) : '-';
       doc.text(mgText, cols.moyenne.x + 3, y + 7, { width: cols.moyenne.w - 6, align: 'center' });
 
+      // Overall appreciation in the appréciation column of the summary row
+      doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+        .text(getAppreciation(moyenneGenerale), cols.appreciation.x + 3, y + 7, { width: cols.appreciation.w - 6, align: 'left' });
+
       // Outer border around the whole table
-      const tableHeight = ROW_H + bulletin.length * ROW_H + ROW_H;
+      const tableHeight = HEADER_ROW_H + bulletin.length * ROW_H + HEADER_ROW_H;
       doc.rect(LEFT, TABLE_TOP, PAGE_W, tableHeight).lineWidth(1).strokeColor(NAVY).stroke();
 
       // Vertical lines
