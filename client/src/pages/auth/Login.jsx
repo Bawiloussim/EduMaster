@@ -4,11 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { GraduationCap, BookOpen, Award } from 'lucide-react';
+import { GraduationCap, BookOpen, Award, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import Footer from '../../components/layout/Footer';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -96,7 +95,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <Link to="/" className="w-full max-w-4xl flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors mb-3">
+        <ArrowLeft className="h-4 w-4" /> Retour à l'accueil
+      </Link>
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid md:grid-cols-2">
 
         {/* Left panel */}
@@ -166,7 +168,6 @@ export default function Login() {
         </div>
       </div>
       </div>
-      <Footer />
     </div>
   );
 }
