@@ -6,12 +6,21 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 
-export default function AdminTopbar({ title, onMenuClick }) {
+const ROLE_META = {
+  superadmin: { label: 'Super Admin', badge: 'bg-red-100 text-red-700' },
+  admin: { label: 'Admin', badge: 'bg-red-100 text-red-700' },
+  instructor: { label: 'Formateur', badge: 'bg-purple-100 text-purple-700' },
+  student: { label: 'Élève', badge: 'bg-blue-100 text-blue-700' },
+};
+
+/** Generic topbar shared by the admin, instructor and student spaces. */
+export default function DashboardTopbar({ title, onMenuClick }) {
   const { user } = useAuthStore();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const role = ROLE_META[user?.role] || ROLE_META.student;
 
   const { data: notifData } = useQuery({
     queryKey: ['notifications'],
@@ -61,8 +70,8 @@ export default function AdminTopbar({ title, onMenuClick }) {
               <div className="px-4 py-2 border-b border-gray-50 mb-1">
                 <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
                 <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block bg-red-100 text-red-700">
-                  {user?.role === 'superadmin' ? 'Super Admin' : 'Admin'}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${role.badge}`}>
+                  {role.label}
                 </span>
               </div>
               <Link to="/home" onClick={() => setUserMenuOpen(false)}

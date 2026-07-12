@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload } from 'lucide-react';
+import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload, Layers, Trophy, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../../services/api';
 import Spinner from '../../../components/ui/Spinner';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
-import AdminSidebar from '../../../components/layout/AdminSidebar';
-import AdminTopbar from '../../../components/layout/AdminTopbar';
+import DashboardSidebar from '../../../components/layout/DashboardSidebar';
+import DashboardTopbar from '../../../components/layout/DashboardTopbar';
 import { useAuthStore } from '../../../store/useAuthStore';
 import PalmaresTab from './tabs/PalmaresTab';
 import ClassesTab from './tabs/ClassesTab';
@@ -26,6 +26,29 @@ const TAB_TITLES = {
   palmares: 'Palmarès',
   announcements: 'Annonces',
 };
+
+const SIDEBAR_SECTIONS = [
+  {
+    label: 'Général',
+    items: [{ id: 'overview', label: "Vue d'ensemble", icon: BarChart }],
+  },
+  {
+    label: 'Gestion',
+    items: [
+      { id: 'instructors', label: 'Formateurs', icon: GraduationCap },
+      { id: 'students', label: 'Élèves', icon: Users },
+      { id: 'courses', label: 'Cours', icon: BookOpen },
+      { id: 'classes', label: 'Classes', icon: Layers },
+    ],
+  },
+  {
+    label: 'Pédagogie',
+    items: [
+      { id: 'palmares', label: 'Palmarès', icon: Trophy },
+      { id: 'announcements', label: 'Annonces', icon: Megaphone },
+    ],
+  },
+];
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   const colors = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', orange: 'bg-orange-50 text-orange-600' };
@@ -367,10 +390,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <DashboardSidebar subtitle="Administration" sections={SIDEBAR_SECTIONS} activeId={activeTab} onSelect={setActiveTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <AdminTopbar title={TAB_TITLES[activeTab]} onMenuClick={() => setMobileNavOpen(true)} />
+        <DashboardTopbar title={TAB_TITLES[activeTab]} onMenuClick={() => setMobileNavOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {activeTab === 'overview' && <OverviewTab />}

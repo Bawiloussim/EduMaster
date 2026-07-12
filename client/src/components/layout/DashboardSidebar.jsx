@@ -1,33 +1,20 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { BarChart, GraduationCap, Users, BookOpen, User, LogOut, X, Trophy, Layers, Megaphone, } from 'lucide-react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { GraduationCap, User, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
-const SECTIONS = [
-  {
-    label: 'Général',
-    items: [{ id: 'overview', label: "Vue d'ensemble", icon: BarChart }],
-  },
-  {
-    label: 'Gestion',
-    items: [
-      { id: 'instructors', label: 'Formateurs', icon: GraduationCap },
-      { id: 'students', label: 'Élèves', icon: Users },
-      { id: 'courses', label: 'Cours', icon: BookOpen },
-      { id: 'classes', label: 'Classes', icon: Layers },
-    ],
-  },
-  {
-    label: 'Pédagogie',
-    items: [
-      { id: 'palmares', label: 'Palmarès', icon: Trophy },
-      { id: 'announcements', label: 'Annonces', icon: Megaphone },
-    ],
-  },
-];
-
-export default function AdminSidebar({ activeTab, setActiveTab, mobileOpen, onClose }) {
+/**
+ * Generic left sidebar shared by the admin, instructor and student spaces.
+ * Each item is either tab-style ({id, label, icon} + activeId/onSelect from the
+ * parent) or route-style ({id, label, icon, to, end?} rendered as a NavLink).
+ */
+export default function DashboardSidebar({ subtitle, sections, activeId, onSelect, mobileOpen, onClose }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  const itemClasses = (active) =>
+    `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      active ? 'bg-[#0ea5e9] text-white' : 'text-blue-100 hover:bg-white/10'
+    }`;
 
   const content = (
     <div className="flex flex-col h-full bg-[#04214a] text-blue-100">
@@ -38,7 +25,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, mobileOpen, onCl
         </div>
         <div className="leading-tight min-w-0">
           <p className="font-bold text-white text-sm truncate">EduMaster</p>
-          <p className="text-xs text-blue-300 truncate">Administration</p>
+          <p className="text-xs text-blue-300 truncate">{subtitle}</p>
         </div>
         <button onClick={onClose} className="md:hidden ml-auto p-1 text-blue-300 hover:text-white">
           <X className="h-5 w-5" />
@@ -47,25 +34,33 @@ export default function AdminSidebar({ activeTab, setActiveTab, mobileOpen, onCl
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label}>
             <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-400">{section.label}</p>
             <div className="space-y-1">
-              {section.items.map((item) => {
-                const active = activeTab === item.id;
-                return (
+              {section.items.map((item) =>
+                item.to ? (
+                  <NavLink
+                    key={item.id}
+                    to={item.to}
+                    end={item.end}
+                    onClick={onClose}
+                    className={({ isActive }) => itemClasses(isActive)}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </NavLink>
+                ) : (
                   <button
                     key={item.id}
-                    onClick={() => { setActiveTab(item.id); onClose?.(); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      active ? 'bg-[#0ea5e9] text-white' : 'text-blue-100 hover:bg-white/10'
-                    }`}
+                    onClick={() => { onSelect(item.id); onClose?.(); }}
+                    className={itemClasses(activeId === item.id)}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
                     {item.label}
                   </button>
-                );
-              })}
+                )
+              )}
             </div>
           </div>
         ))}

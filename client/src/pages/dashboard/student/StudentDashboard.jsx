@@ -13,7 +13,27 @@ import api from '../../../services/api';
 import { useAuthStore } from '../../../store/useAuthStore';
 import Spinner from '../../../components/ui/Spinner';
 import ProgressBar from '../../../components/ui/ProgressBar';
-import PageWrapper from '../../../components/layout/PageWrapper';
+import DashboardSidebar from '../../../components/layout/DashboardSidebar';
+import DashboardTopbar from '../../../components/layout/DashboardTopbar';
+
+const TAB_TITLES = {
+  courses: 'Mes cours',
+  evaluations: 'Évaluations',
+  bulletin: 'Bulletin',
+  attestations: 'Attestations',
+};
+
+const SIDEBAR_SECTIONS = [
+  {
+    label: 'Mon espace',
+    items: [
+      { id: 'courses', label: 'Mes cours', icon: BookOpen },
+      { id: 'evaluations', label: 'Évaluations', icon: ClipboardList },
+      { id: 'bulletin', label: 'Bulletin', icon: FileText },
+      { id: 'attestations', label: 'Attestations', icon: GraduationCap },
+    ],
+  },
+];
 
 /* ── helpers ─────────────────────────────────────────────────────── */
 const APPRECIATION_COLOR = {
@@ -102,18 +122,6 @@ function StatCard({ icon: Icon, label, value, color = 'blue' }) {
         <div className="text-sm text-gray-500">{label}</div>
       </div>
     </div>
-  );
-}
-
-/* ── tab button ──────────────────────────────────────────────────── */
-function Tab({ active, onClick, icon: Icon, children }) {
-  return (
-    <button onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-        active ? 'bg-[#003580] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'
-      }`}>
-      <Icon className="h-4 w-4" /> {children}
-    </button>
   );
 }
 
@@ -483,93 +491,96 @@ function AttestationsTab() {
 export default function StudentDashboard() {
   const { user } = useAuthStore();
   const [tab, setTab] = useState('courses');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-student'],
     queryFn: () => api.get('/dashboard/student').then(r => r.data.data),
   });
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
-
   return (
-    <PageWrapper>
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bonjour, {user?.name} 👋</h1>
-          <p className="text-gray-500 mt-1">Suivez votre progression et accédez à vos ressources</p>
-        </div>
-        {user?.classe && (
-          <span className="text-sm font-bold px-4 py-2 rounded-full bg-[#003580] text-white">
-            {user.classe}{user.serie ? ` · Série ${user.serie}` : ''}
-          </span>
-        )}
-      </div>
+    <div className="min-h-screen flex bg-gray-50">
+      <DashboardSidebar subtitle="Espace Élève" sections={SIDEBAR_SECTIONS} activeId={tab} onSelect={setTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={BookOpen} label="Cours suivis" value={data?.enrollmentsCount || 0} color="blue" />
-        <StatCard icon={TrendingUp} label="Cours complétés" value={data?.completedCourses || 0} color="green" />
-        <StatCard icon={Award} label="Attestations" value={data?.certificatesCount || 0} color="purple" />
-        <StatCard icon={Clock} label="Progression moy." value={`${data?.avgProgress || 0}%`} color="orange" />
-      </div>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <DashboardTopbar title={TAB_TITLES[tab]} onMenuClick={() => setMobileNavOpen(true)} />
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <Tab active={tab === 'courses'} onClick={() => setTab('courses')} icon={BookOpen}>Mes cours</Tab>
-        <Tab active={tab === 'evaluations'} onClick={() => setTab('evaluations')} icon={ClipboardList}>Évaluations</Tab>
-        <Tab active={tab === 'bulletin'} onClick={() => setTab('bulletin')} icon={FileText}>Bulletin</Tab>
-        <Tab active={tab === 'attestations'} onClick={() => setTab('attestations')} icon={GraduationCap}>Attestations</Tab>
-      </div>
-
-      {/* Courses tab */}
-      {tab === 'courses' && (
-        <div>
-          {!data?.enrollments?.length ? (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
-              <BookOpen className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-400 mb-4">Vous n'êtes inscrit à aucun cours</p>
-              <Link to="/catalog" className="text-[#0ea5e9] text-sm font-medium hover:underline">Découvrir le catalogue →</Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {data.enrollments.map(e => (
-                <div key={e._id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
-                  <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-[#003580] to-[#0ea5e9] overflow-hidden shrink-0 flex items-center justify-center">
-                    {e.course?.coverImage
-                      ? <img src={e.course.coverImage} alt="" className="w-full h-full object-cover" />
-                      : <BookOpen className="h-6 w-6 text-white/60" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <Link to={`/courses/${e.course?._id}/learn`}
-                      className="font-semibold text-gray-900 hover:text-[#003580] text-sm truncate block">
-                      {e.course?.title}
-                    </Link>
-                    <div className="text-xs text-gray-400 mb-1.5">
-                      {e.course?.classe}{e.course?.serie ? ` · Série ${e.course.serie}` : ''}
-                    </div>
-                    <ProgressBar value={e.progress} showLabel />
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {e.progress === 100 && (
-                      <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                        <CheckCircle className="h-3 w-3" /> Complété
-                      </span>
-                    )}
-                    <Link to={`/courses/${e.course?._id}/learn`}
-                      className="text-xs bg-[#003580] hover:bg-[#002060] text-white font-bold px-3 py-1.5 rounded-lg transition-colors">
-                      {e.progress > 0 ? 'Continuer' : 'Commencer'}
-                    </Link>
-                  </div>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {isLoading ? <div className="flex h-64 items-center justify-center"><Spinner size="lg" /></div> : (
+            <>
+              <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Bonjour, {user?.name} 👋</h1>
+                  <p className="text-gray-500 mt-1">Suivez votre progression et accédez à vos ressources</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                {user?.classe && (
+                  <span className="text-sm font-bold px-4 py-2 rounded-full bg-[#003580] text-white">
+                    {user.classe}{user.serie ? ` · Série ${user.serie}` : ''}
+                  </span>
+                )}
+              </div>
 
-      {tab === 'evaluations' && <EvaluationsTab />}
-      {tab === 'bulletin' && <BulletinTab />}
-      {tab === 'attestations' && <AttestationsTab />}
-    </PageWrapper>
+              {/* Stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard icon={BookOpen} label="Cours suivis" value={data?.enrollmentsCount || 0} color="blue" />
+                <StatCard icon={TrendingUp} label="Cours complétés" value={data?.completedCourses || 0} color="green" />
+                <StatCard icon={Award} label="Attestations" value={data?.certificatesCount || 0} color="purple" />
+                <StatCard icon={Clock} label="Progression moy." value={`${data?.avgProgress || 0}%`} color="orange" />
+              </div>
+
+              {/* Courses tab */}
+              {tab === 'courses' && (
+                <div>
+                  {!data?.enrollments?.length ? (
+                    <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
+                      <BookOpen className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+                      <p className="text-gray-400 mb-4">Vous n'êtes inscrit à aucun cours</p>
+                      <Link to="/catalog" className="text-[#0ea5e9] text-sm font-medium hover:underline">Découvrir le catalogue →</Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {data.enrollments.map(e => (
+                        <div key={e._id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
+                          <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-[#003580] to-[#0ea5e9] overflow-hidden shrink-0 flex items-center justify-center">
+                            {e.course?.coverImage
+                              ? <img src={e.course.coverImage} alt="" className="w-full h-full object-cover" />
+                              : <BookOpen className="h-6 w-6 text-white/60" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link to={`/courses/${e.course?._id}/learn`}
+                              className="font-semibold text-gray-900 hover:text-[#003580] text-sm truncate block">
+                              {e.course?.title}
+                            </Link>
+                            <div className="text-xs text-gray-400 mb-1.5">
+                              {e.course?.classe}{e.course?.serie ? ` · Série ${e.course.serie}` : ''}
+                            </div>
+                            <ProgressBar value={e.progress} showLabel />
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {e.progress === 100 && (
+                              <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                                <CheckCircle className="h-3 w-3" /> Complété
+                              </span>
+                            )}
+                            <Link to={`/courses/${e.course?._id}/learn`}
+                              className="text-xs bg-[#003580] hover:bg-[#002060] text-white font-bold px-3 py-1.5 rounded-lg transition-colors">
+                              {e.progress > 0 ? 'Continuer' : 'Commencer'}
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {tab === 'evaluations' && <EvaluationsTab />}
+              {tab === 'bulletin' && <BulletinTab />}
+              {tab === 'attestations' && <AttestationsTab />}
+            </>
+          )}
+        </main>
+      </div>
+    </div>
   );
 }
