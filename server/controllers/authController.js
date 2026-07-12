@@ -29,9 +29,7 @@ const cookieOpts = {
 // Shared by password registration and Google sign-up — everything past
 // "we know who this is and they don't have an account yet".
 async function createAccountAndRespond(res, { name, email, password, googleId, emailVerified, role, schoolId, classe, serie }) {
-  // Instructors are added by their school's chef d'établissement (CSV import
-  // or a future invite flow) — not self-registered from the public form.
-  const allowedRoles = ['student', 'admin'];
+  const allowedRoles = ['student', 'instructor', 'admin'];
   const finalRole = allowedRoles.includes(role) ? role : 'student';
 
   const school = await School.findOne({ _id: schoolId, status: 'active' });

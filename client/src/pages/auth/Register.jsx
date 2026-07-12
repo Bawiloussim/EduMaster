@@ -17,6 +17,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const ROLES = [
   { value: 'student', label: 'Apprenant', emoji: '📚' },
+  { value: 'instructor', label: 'Formateur', emoji: '🎓' },
   { value: 'admin', label: "Chef d'établissement", emoji: '🏫' },
 ];
 
@@ -189,7 +190,7 @@ export default function Register() {
           <div className="space-y-4 mb-4">
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-2">Je suis un…</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {ROLES.map((opt) => (
                   <label key={opt.value}
                     className={`flex flex-col items-center gap-1 border rounded-lg p-2.5 cursor-pointer transition-colors text-center ${role === opt.value ? 'border-brand bg-brand/10' : 'border-gray-200 hover:bg-gray-50'}`}>
