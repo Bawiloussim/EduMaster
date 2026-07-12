@@ -58,26 +58,26 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-blue-500" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-red-400" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-green-500" />].filter(Boolean);
+  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-brand-light0" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-danger" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-success-light0" />].filter(Boolean);
 
   return (
-    <div className={`rounded-xl border transition-colors ${open ? 'border-blue-200 bg-blue-50/20' : 'border-gray-100 bg-white hover:bg-gray-50'}`}>
+    <div className={`rounded-xl border transition-colors ${open ? 'border-brand/25 bg-brand/10/20' : 'border-gray-100 bg-white hover:bg-gray-50'}`}>
       <div className="flex items-center gap-2 px-4 py-3 cursor-pointer" onClick={() => setOpen(o => !o)}>
         <div className="flex items-center gap-1 shrink-0">{icons.length ? icons : <div className="h-3 w-3 rounded-full bg-gray-200" />}</div>
         <span className="text-sm font-medium text-gray-800 flex-1 truncate">{lesson.title}</span>
-        {form.isFreePreview && <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded">Aperçu</span>}
-        <span className="text-xs text-blue-500">{open ? 'Fermer' : 'Éditer'}</span>
+        {form.isFreePreview && <span className="text-xs text-success bg-success-light border border-success-light px-1.5 py-0.5 rounded">Aperçu</span>}
+        <span className="text-xs text-brand-light0">{open ? 'Fermer' : 'Éditer'}</span>
         {open ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
-        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+        <button onClick={e => { e.stopPropagation(); onDelete(); }} className="p-1 text-danger hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
 
       {open && (
-        <div className="border-t border-blue-100">
+        <div className="border-t border-brand/15">
           {/* Tabs */}
           <div className="flex border-b border-gray-100">
             {[{ id: 'content', label: 'Contenu' }, { id: 'exercises', label: 'Exercices' }].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === t.id ? 'border-brand/100 text-brand-dark' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 {t.label}
               </button>
             ))}
@@ -86,29 +86,29 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
           {tab === 'content' && (
             <div className="p-4 space-y-4">
               <div className="space-y-1">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><Video className="h-3.5 w-3.5 text-blue-500" /> Vidéo</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><Video className="h-3.5 w-3.5 text-brand-light0" /> Vidéo</label>
                 <Input value={form.videoUrl} onChange={e => set('videoUrl', e.target.value)} placeholder="URL YouTube, Vimeo ou lien direct (.mp4)…" />
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><FileText className="h-3.5 w-3.5 text-red-400" /> PDF / Documents</label>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><FileText className="h-3.5 w-3.5 text-danger" /> PDF / Documents</label>
                 {form.pdfUrls.map((pdf, i) => (
-                  <div key={pdf.url} className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                    <FileText className="h-4 w-4 text-red-500 shrink-0" />
-                    <span className="text-xs text-red-700 flex-1 truncate">{pdf.name || 'PDF enregistré'}</span>
-                    <a href={pdfHref(pdf.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Voir</a>
-                    <button onClick={() => removeExistingPdf(i)} className="text-gray-400 hover:text-red-500">✕</button>
+                  <div key={pdf.url} className="flex items-center gap-2 bg-danger-light border border-danger-light rounded-lg px-3 py-2">
+                    <FileText className="h-4 w-4 text-danger-light0 shrink-0" />
+                    <span className="text-xs text-danger flex-1 truncate">{pdf.name || 'PDF enregistré'}</span>
+                    <a href={pdfHref(pdf.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-dark hover:underline">Voir</a>
+                    <button onClick={() => removeExistingPdf(i)} className="text-gray-400 hover:text-danger-light0">✕</button>
                   </div>
                 ))}
                 {pdfFiles.map((f, i) => (
-                  <div key={`${f.name}-${i}`} className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
-                    <FileText className="h-4 w-4 text-orange-500" />
-                    <span className="text-xs text-orange-700 flex-1 truncate">{f.name}</span>
+                  <div key={`${f.name}-${i}`} className="flex items-center gap-2 bg-warning-light border border-warning-light rounded-lg px-3 py-2">
+                    <FileText className="h-4 w-4 text-warning-light0" />
+                    <span className="text-xs text-warning flex-1 truncate">{f.name}</span>
                     <span className="text-xs text-orange-400">{(f.size / 1024 / 1024).toFixed(1)} Mo</span>
-                    <button onClick={() => removePendingPdf(i)} className="text-gray-400 hover:text-red-500">✕</button>
+                    <button onClick={() => removePendingPdf(i)} className="text-gray-400 hover:text-danger-light0">✕</button>
                   </div>
                 ))}
-                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-red-300 hover:text-red-500 cursor-pointer transition-colors">
+                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-danger/40 hover:text-danger-light0 cursor-pointer transition-colors">
                   <FileText className="h-4 w-4" />
                   Importer un ou plusieurs fichiers PDF
                   <input type="file" accept=".pdf,application/pdf" multiple className="hidden"
@@ -121,13 +121,13 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
               </div>
 
               <div className="space-y-1">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><AlignLeft className="h-3.5 w-3.5 text-green-500" /> Cours écrit</label>
-                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><AlignLeft className="h-3.5 w-3.5 text-success-light0" /> Cours écrit</label>
+                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
               </div>
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input type="checkbox" checked={form.isFreePreview} onChange={e => set('isFreePreview', e.target.checked)} className="accent-blue-600" />
+                  <input type="checkbox" checked={form.isFreePreview} onChange={e => set('isFreePreview', e.target.checked)} className="accent-brand" />
                   Aperçu gratuit
                 </label>
                 <Button size="sm" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}><Save className="h-3.5 w-3.5" /> Sauvegarder</Button>
@@ -194,7 +194,7 @@ function ExercisesTab({ lessonId, courseId }) {
       ))}
 
       {adding && (
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+        <div className="bg-brand/10 border border-brand/15 rounded-xl p-4 space-y-3">
           <ExerciseFormFields value={newEx} onChange={setNewEx} />
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={() => setAdding(false)}>Annuler</Button>
@@ -204,7 +204,7 @@ function ExercisesTab({ lessonId, courseId }) {
       )}
 
       {!adding && (
-        <button onClick={() => setAdding(true)} className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-500 hover:border-blue-300 hover:text-blue-500 transition-colors">
+        <button onClick={() => setAdding(true)} className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-500 hover:border-brand/35 hover:text-brand-light0 transition-colors">
           + Ajouter un exercice
         </button>
       )}
@@ -219,23 +219,23 @@ function ExerciseFormFields({ value, onChange }) {
     <>
       <div className="flex gap-2">
         <select value={value.type} onChange={e => set('type', e.target.value)}
-          className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+          className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 bg-white">
           <option value="open">Question ouverte</option>
           <option value="qcm">QCM</option>
         </select>
       </div>
       <textarea rows={3} value={value.statement} onChange={e => set('statement', e.target.value)}
         placeholder="Énoncé de l'exercice…"
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
       {value.type === 'qcm' && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">Propositions (cochez la bonne réponse) :</p>
           {value.options.map((opt, i) => (
             <div key={i} className="flex items-center gap-2">
-              <input type="radio" name="correct" checked={value.correctOption === i} onChange={() => set('correctOption', i)} className="accent-green-600" />
+              <input type="radio" name="correct" checked={value.correctOption === i} onChange={() => set('correctOption', i)} className="accent-success" />
               <input value={opt} onChange={e => { const o = [...value.options]; o[i] = e.target.value; set('options', o); }}
                 placeholder={`Option ${i + 1}…`}
-                className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100" />
             </div>
           ))}
         </div>
@@ -253,7 +253,7 @@ function EditExerciseForm({ exercise, onSave, onCancel, saving }) {
   });
 
   return (
-    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3">
+    <div className="bg-brand/10 border border-brand/15 rounded-xl p-4 space-y-3">
       <ExerciseFormFields value={ex} onChange={setEx} />
       <div className="flex gap-2">
         <Button size="sm" variant="secondary" onClick={onCancel}>Annuler</Button>
@@ -278,7 +278,7 @@ function ExerciseRow({ exercise: ex, index: i, onEdit, onDelete }) {
           {ex.type === 'qcm' && (
             <div className="mt-2 space-y-1">
               {ex.options.map((opt, oi) => (
-                <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === ex.correctOption ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500'}`}>
+                <div key={oi} className={`text-xs px-2 py-1 rounded ${oi === ex.correctOption ? 'bg-success-light text-success font-medium' : 'text-gray-500'}`}>
                   {oi === ex.correctOption ? '✓ ' : '◦ '}{opt}
                 </div>
               ))}
@@ -286,14 +286,14 @@ function ExerciseRow({ exercise: ex, index: i, onEdit, onDelete }) {
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <span className={`text-xs px-1.5 py-0.5 rounded ${ex.type === 'qcm' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>{ex.type === 'qcm' ? 'QCM' : 'Ouvert'}</span>
-          <button onClick={onEdit} className="p-1 text-blue-400 hover:text-blue-600"><Pencil className="h-3 w-3" /></button>
-          <button onClick={onDelete} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></button>
+          <span className={`text-xs px-1.5 py-0.5 rounded ${ex.type === 'qcm' ? 'bg-brand/10 text-brand-dark' : 'bg-success-light text-success'}`}>{ex.type === 'qcm' ? 'QCM' : 'Ouvert'}</span>
+          <button onClick={onEdit} className="p-1 text-brand hover:text-brand-dark"><Pencil className="h-3 w-3" /></button>
+          <button onClick={onDelete} className="p-1 text-danger hover:text-danger"><Trash2 className="h-3 w-3" /></button>
         </div>
       </div>
       {ex.type === 'open' && (
         <div className="mt-2">
-          <button onClick={() => setShowAnswers(v => !v)} className="text-xs text-blue-600 hover:underline">
+          <button onClick={() => setShowAnswers(v => !v)} className="text-xs text-brand-dark hover:underline">
             {showAnswers ? 'Masquer les réponses' : 'Voir les réponses des élèves'}
           </button>
           {showAnswers && <ExerciseAnswers exerciseId={ex._id} />}
@@ -328,7 +328,7 @@ function ExerciseAnswers({ exerciseId }) {
         <div key={a._id} className="bg-white border border-gray-100 rounded-lg p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-700">{a.student?.name}</span>
-            {a.grade != null && <span className="text-xs text-green-600 font-medium">Noté : {a.grade}/10</span>}
+            {a.grade != null && <span className="text-xs text-success font-medium">Noté : {a.grade}/10</span>}
           </div>
           {(a.answer || !a.answerFileUrl) && (
             <p className="text-sm text-gray-800 bg-gray-50 rounded-lg p-2 whitespace-pre-wrap">
@@ -337,7 +337,7 @@ function ExerciseAnswers({ exerciseId }) {
           )}
           {a.answerFileUrl && (
             <a href={pdfHref(a.answerFileUrl)} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline w-fit">
+              className="flex items-center gap-1.5 text-xs text-brand-dark hover:underline w-fit">
               <FileText className="h-3.5 w-3.5" /> {a.answerFileName || 'Voir le fichier envoyé'}
             </a>
           )}
@@ -345,11 +345,11 @@ function ExerciseAnswers({ exerciseId }) {
             <input type="number" min={0} max={10} step="0.5" placeholder="Note"
               defaultValue={a.grade ?? ''}
               onChange={e => setGrades(g => ({ ...g, [a._id]: e.target.value }))}
-              className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100" />
             <span className="text-xs text-gray-400">/10</span>
             <input placeholder="Commentaire…" defaultValue={a.feedback || ''}
               onChange={e => setFeedbacks(f => ({ ...f, [a._id]: e.target.value }))}
-              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100" />
             <Button size="sm" loading={gradeMutation.isPending}
               onClick={() => gradeMutation.mutate({
                 answerId: a._id,
@@ -367,10 +367,10 @@ function ExerciseAnswers({ exerciseId }) {
 
 // ─── Evaluations tab ──────────────────────────────────────────────────────────
 const EVAL_TYPES = [
-  { type: 'interrogation', seq: 1, label: 'Interrogation 1', coeff: 1, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-  { type: 'interrogation', seq: 2, label: 'Interrogation 2', coeff: 1, color: 'bg-blue-50 border-blue-200 text-blue-700' },
+  { type: 'interrogation', seq: 1, label: 'Interrogation 1', coeff: 1, color: 'bg-brand/10 border-brand/25 text-brand-dark' },
+  { type: 'interrogation', seq: 2, label: 'Interrogation 2', coeff: 1, color: 'bg-brand/10 border-brand/25 text-brand-dark' },
   { type: 'devoir', seq: 1, label: 'Devoir', coeff: 2, color: 'bg-purple-50 border-purple-200 text-purple-700' },
-  { type: 'composition', seq: 1, label: 'Composition', coeff: 3, color: 'bg-orange-50 border-orange-200 text-orange-700' },
+  { type: 'composition', seq: 1, label: 'Composition', coeff: 3, color: 'bg-warning-light border-warning/30 text-warning' },
 ];
 
 function EvaluationsTab({ courseId }) {
@@ -431,7 +431,7 @@ function EvaluationsTab({ courseId }) {
                 {ev ? (
                   <div className="flex gap-2">
                     <button onClick={() => setGradesModal(ev._id)} className="text-xs px-2 py-1 bg-white/70 rounded-lg hover:bg-white transition-colors">Notes</button>
-                    <button onClick={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ev._id)} className="text-xs px-2 py-1 text-red-600 bg-white/70 rounded-lg hover:bg-white transition-colors">✕</button>
+                    <button onClick={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ev._id)} className="text-xs px-2 py-1 text-danger bg-white/70 rounded-lg hover:bg-white transition-colors">✕</button>
                   </div>
                 ) : (
                   <button onClick={() => createMutation.mutate({ trimestre, type, sequence: seq, maxScore: 20 })}
@@ -444,7 +444,7 @@ function EvaluationsTab({ courseId }) {
               {ev && (
                 <div className="space-y-2 mt-3">
                   <div className="flex items-center gap-2 text-xs">
-                    {ev.isGraded ? <span className="flex items-center gap-1 text-green-700"><Check className="h-3 w-3" /> Notes saisies</span>
+                    {ev.isGraded ? <span className="flex items-center gap-1 text-success"><Check className="h-3 w-3" /> Notes saisies</span>
                       : <span className="opacity-60">Notes non saisies</span>}
                     {ev.correctionUrl
                       ? <a href={pdfHref(ev.correctionUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-current hover:underline ml-auto"><Eye className="h-3 w-3" /> Voir corrigé</a>
@@ -556,7 +556,7 @@ function GradesModal({ evaluationId, onClose, onSaved }) {
                 {row.grade?.submissionUrl && (
                   <a href={pdfHref(row.grade.submissionUrl)} target="_blank" rel="noopener noreferrer"
                     title={row.grade.submissionName || 'Voir la copie'}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline shrink-0">
+                    className="flex items-center gap-1 text-xs text-brand-dark hover:underline shrink-0">
                     <FileText className="h-3.5 w-3.5" /> Copie
                   </a>
                 )}
@@ -564,7 +564,7 @@ function GradesModal({ evaluationId, onClose, onSaved }) {
                   defaultValue={row.grade?.absent ? 'ABS' : (row.grade?.score ?? '')}
                   onChange={e => setScore(row.student._id, e.target.value)}
                   placeholder="—"
-                  className="w-16 text-center border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-16 text-center border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100"
                 />
               </div>
             ))}
@@ -610,7 +610,7 @@ function BulletinTab({ courseId }) {
 
       {enrollments?.length > 0 && (
         <select value={studentId} onChange={e => setStudentId(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100">
           <option value="">-- Sélectionner un élève --</option>
           {enrollments.map(e => <option key={e.student?._id} value={e.student?._id}>{e.student?.name}</option>)}
         </select>
@@ -632,17 +632,17 @@ function BulletinTab({ courseId }) {
                   <span className="text-gray-400 text-xs ml-1">(coeff {ev.coefficient})</span>
                 </span>
                 {ev.grade?.absent
-                  ? <span className="text-orange-600 font-medium">ABS</span>
+                  ? <span className="text-warning font-medium">ABS</span>
                   : ev.grade?.score !== null && ev.grade?.score !== undefined
-                    ? <span className={`font-bold ${ev.score20 >= 10 ? 'text-green-600' : 'text-red-500'}`}>{ev.grade.score}/{ev._maxScore || 20}</span>
+                    ? <span className={`font-bold ${ev.score20 >= 10 ? 'text-success' : 'text-danger-light0'}`}>{ev.grade.score}/{ev._maxScore || 20}</span>
                     : <span className="text-gray-300">—</span>}
               </div>
             ))}
           </div>
-          <div className={`flex items-center justify-between px-4 py-3 border-t-2 font-bold ${courseData.moyenne >= 10 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className={`flex items-center justify-between px-4 py-3 border-t-2 font-bold ${courseData.moyenne >= 10 ? 'bg-success-light border-success/30' : 'bg-danger-light border-danger/30'}`}>
             <span className="text-gray-800">Moyenne</span>
             <div className="text-right">
-              <span className={`text-lg ${courseData.moyenne >= 10 ? 'text-green-700' : 'text-red-600'}`}>{courseData.moyenne ?? '—'}/20</span>
+              <span className={`text-lg ${courseData.moyenne >= 10 ? 'text-success' : 'text-danger'}`}>{courseData.moyenne ?? '—'}/20</span>
               {courseData.appreciation && <div className="text-xs text-gray-500 font-normal">{courseData.appreciation}</div>}
             </div>
           </div>
@@ -778,7 +778,7 @@ export default function EditCourse() {
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{course.classe}</span>
             {course.serie && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>Série {course.serie}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-brand/15 text-brand-dark' : 'bg-purple-100 text-purple-700'}`}>Série {course.serie}</span>
             )}
           </div>
         </div>
@@ -802,14 +802,14 @@ export default function EditCourse() {
                 <label className="text-xs font-medium text-gray-600 block mb-1">Série</label>
                 <div className="flex gap-1">
                   {SERIES.map(s => <button key={s} type="button" onClick={() => set('serie', s)}
-                    className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-colors ${form.serie === s ? s === 'D' ? 'border-blue-600 bg-blue-600 text-white' : 'border-purple-600 bg-purple-600 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>Série {s}</button>)}
+                    className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-colors ${form.serie === s ? s === 'D' ? 'border-brand bg-brand text-white' : 'border-purple-600 bg-purple-600 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>Série {s}</button>)}
                 </div>
               </div>
             )}
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Matière</label>
               <select value={form.subject} onChange={e => set('subject', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1">
+                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100 mb-1">
                 <option value="">-- Choisir --</option>
                 {subjects.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -817,7 +817,7 @@ export default function EditCourse() {
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Description</label>
-              <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
             </div>
           </div>
         </div>
@@ -828,7 +828,7 @@ export default function EditCourse() {
           <div className="flex border-b border-gray-200 mb-4">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === t.id ? 'border-brand/100 text-brand-dark' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 <t.icon className="h-4 w-4" />
                 {t.label}
               </button>
@@ -882,7 +882,7 @@ function AddLessonInline({ courseId, modules, onSuccess }) {
       {modules.length > 0 && (
         <div>
           <label className="text-sm font-medium text-gray-700 block mb-1">Module (optionnel)</label>
-          <select value={moduleId} onChange={e => setModuleId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select value={moduleId} onChange={e => setModuleId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100">
             <option value="">Sans module</option>
             {modules.map(m => <option key={m._id} value={m._id}>{m.title}</option>)}
           </select>

@@ -26,7 +26,7 @@ function Timer({ startedAt, duration, onExpired }) {
   const danger = remaining < 120;
 
   return (
-    <div className={`flex items-center gap-1.5 font-mono font-bold text-lg ${danger ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
+    <div className={`flex items-center gap-1.5 font-mono font-bold text-lg ${danger ? 'text-danger animate-pulse' : 'text-gray-700'}`}>
       <Clock className="h-5 w-5" />
       {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
     </div>
@@ -41,8 +41,8 @@ function QuestionView({ question, index, answer, onChange }) {
     return (
       <div className="space-y-3">
         {options.map((opt, i) => (
-          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${answer === i ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
-            <input type="radio" name={`q-${question._id}`} value={i} checked={answer === i} onChange={() => onChange(i)} className="accent-blue-600" />
+          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${answer === i ? 'border-brand/100 bg-brand/10' : 'border-gray-200 hover:border-gray-300'}`}>
+            <input type="radio" name={`q-${question._id}`} value={i} checked={answer === i} onChange={() => onChange(i)} className="accent-brand" />
             <span className="text-gray-800">{opt}</span>
           </label>
         ))}
@@ -55,10 +55,10 @@ function QuestionView({ question, index, answer, onChange }) {
     return (
       <div className="space-y-3">
         {question.options.map((opt, i) => (
-          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${selected.includes(i) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${selected.includes(i) ? 'border-brand/100 bg-brand/10' : 'border-gray-200 hover:border-gray-300'}`}>
             <input type="checkbox" checked={selected.includes(i)}
               onChange={() => onChange(selected.includes(i) ? selected.filter(x => x !== i) : [...selected, i])}
-              className="accent-blue-600" />
+              className="accent-brand" />
             <span className="text-gray-800">{opt}</span>
           </label>
         ))}
@@ -72,7 +72,7 @@ function QuestionView({ question, index, answer, onChange }) {
       onChange={(e) => onChange(e.target.value)}
       rows={8}
       placeholder="Rédigez votre réponse ici…"
-      className="w-full border-2 border-gray-200 rounded-xl p-4 text-gray-800 focus:outline-none focus:border-blue-500 resize-none"
+      className="w-full border-2 border-gray-200 rounded-xl p-4 text-gray-800 focus:outline-none focus:border-brand/100 resize-none"
     />
   );
 }
@@ -124,7 +124,7 @@ export default function ExamSession() {
   if (!questions.length) {
     return (
       <div className="flex h-screen items-center justify-center flex-col gap-4">
-        <p>Session introuvable. <button className="text-blue-600" onClick={() => navigate(-1)}>Retour</button></p>
+        <p>Session introuvable. <button className="text-brand-dark" onClick={() => navigate(-1)}>Retour</button></p>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export default function ExamSession() {
         <div className="text-sm text-gray-600">
           Question <span className="font-semibold text-gray-900">{current + 1}</span> / {questions.length}
           {focusWarnings > 0 && (
-            <span className="ml-3 text-red-600 text-xs flex items-center gap-1 inline-flex">
+            <span className="ml-3 text-danger text-xs flex items-center gap-1 inline-flex">
               <AlertTriangle className="h-3 w-3" /> {focusWarnings} avertissement{focusWarnings > 1 ? 's' : ''}
             </span>
           )}
@@ -182,16 +182,16 @@ export default function ExamSession() {
               const isAnswered = answers[question._id] !== null && answers[question._id] !== undefined && answers[question._id] !== '';
               return (
                 <button key={i} onClick={() => setCurrent(i)}
-                  className={`h-8 w-8 rounded text-xs font-medium transition-colors ${i === current ? 'bg-blue-600 text-white' : isAnswered ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                  className={`h-8 w-8 rounded text-xs font-medium transition-colors ${i === current ? 'bg-brand text-white' : isAnswered ? 'bg-success-light text-success hover:bg-success/30' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                   {i + 1}
                 </button>
               );
             })}
           </div>
           <div className="mt-4 space-y-1 text-xs text-gray-400">
-            <div className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-green-100 inline-block" /> Répondue</div>
+            <div className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-success-light inline-block" /> Répondue</div>
             <div className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-gray-100 inline-block" /> Sans réponse</div>
-            <div className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-blue-600 inline-block" /> Actuelle</div>
+            <div className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-brand inline-block" /> Actuelle</div>
           </div>
         </aside>
 
@@ -200,7 +200,7 @@ export default function ExamSession() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Question {current + 1}</span>
+                <span className="text-xs font-medium text-brand-dark uppercase tracking-wide">Question {current + 1}</span>
                 <p className="text-lg font-semibold text-gray-900 mt-1">{q.text}</p>
               </div>
               <span className="text-xs text-gray-400 shrink-0 ml-4">{q.points} pt{q.points > 1 ? 's' : ''}</span>
@@ -217,7 +217,7 @@ export default function ExamSession() {
                 Suivant <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="primary" loading={submitting} onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+              <Button variant="primary" loading={submitting} onClick={handleSubmit} className="bg-success hover:bg-success">
                 <Send className="h-4 w-4" /> Soumettre
               </Button>
             )}

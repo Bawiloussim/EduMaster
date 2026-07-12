@@ -48,7 +48,7 @@ export default function Navbar() {
 
   const navLink = (to, label) => (
     <Link to={to}
-      className={`text-sm font-medium transition-colors px-2 py-1 rounded ${location.pathname === to ? 'text-[#0ea5e9]' : 'text-gray-700 hover:text-[#0ea5e9]'}`}>
+      className={`text-sm font-medium transition-colors px-2 py-1 rounded ${location.pathname === to ? 'text-brand' : 'text-gray-700 hover:text-brand'}`}>
       {label}
     </Link>
   );
@@ -60,13 +60,13 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to={user ? '/home' : '/'} className="flex items-center gap-2 shrink-0 mr-4">
-            <div className="h-9 w-9 bg-[#003580] rounded-lg flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-[#0ea5e9]" />
+            <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-brand" />
               
             </div>
             <div className="leading-tight hidden sm:block">
-              <span className="font-extrabold text-[#003580] text-lg leading-none block">Edu</span>
-              <span className="font-extrabold text-[#0ea5e9] text-lg leading-none block -mt-1">Master</span>
+              <span className="font-extrabold text-primary text-lg leading-none block">Edu</span>
+              <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>
             </div>
           </Link>
 
@@ -78,7 +78,7 @@ export default function Navbar() {
             {/* Classes dropdown */}
             <div className="relative" ref={classesRef}>
               <button onClick={() => setClassesOpen(v => !v)}
-                className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-[#0ea5e9] px-2 py-1 rounded transition-colors">
+                className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-brand px-2 py-1 rounded transition-colors">
                 Classes <ChevronDown className={`h-3.5 w-3.5 transition-transform ${classesOpen ? 'rotate-180' : ''}`} />
               </button>
               {classesOpen && (
@@ -91,8 +91,8 @@ export default function Navbar() {
                           {['D', 'A4'].map(s => (
                             <Link key={s} to={`/catalog?classe=${encodeURIComponent(c)}&serie=${s}`}
                               onClick={() => setClassesOpen(false)}
-                              className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-[#003580] hover:text-white transition-colors">
-                              <span className={`h-2 w-2 rounded-full ${s === 'D' ? 'bg-[#0ea5e9]' : 'bg-purple-500'}`} />
+                              className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
+                              <span className={`h-2 w-2 rounded-full ${s === 'D' ? 'bg-brand' : 'bg-purple-500'}`} />
                               Série {s}
                             </Link>
                           ))}
@@ -100,7 +100,7 @@ export default function Navbar() {
                       ) : (
                         <Link to={`/catalog?classe=${encodeURIComponent(c)}`}
                           onClick={() => setClassesOpen(false)}
-                          className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-[#003580] hover:text-white transition-colors">
+                          className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition-colors">
                           {c}
                         </Link>
                       )}
@@ -117,7 +117,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2 ml-auto">
             {/* Search toggle */}
             <button onClick={() => setSearchOpen(v => !v)}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-[#003580] transition-colors">
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-primary transition-colors">
               <Search className="h-4.5 w-4.5" style={{ height: '18px', width: '18px' }} />
             </button>
 
@@ -127,7 +127,7 @@ export default function Navbar() {
                 <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors">
                   <Bell style={{ height: '18px', width: '18px' }} />
                   {unread > 0 && (
-                    <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
+                    <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-danger-light0 text-white text-[9px] flex items-center justify-center font-bold">
                       {unread > 9 ? '9+' : unread}
                     </span>
                   )}
@@ -136,8 +136,8 @@ export default function Navbar() {
                 {/* User menu */}
                 <div className="relative" ref={userMenuRef}>
                   <button onClick={() => setUserMenuOpen(v => !v)}
-                    className="flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-full border border-gray-200 hover:border-[#0ea5e9] transition-colors bg-white">
-                    <div className="h-7 w-7 rounded-full bg-[#003580] flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                    className="flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-full border border-gray-200 hover:border-brand transition-colors bg-white">
+                    <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold overflow-hidden">
                       {user.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : user.name[0]?.toUpperCase()}
                     </div>
                     <span className="hidden md:block text-sm font-medium text-gray-700 max-w-[100px] truncate">{user.name}</span>
@@ -148,7 +148,7 @@ export default function Navbar() {
                       <div className="px-4 py-2 border-b border-gray-50 mb-1">
                         <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
                         <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${user.role === 'superadmin' ? 'bg-red-100 text-red-700' : user.role === 'admin' ? 'bg-orange-100 text-orange-700' : user.role === 'instructor' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${user.role === 'superadmin' ? 'bg-danger-light text-danger' : user.role === 'admin' ? 'bg-warning-light text-warning' : user.role === 'instructor' ? 'bg-purple-100 text-purple-700' : 'bg-brand/15 text-brand-dark'}`}>
                           {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : user.role === 'instructor' ? 'Formateur' : 'Élève'}
                         </span>
                       </div>
@@ -162,7 +162,7 @@ export default function Navbar() {
                       </Link>
                       <hr className="my-1 border-gray-100" />
                       <button onClick={async () => { await logout(); navigate('/'); setUserMenuOpen(false); }}
-                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-danger hover:bg-danger-light transition-colors">
                         <LogOut className="h-4 w-4" /> Déconnexion
                       </button>
                     </div>
@@ -171,11 +171,11 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-[#003580] px-3 py-1.5 rounded-lg transition-colors">
+                <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-primary px-3 py-1.5 rounded-lg transition-colors">
                   Connexion
                 </Link>
                 <Link to="/register"
-                  className="text-sm font-bold bg-[#0ea5e9] hover:bg-[#0284c7] text-white px-4 py-1.5 rounded-sm transition-colors">
+                  className="text-sm font-bold bg-brand hover:bg-brand-dark text-white px-4 py-1.5 rounded-sm transition-colors">
                   S'inscrire
                 </Link>
               </div>
@@ -194,8 +194,8 @@ export default function Navbar() {
             <form onSubmit={handleSearch} className="flex max-w-2xl mx-auto gap-2">
               <input autoFocus value={searchVal} onChange={e => setSearchVal(e.target.value)}
                 placeholder="Rechercher une matière, une leçon…"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] bg-white" />
-              <button type="submit" className="bg-[#0ea5e9] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#0284c7] transition-colors">
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white" />
+              <button type="submit" className="bg-brand text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors">
                 Rechercher
               </button>
               <button type="button" onClick={() => setSearchOpen(false)} className="p-2 text-gray-400 hover:text-gray-600">
@@ -208,8 +208,8 @@ export default function Navbar() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1">
-            <Link to="/home" onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">Accueil</Link>
-            <Link to="/catalog" onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">Catalogue</Link>
+            <Link to="/home" onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-brand">Accueil</Link>
+            <Link to="/catalog" onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-brand">Catalogue</Link>
             {CLASSES.map(c => (
               <div key={c}>
                 {requiresSerie(c) ? (
@@ -218,7 +218,7 @@ export default function Navbar() {
                     {['D', 'A4'].map(s => (
                       <Link key={s} to={`/catalog?classe=${encodeURIComponent(c)}&serie=${s}`}
                         onClick={() => setMenuOpen(false)}
-                        className="block text-sm text-gray-600 py-1.5 pl-3 hover:text-[#0ea5e9]">
+                        className="block text-sm text-gray-600 py-1.5 pl-3 hover:text-brand">
                         Série {s}
                       </Link>
                     ))}
@@ -226,13 +226,13 @@ export default function Navbar() {
                 ) : (
                   <Link to={`/catalog?classe=${encodeURIComponent(c)}`}
                     onClick={() => setMenuOpen(false)}
-                    className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">
+                    className="block text-sm text-gray-700 py-2 hover:text-brand">
                     {c}
                   </Link>
                 )}
               </div>
             ))}
-            {user && <Link to={dashLink} onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-[#0ea5e9]">Mon espace</Link>}
+            {user && <Link to={dashLink} onClick={() => setMenuOpen(false)} className="block text-sm text-gray-700 py-2 hover:text-brand">Mon espace</Link>}
           </div>
         )}
       </nav>

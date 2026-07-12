@@ -44,8 +44,8 @@ export default function ExamStart() {
               { icon: AlertTriangle, label: 'Tentatives max', value: exam.maxAttempts },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
-                <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Icon className="h-5 w-5 text-blue-600" />
+                <div className="h-10 w-10 bg-brand/15 rounded-lg flex items-center justify-center">
+                  <Icon className="h-5 w-5 text-brand-dark" />
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">{label}</div>

@@ -33,11 +33,11 @@ export default function ChooseClass() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8">
         <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 bg-[#003580] rounded-xl flex items-center justify-center mb-3">
-            <GraduationCap className="h-7 w-7 text-[#0ea5e9]" />
+          <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center mb-3">
+            <GraduationCap className="h-7 w-7 text-brand" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Bienvenue, {user?.name} !</h1>
           <p className="text-sm text-gray-500 mt-1 text-center">
@@ -55,7 +55,7 @@ export default function ChooseClass() {
                   type="button"
                   onClick={() => setClasse(c)}
                   className={`border-2 rounded-lg p-3 text-sm font-semibold transition-colors ${
-                    classe === c ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-600 hover:border-[#003580]'
+                    classe === c ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-600 hover:border-primary'
                   }`}
                 >
                   {c}
@@ -74,7 +74,7 @@ export default function ChooseClass() {
                     type="button"
                     onClick={() => setSerie(s)}
                     className={`border-2 rounded-lg p-3 text-sm font-semibold transition-colors ${
-                      serie === s ? 'border-[#0ea5e9] bg-[#0ea5e9] text-white' : 'border-gray-200 text-gray-600 hover:border-[#0ea5e9]'
+                      serie === s ? 'border-brand bg-brand text-white' : 'border-gray-200 text-gray-600 hover:border-brand'
                     }`}
                   >
                     {SERIE_LABELS[s]}

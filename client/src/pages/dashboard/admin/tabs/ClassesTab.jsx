@@ -6,7 +6,7 @@ import { requiresSerie } from '../../../../constants/academic';
 
 const ACCENTS = {
   teal: { badge: 'bg-teal-50 text-teal-600', pillActive: 'bg-teal-50 text-teal-700', header: 'from-teal-50/60' },
-  blue: { badge: 'bg-blue-50 text-blue-600', pillActive: 'bg-blue-50 text-blue-700', header: 'from-blue-50/60' },
+  blue: { badge: 'bg-brand/10 text-brand-dark', pillActive: 'bg-brand/10 text-brand-dark', header: 'from-brand/10/60' },
 };
 
 function CountPill({ value, color }) {

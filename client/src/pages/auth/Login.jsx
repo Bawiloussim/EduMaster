@@ -32,15 +32,15 @@ function LessonsBarChart() {
   const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
   return (
     <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-      <p className="text-xs font-semibold text-blue-100 mb-3">Leçons complétées</p>
+      <p className="text-xs font-semibold text-brand-light mb-3">Leçons complétées</p>
       <div className="flex items-end gap-1.5 h-20">
         {bars.map((h, i) => (
-          <div key={i} className="flex-1 rounded-t bg-[#0ea5e9]" style={{ height: `${h}%`, opacity: 0.5 + (h / 200) }} />
+          <div key={i} className="flex-1 rounded-t bg-brand" style={{ height: `${h}%`, opacity: 0.5 + (h / 200) }} />
         ))}
       </div>
       <div className="flex gap-1.5 mt-1.5">
         {months.map((m) => (
-          <span key={m} className="flex-1 text-center text-[8px] text-blue-200">{m}</span>
+          <span key={m} className="flex-1 text-center text-[8px] text-brand-light">{m}</span>
         ))}
       </div>
     </div>
@@ -54,14 +54,14 @@ function PassRateDonut() {
     <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 flex items-center gap-4">
       <div className="relative h-16 w-16 shrink-0 rounded-full grid place-items-center"
         style={{ background: `conic-gradient(#0ea5e9 ${rate * 3.6}deg, rgba(255,255,255,0.15) 0deg)` }}>
-        <div className="h-11 w-11 rounded-full bg-[#003580] grid place-items-center">
+        <div className="h-11 w-11 rounded-full bg-primary grid place-items-center">
           <span className="text-xs font-bold text-white">{rate}%</span>
         </div>
       </div>
       <div>
-        <p className="text-xs font-semibold text-blue-100">Taux de réussite</p>
-        <p className="text-[11px] text-blue-200 mt-1 flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-[#0ea5e9]" /> Aux examens
+        <p className="text-xs font-semibold text-brand-light">Taux de réussite</p>
+        <p className="text-[11px] text-brand-light mt-1 flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-brand" /> Aux examens
         </p>
       </div>
     </div>
@@ -98,12 +98,12 @@ export default function Login() {
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid md:grid-cols-2">
 
         {/* Left panel */}
-        <div className="hidden md:flex flex-col justify-between bg-[#003580] relative p-10 overflow-hidden">
+        <div className="hidden md:flex flex-col justify-between bg-primary relative p-10 overflow-hidden">
           <EduPattern />
           <div className="relative">
             <h1 className="text-3xl font-extrabold text-white mb-3">Bienvenue !</h1>
             <p className="text-lg font-semibold text-white mb-3">Connectez-vous à votre espace</p>
-            <p className="text-sm text-blue-100 leading-relaxed max-w-sm">
+            <p className="text-sm text-brand-light leading-relaxed max-w-sm">
               Suivez vos cours, passez vos examens et téléchargez vos certificats — tout en un seul endroit.
             </p>
           </div>
@@ -116,11 +116,11 @@ export default function Login() {
         {/* Right panel — form */}
         <div className="p-8 sm:p-10 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-8">
-            <div className="h-10 w-10 bg-[#003580] rounded-lg flex items-center justify-center shrink-0">
-              <GraduationCap className="h-5 w-5 text-[#0ea5e9]" />
+            <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
+              <GraduationCap className="h-5 w-5 text-brand" />
             </div>
             <div className="leading-tight">
-              <span className="font-extrabold text-[#003580] text-base leading-none block">EduMaster</span>
+              <span className="font-extrabold text-primary text-base leading-none block">EduMaster</span>
               <span className="text-xs text-gray-400">Plateforme de formation</span>
             </div>
           </div>
@@ -134,31 +134,31 @@ export default function Login() {
 
             <div className="flex items-center justify-between">
               <button type="button" onClick={() => setRememberMe((v) => !v)} className="flex items-center gap-2 group">
-                <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${rememberMe ? 'bg-[#0ea5e9]' : 'bg-gray-300'}`}>
+                <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${rememberMe ? 'bg-brand' : 'bg-gray-300'}`}>
                   <span className="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform"
                     style={{ transform: rememberMe ? 'translateX(18px)' : 'translateX(4px)' }} />
                 </span>
                 <span className="text-sm text-gray-600 group-hover:text-gray-800">Rester connecté</span>
               </button>
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">Mot de passe oublié ?</Link>
+              <Link to="/forgot-password" className="text-sm text-brand-dark hover:underline">Mot de passe oublié ?</Link>
             </div>
 
-            <Button type="submit" className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] focus:ring-[#0ea5e9]" size="lg" loading={isSubmitting}>
+            <Button type="submit" className="w-full bg-brand hover:bg-brand-dark focus:ring-brand" size="lg" loading={isSubmitting}>
               Se connecter
             </Button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Pas encore de compte ?{' '}
-            <Link to="/register" className="text-blue-600 font-medium hover:underline">Créer un compte</Link>
+            <Link to="/register" className="text-brand-dark font-medium hover:underline">Créer un compte</Link>
           </p>
 
           <div className="grid grid-cols-2 gap-3 mt-8 pt-6 border-t border-gray-100">
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              <BookOpen className="h-4 w-4 text-[#0ea5e9]" /> Cours illimités
+              <BookOpen className="h-4 w-4 text-brand" /> Cours illimités
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Award className="h-4 w-4 text-[#0ea5e9]" /> Certificats reconnus
+              <Award className="h-4 w-4 text-brand" /> Certificats reconnus
             </div>
           </div>
         </div>

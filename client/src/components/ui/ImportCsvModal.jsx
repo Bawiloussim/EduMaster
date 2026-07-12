@@ -47,10 +47,10 @@ export default function ImportCsvModal({ open, onClose, onImported, title, endpo
         <div className="mt-6 space-y-4">
           {result.created.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 text-green-700 font-medium text-sm mb-2">
+              <div className="flex items-center gap-2 text-success font-medium text-sm mb-2">
                 <CheckCircle2 className="h-4 w-4" /> {createdHeading(result.created.length)}
               </div>
-              <div className="bg-green-50 rounded-lg border border-green-100 divide-y divide-green-100 max-h-48 overflow-y-auto">
+              <div className="bg-success-light rounded-lg border border-success-light divide-y divide-success-light max-h-48 overflow-y-auto">
                 {result.created.map((c, i) => (
                   <div key={i} className="px-3 py-2 text-xs flex items-center justify-between gap-2">
                     {renderCreatedItem(c)}

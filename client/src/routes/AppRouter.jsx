@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import Spinner from '../components/ui/Spinner';
 import ProtectedRoute from '../components/shared/ProtectedRoute';
 import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 import InstructorLayout from '../components/layout/InstructorLayout';
 
 const Login = lazy(() => import('../pages/auth/Login'));
@@ -33,10 +34,11 @@ const Landing = lazy(() => import('../pages/Landing'));
 
 function Layout({ children }) {
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      {children}
-    </>
+      <div className="flex-1">{children}</div>
+      <Footer />
+    </div>
   );
 }
 

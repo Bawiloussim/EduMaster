@@ -13,7 +13,7 @@ import PageWrapper from '../../../components/layout/PageWrapper';
 import { CLASSES, SERIES, SERIE_LABELS, SUBJECTS_BY_SERIE, SUBJECTS_COLLEGE, requiresSerie } from '../../../utils/schoolData';
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
-  const colors = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', orange: 'bg-orange-50 text-orange-600' };
+  const colors = { blue: 'bg-brand/10 text-brand-dark', green: 'bg-success-light text-success', purple: 'bg-purple-50 text-purple-600', orange: 'bg-warning-light text-warning' };
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4">
       <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${colors[color]}`}><Icon className="h-6 w-6" /></div>
@@ -91,7 +91,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
                 {SERIES.map(s => (
                   <button key={s} type="button" onClick={() => { set('serie', s); set('subject', ''); }}
                     className={`flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${form.serie === s
-                      ? s === 'D' ? 'border-blue-600 bg-blue-600 text-white' : 'border-purple-600 bg-purple-600 text-white'
+                      ? s === 'D' ? 'border-brand bg-brand text-white' : 'border-purple-600 bg-purple-600 text-white'
                       : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
                     <div className="font-bold">Série {s}</div>
                     <div className="text-xs opacity-80">{s === 'D' ? 'Scientifique' : 'Littéraire'}</div>
@@ -107,7 +107,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
             <div className="flex flex-wrap gap-2 mb-2">
               {subjects.map(s => (
                 <button key={s} type="button" onClick={() => set('subject', s)}
-                  className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${form.subject === s ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                  className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${form.subject === s ? 'border-brand/100 bg-brand/10 text-brand-dark' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                   {s}
                 </button>
               ))}
@@ -119,7 +119,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">Description (optionnel)</label>
             <textarea rows={2} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Programme, objectifs, prérequis…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
           </div>
 
           <Button className="w-full" disabled={!form.subject || !form.classe || (needsSerie && !form.serie)}
@@ -138,13 +138,13 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
                 <span className="text-xs font-bold text-gray-400 w-6 shrink-0">#{i + 1}</span>
                 <Input placeholder={`Titre de la leçon ${i + 1}…`} value={lesson.title} onChange={e => setLesson(i, e.target.value)} className="flex-1" />
                 {lessons.length > 1 && (
-                  <button onClick={() => removeLesson(i)} className="text-red-400 hover:text-red-600 p-1 shrink-0">✕</button>
+                  <button onClick={() => removeLesson(i)} className="text-danger hover:text-danger p-1 shrink-0">✕</button>
                 )}
               </div>
             ))}
           </div>
 
-          <button onClick={addLesson} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
+          <button onClick={addLesson} className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-brand hover:text-brand-dark transition-colors">
             + Ajouter une leçon
           </button>
 
@@ -176,7 +176,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
       <div className="p-5 flex items-center gap-4">
-        <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-[#003580] to-[#0ea5e9] overflow-hidden shrink-0 flex items-center justify-center">
+        <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-primary to-brand overflow-hidden shrink-0 flex items-center justify-center">
           {course.coverImage
             ? <img src={course.coverImage} alt="" className="w-full h-full object-cover" />
             : <BookOpen className="h-6 w-6 text-white/50" />}
@@ -186,7 +186,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
             <span className="font-semibold text-gray-900 truncate">{course.title}</span>
             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{course.classe}</span>
             {course.serie && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${course.serie === 'D' ? 'bg-brand/15 text-brand-dark' : 'bg-purple-100 text-purple-700'}`}>
                 Série {course.serie}
               </span>
             )}
@@ -198,7 +198,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
             <span>{course.subject}</span>
             <span className="flex items-center gap-1"><Users className="h-3 w-3" />{course.enrollmentsCount || 0} inscrit{(course.enrollmentsCount || 0) > 1 ? 's' : ''}</span>
             {stats && (
-              <span className="flex items-center gap-1 text-green-600 font-medium">
+              <span className="flex items-center gap-1 text-success font-medium">
                 <CheckCircle className="h-3 w-3" />{stats.completedCount} complété{stats.completedCount > 1 ? 's' : ''} ({completionRate}%)
               </span>
             )}
@@ -206,7 +206,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={() => setShowStats(v => !v)}
-            className={`p-2 rounded-lg transition-colors ${showStats ? 'bg-[#003580] text-white' : 'hover:bg-gray-100 text-gray-500'}`}
+            className={`p-2 rounded-lg transition-colors ${showStats ? 'bg-primary text-white' : 'hover:bg-gray-100 text-gray-500'}`}
             title="Statistiques">
             <BarChart2 className="h-4 w-4" />
           </button>
@@ -220,7 +220,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
             loading={publishPending} onClick={onPublish}>
             {course.status === 'published' ? 'Dépublier' : 'Publier'}
           </Button>
-          <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={onDelete}>
+          <Button size="sm" variant="ghost" className="text-danger-light0 hover:bg-danger-light" onClick={onDelete}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -230,8 +230,8 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
       {showStats && (
         <div className="border-t border-gray-100 bg-gray-50 px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Inscrits', value: stats?.enrollmentCount ?? '…', color: 'text-[#003580]' },
-            { label: 'Complétés', value: stats?.completedCount ?? '…', color: 'text-green-600' },
+            { label: 'Inscrits', value: stats?.enrollmentCount ?? '…', color: 'text-primary' },
+            { label: 'Complétés', value: stats?.completedCount ?? '…', color: 'text-success' },
             { label: 'Taux de complétion', value: stats ? `${completionRate}%` : '…', color: 'text-purple-600' },
             { label: 'Leçons', value: stats?.lessonsCount ?? '…', color: 'text-gray-700' },
           ].map(({ label, value, color }) => (
@@ -286,12 +286,12 @@ export default function InstructorDashboard() {
       </div>
 
       {data?.pendingGradingCount > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-orange-700">
+        <div className="bg-warning-light border border-warning/30 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-warning">
             <ClipboardList className="h-5 w-5" />
             <span className="font-medium">{data.pendingGradingCount} copie{data.pendingGradingCount > 1 ? 's' : ''} à corriger</span>
           </div>
-          <Link to="/instructor/grading" className="text-sm text-orange-700 hover:underline font-medium">Corriger →</Link>
+          <Link to="/instructor/grading" className="text-sm text-warning hover:underline font-medium">Corriger →</Link>
         </div>
       )}
 

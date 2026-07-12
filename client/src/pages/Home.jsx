@@ -19,7 +19,7 @@ function EduPattern() {
 function StatsBadge({ icon: Icon, value, label }) {
   return (
     <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm">
-      <Icon className="h-4 w-4 text-[#0ea5e9]" />
+      <Icon className="h-4 w-4 text-brand" />
       <span className="font-bold text-gray-900 text-sm">{value}</span>
       <span className="text-gray-500 text-xs">{label}</span>
     </div>
@@ -31,7 +31,7 @@ function CourseCard({ course }) {
   return (
     <Link to={`/courses/${course._id}`}
       className="bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all overflow-hidden group flex flex-col">
-      <div className="relative h-36 bg-gradient-to-br from-[#003580] to-[#0ea5e9] overflow-hidden">
+      <div className="relative h-36 bg-gradient-to-br from-primary to-brand overflow-hidden">
         {course.coverImage
           ? <img src={course.coverImage} alt={course.title} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-300" />
           : <div className="flex flex-col items-center justify-center h-full gap-1">
@@ -40,21 +40,21 @@ function CourseCard({ course }) {
         <div className="absolute top-2 left-2 flex gap-1">
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-gray-800">{course.classe}</span>
           {course.serie && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${course.serie === 'D' ? 'bg-[#0ea5e9]' : 'bg-purple-600'}`}>Série {course.serie}</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${course.serie === 'D' ? 'bg-brand' : 'bg-purple-600'}`}>Série {course.serie}</span>
           )}
         </div>
       </div>
       <div className="p-3 flex-1 flex flex-col">
-        <p className="text-[11px] font-semibold text-[#0ea5e9] mb-0.5">{course.subject}</p>
-        <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#003580] transition-colors line-clamp-2 flex-1">{course.title}</h3>
+        <p className="text-[11px] font-semibold text-brand mb-0.5">{course.subject}</p>
+        <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2 flex-1">{course.title}</h3>
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
           <div className="flex items-center gap-1.5">
-            <div className="h-5 w-5 rounded-full bg-[#003580]/10 flex items-center justify-center text-[10px] font-bold text-[#003580]">
+            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
               {course.instructor?.name?.[0]?.toUpperCase()}
             </div>
             <span className="text-[10px] text-gray-400 truncate max-w-[80px]">{course.instructor?.name}</span>
           </div>
-          <span className="text-xs font-bold text-green-600">Gratuit</span>
+          <span className="text-xs font-bold text-success">Gratuit</span>
         </div>
       </div>
     </Link>
@@ -96,11 +96,11 @@ export default function Home() {
 
         <div className="relative z-10 flex flex-col items-center justify-center px-4 pt-16 pb-12 text-center">
           {/* Title banner */}
-          <div className="bg-[#003580] text-white px-8 py-5 rounded-sm shadow-lg mb-6 max-w-2xl w-full">
+          <div className="bg-primary text-white px-8 py-5 rounded-sm shadow-lg mb-6 max-w-2xl w-full">
             <h1 className="text-2xl md:text-3xl font-bold leading-snug">
               EduMaster — Cours du secondaire gratuits avec certificats
             </h1>
-            <p className="text-blue-200 text-sm mt-1">Seconde, Première, Terminale · Séries A4 & D · 100% gratuit</p>
+            <p className="text-brand-light text-sm mt-1">Seconde, Première, Terminale · Séries A4 & D · 100% gratuit</p>
           </div>
 
           {/* Search bar */}
@@ -109,10 +109,10 @@ export default function Home() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Quelle matière voulez-vous apprendre ?"
-              className="flex-1 px-5 py-3.5 text-sm border-2 border-r-0 border-[#0ea5e9] rounded-l-sm focus:outline-none bg-white text-gray-700 placeholder-gray-400"
+              className="flex-1 px-5 py-3.5 text-sm border-2 border-r-0 border-brand rounded-l-sm focus:outline-none bg-white text-gray-700 placeholder-gray-400"
             />
             <button type="submit"
-              className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-6 text-sm rounded-r-sm transition-colors">
+              className="bg-brand hover:bg-brand-dark text-white font-bold px-6 text-sm rounded-r-sm transition-colors">
               Rechercher
             </button>
           </form>
@@ -133,25 +133,25 @@ export default function Home() {
 
       {/* ── Quick filters — hidden for students, they only see their own classe ── */}
       {!(user?.role === 'student' && user?.classe) && (
-        <section className="bg-[#003580] text-white">
+        <section className="bg-primary text-white">
           <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-blue-200 mr-2">Parcourir par classe :</span>
+            <span className="text-sm font-semibold text-brand-light mr-2">Parcourir par classe :</span>
             {CLASSES.map(c => (
               <Link key={c} to={`/home?classe=${encodeURIComponent(c)}`}
-                className="text-sm px-4 py-1.5 rounded-full bg-white/10 hover:bg-[#0ea5e9] transition-colors font-medium">
+                className="text-sm px-4 py-1.5 rounded-full bg-white/10 hover:bg-brand transition-colors font-medium">
                 {c}
               </Link>
             ))}
             <div className="w-px bg-white/20 mx-1 h-5" />
             <Link to="/home?serie=D"
-              className="text-sm px-4 py-1.5 rounded-full bg-[#0ea5e9]/30 hover:bg-[#0ea5e9] border border-[#0ea5e9] transition-colors font-medium">
+              className="text-sm px-4 py-1.5 rounded-full bg-brand/30 hover:bg-brand border border-brand transition-colors font-medium">
               Série D — Scientifique
             </Link>
             <Link to="/home?serie=A4"
               className="text-sm px-4 py-1.5 rounded-full bg-purple-500/30 hover:bg-purple-500 border border-purple-400 transition-colors font-medium">
               Série A4 — Littéraire
             </Link>
-            <Link to="/catalog" className="ml-auto text-sm text-blue-200 hover:text-white flex items-center gap-1">
+            <Link to="/catalog" className="ml-auto text-sm text-brand-light hover:text-white flex items-center gap-1">
               Tous les cours <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -162,7 +162,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Cours récents</h2>
-          <Link to="/catalog" className="text-sm text-[#0ea5e9] hover:underline flex items-center gap-1">
+          <Link to="/catalog" className="text-sm text-brand hover:underline flex items-center gap-1">
             Voir tout <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
@@ -171,7 +171,7 @@ export default function Home() {
           <div className="text-center py-16 text-gray-400">
             <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>Aucun cours publié pour l'instant</p>
-            <Link to="/register" className="mt-4 inline-block text-[#0ea5e9] hover:underline text-sm">
+            <Link to="/register" className="mt-4 inline-block text-brand hover:underline text-sm">
               Devenir formateur →
             </Link>
           </div>
@@ -184,19 +184,19 @@ export default function Home() {
 
       {/* ── CTA banner — visible only for guests ─────────────────────── */}
       {!user && (
-        <section className="bg-[#003580] mt-4">
+        <section className="bg-primary mt-4">
           <div className="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-2 gap-8 items-center">
             <div className="text-white">
               <h3 className="text-xl font-bold mb-1">Vous êtes élève ?</h3>
-              <p className="text-blue-200 text-sm">Créez un compte gratuit et accédez à tous les cours, bulletins et attestations sans rien payer.</p>
+              <p className="text-brand-light text-sm">Créez un compte gratuit et accédez à tous les cours, bulletins et attestations sans rien payer.</p>
               <Link to="/register?role=student"
-                className="mt-3 inline-block bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-6 py-2.5 rounded-sm text-sm transition-colors">
+                className="mt-3 inline-block bg-brand hover:bg-brand-dark text-white font-bold px-6 py-2.5 rounded-sm text-sm transition-colors">
                 S'inscrire gratuitement
               </Link>
             </div>
             <div className="text-white">
               <h3 className="text-xl font-bold mb-1">Vous êtes professeur ?</h3>
-              <p className="text-blue-200 text-sm">Publiez vos cours, gérez vos évaluations trimestrielles et suivez vos élèves partout dans le monde.</p>
+              <p className="text-brand-light text-sm">Publiez vos cours, gérez vos évaluations trimestrielles et suivez vos élèves partout dans le monde.</p>
               <Link to="/register?role=instructor"
                 className="mt-3 inline-block bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-6 py-2.5 rounded-sm text-sm transition-colors">
                 Créer mon espace formateur

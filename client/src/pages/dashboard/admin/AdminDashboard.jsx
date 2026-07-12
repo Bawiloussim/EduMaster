@@ -51,7 +51,7 @@ const SIDEBAR_SECTIONS = [
 ];
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
-  const colors = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', orange: 'bg-orange-50 text-orange-600' };
+  const colors = { blue: 'bg-brand/10 text-brand-dark', green: 'bg-success-light text-success', purple: 'bg-purple-50 text-purple-600', orange: 'bg-warning-light text-warning' };
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4">
       <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${colors[color]}`}><Icon className="h-6 w-6" /></div>
@@ -99,7 +99,7 @@ function OverviewTab() {
           <div className="space-y-3">
             {data?.popularCourses?.map((c) => (
               <div key={c._id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 overflow-hidden shrink-0">
+                <div className="h-10 w-10 rounded-lg bg-brand/15 overflow-hidden shrink-0">
                   {c.coverImage && <img src={c.coverImage} alt="" className="w-full h-full object-cover" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -128,13 +128,13 @@ function OverviewTab() {
                     <div className="text-xs text-gray-400 truncate">{u.email}</div>
                   </div>
                   {u.role === 'superadmin' ? (
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-800">Super Admin</span>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-danger-light text-danger">Super Admin</span>
                   ) : (
                     <select
                       value={u.role}
                       disabled={!isSuperAdmin && u.role === 'admin'}
                       onChange={(e) => roleMutation.mutate({ id: u._id, role: e.target.value })}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand/100 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="student">Étudiant</option>
                       <option value="instructor">Formateur</option>
@@ -270,7 +270,7 @@ function StudentsTab() {
               <td className="px-4 py-3 text-center">{s.coursesCount}</td>
               <td className="px-4 py-3 text-center">{s.avgProgress}%</td>
               <td className="px-4 py-3 text-center">
-                <button onClick={() => downloadStudentBulletin(s._id, s.name)} className="text-blue-600 hover:underline text-xs flex items-center gap-1 justify-center w-full">
+                <button onClick={() => downloadStudentBulletin(s._id, s.name)} className="text-brand-dark hover:underline text-xs flex items-center gap-1 justify-center w-full">
                   <Download className="h-3 w-3" /> PDF
                 </button>
               </td>
@@ -328,7 +328,7 @@ function CoursesTab() {
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand/100 bg-white"
           >
             <option value="">Toutes les matières</option>
             {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -366,7 +366,7 @@ function CoursesTab() {
                       loading={publishMutation.isPending} onClick={() => publishMutation.mutate(c._id)}>
                       {c.status === 'published' ? 'Dépublier' : 'Publier'}
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50"
+                    <Button size="sm" variant="ghost" className="text-danger-light0 hover:bg-danger-light"
                       onClick={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(c._id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>

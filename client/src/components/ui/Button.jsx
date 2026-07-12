@@ -1,8 +1,8 @@
 const variants = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+  primary: 'bg-brand hover:bg-brand-dark text-white',
   secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-  danger: 'bg-red-600 hover:bg-red-700 text-white',
-  outline: 'border border-blue-600 text-blue-600 hover:bg-blue-50',
+  danger: 'bg-danger hover:bg-danger text-white',
+  outline: 'border border-brand text-brand hover:bg-brand/10',
   ghost: 'text-gray-600 hover:bg-gray-100',
 };
 
@@ -17,7 +17,7 @@ export default function Button({ children, variant = 'primary', size = 'md', cla
     <button
       {...props}
       disabled={loading || props.disabled}
-      className={`inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {loading && (
         <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">

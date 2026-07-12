@@ -55,12 +55,12 @@ function ResultGrading({ result, onDone }) {
               <input type="number" min={0} max={q.points} step="0.5"
                 value={scores[q._id] ?? ''}
                 onChange={(e) => setScores((s) => ({ ...s, [q._id]: e.target.value }))}
-                className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100" />
               <span className="text-xs text-gray-400">/ {q.points}</span>
             </div>
             <textarea rows={2} placeholder="Commentaire (optionnel)…" value={comments[q._id] || ''}
               onChange={(e) => setComments((c) => ({ ...c, [q._id]: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
           </div>
         );
       })}
@@ -100,12 +100,12 @@ export default function Grading() {
         <div className="space-y-3">
           {data.map((r) => (
             <button key={r._id} onClick={() => setSelectedId(r._id)}
-              className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 hover:border-blue-200 hover:bg-blue-50/30 transition-colors text-left">
+              className="w-full flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 hover:border-brand/25 hover:bg-brand/10/30 transition-colors text-left">
               <div>
                 <p className="font-medium text-gray-900 text-sm">{r.exam.title}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{r.student.name} — {r.exam.course.title}</p>
               </div>
-              <span className="text-xs text-orange-600 bg-orange-50 border border-orange-100 px-2 py-1 rounded-full font-medium">À corriger</span>
+              <span className="text-xs text-warning bg-warning-light border border-warning-light px-2 py-1 rounded-full font-medium">À corriger</span>
             </button>
           ))}
         </div>

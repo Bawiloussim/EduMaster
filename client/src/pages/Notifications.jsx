@@ -40,8 +40,8 @@ export default function Notifications() {
         ) : (
           <div className="space-y-2">
             {notifications.map((n) => (
-              <div key={n._id} className={`bg-white rounded-xl border p-4 flex items-start gap-3 transition-colors ${!n.read ? 'border-blue-200 bg-blue-50' : 'border-gray-100'}`}>
-                <div className={`h-2 w-2 rounded-full mt-2 shrink-0 ${!n.read ? 'bg-blue-500' : 'bg-transparent'}`} />
+              <div key={n._id} className={`bg-white rounded-xl border p-4 flex items-start gap-3 transition-colors ${!n.read ? 'border-brand/25 bg-brand/10' : 'border-gray-100'}`}>
+                <div className={`h-2 w-2 rounded-full mt-2 shrink-0 ${!n.read ? 'bg-brand/100' : 'bg-transparent'}`} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900">{n.title}</div>
                   <div className="text-sm text-gray-500 mt-0.5">{n.message}</div>

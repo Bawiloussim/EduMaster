@@ -20,18 +20,18 @@ export default function CertificateVerify() {
         {isLoading && <div className="text-center py-20"><Spinner size="lg" /></div>}
 
         {isError && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-10 text-center">
-            <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h1 className="text-xl font-bold text-red-900 mb-2">Certificat introuvable</h1>
-            <p className="text-red-600">Ce certificat n'existe pas ou a été révoqué.</p>
+          <div className="bg-danger-light border-2 border-danger/30 rounded-2xl p-10 text-center">
+            <XCircle className="h-16 w-16 text-danger mx-auto mb-4" />
+            <h1 className="text-xl font-bold text-danger mb-2">Certificat introuvable</h1>
+            <p className="text-danger">Ce certificat n'existe pas ou a été révoqué.</p>
           </div>
         )}
 
         {cert && (
-          <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-10 text-center">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-green-900 mb-1">Certificat authentique</h1>
-            <p className="text-green-600 mb-6">Ce certificat a été délivré par EduMaster</p>
+          <div className="bg-success-light border-2 border-success/30 rounded-2xl p-10 text-center">
+            <CheckCircle className="h-16 w-16 text-success-light0 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-success mb-1">Certificat authentique</h1>
+            <p className="text-success mb-6">Ce certificat a été délivré par EduMaster</p>
 
             <div className="bg-white rounded-xl p-6 text-left space-y-3">
               <div className="flex gap-2">
@@ -61,7 +61,7 @@ export default function CertificateVerify() {
 
             {cert.pdfUrl && (
               <a href={cert.pdfUrl} target="_blank" rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                className="mt-5 inline-flex items-center gap-2 text-sm text-brand-dark hover:underline">
                 <ExternalLink className="h-4 w-4" /> Télécharger le certificat PDF
               </a>
             )}

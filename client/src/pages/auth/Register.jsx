@@ -37,15 +37,15 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <button onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#003580] transition-colors mb-6">
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors mb-6">
           <ArrowLeft className="h-4 w-4" /> Retour
         </button>
         <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 bg-[#003580] rounded-xl flex items-center justify-center mb-3">
-            <GraduationCap className="h-7 w-7 text-[#0ea5e9]" />
+          <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center mb-3">
+            <GraduationCap className="h-7 w-7 text-brand" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Créer un compte</h1>
           <p className="text-sm text-gray-500 mt-1">Rejoignez EduMaster gratuitement</p>
@@ -61,8 +61,8 @@ export default function Register() {
             <label className="text-sm font-medium text-gray-700 block mb-2">Je suis un…</label>
             <div className="grid grid-cols-2 gap-3">
               {[{ value: 'student', label: 'Apprenant', emoji: '📚' }, { value: 'instructor', label: 'Formateur', emoji: '🎓' }].map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-blue-50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition-colors">
-                  <input type="radio" value={opt.value} {...register('role')} className="accent-blue-600" />
+                <label key={opt.value} className="flex items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-brand/10 has-[:checked]:border-brand/100 has-[:checked]:bg-brand/10 transition-colors">
+                  <input type="radio" value={opt.value} {...register('role')} className="accent-brand" />
                   <span className="text-sm">{opt.emoji} {opt.label}</span>
                 </label>
               ))}
@@ -76,7 +76,7 @@ export default function Register() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Déjà un compte ?{' '}
-          <Link to="/login" className="text-blue-600 font-medium hover:underline">Se connecter</Link>
+          <Link to="/login" className="text-brand-dark font-medium hover:underline">Se connecter</Link>
         </p>
       </div>
     </div>

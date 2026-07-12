@@ -5,9 +5,9 @@ import api from '../../../../services/api';
 import Spinner from '../../../../components/ui/Spinner';
 import { CLASSES, SERIES, requiresSerie } from '../../../../constants/academic';
 
-const selectClass = 'text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white';
+const selectClass = 'text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand/100 bg-white';
 
-const MEDAL_COLORS = { 1: 'text-yellow-500', 2: 'text-gray-400', 3: 'text-orange-600' };
+const MEDAL_COLORS = { 1: 'text-yellow-500', 2: 'text-gray-400', 3: 'text-warning' };
 
 export default function PalmaresTab() {
   const [classe, setClasse] = useState(CLASSES[0]);

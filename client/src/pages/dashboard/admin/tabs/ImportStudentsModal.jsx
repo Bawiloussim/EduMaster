@@ -17,7 +17,7 @@ export default function ImportStudentsModal(props) {
       renderCreatedItem={(c) => (
         <>
           <span className="text-gray-700">{c.name} · {c.email}</span>
-          <code className="bg-white px-1.5 py-0.5 rounded border border-green-200">{c.tempPassword}</code>
+          <code className="bg-white px-1.5 py-0.5 rounded border border-success/30">{c.tempPassword}</code>
         </>
       )}
     />

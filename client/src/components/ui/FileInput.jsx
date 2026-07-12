@@ -17,7 +17,7 @@ export default function FileInput({ accept, onChange, label }) {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="w-full flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-brand hover:text-brand transition-colors"
       >
         <Upload className="h-4 w-4 shrink-0" />
         {fileName || 'Choisir un fichier...'}

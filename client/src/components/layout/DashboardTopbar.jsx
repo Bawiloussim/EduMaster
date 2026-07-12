@@ -7,10 +7,10 @@ import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 
 const ROLE_META = {
-  superadmin: { label: 'Super Admin', badge: 'bg-red-100 text-red-700' },
-  admin: { label: 'Admin', badge: 'bg-red-100 text-red-700' },
+  superadmin: { label: 'Super Admin', badge: 'bg-danger-light text-danger' },
+  admin: { label: 'Admin', badge: 'bg-danger-light text-danger' },
   instructor: { label: 'Formateur', badge: 'bg-purple-100 text-purple-700' },
-  student: { label: 'Élève', badge: 'bg-blue-100 text-blue-700' },
+  student: { label: 'Élève', badge: 'bg-brand/15 text-brand-dark' },
 };
 
 /** Generic topbar shared by the admin, instructor and student spaces. */
@@ -50,7 +50,7 @@ export default function DashboardTopbar({ title, onMenuClick }) {
         <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors">
           <Bell className="h-5 w-5" />
           {unread > 0 && (
-            <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
+            <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-danger-light0 text-white text-[9px] flex items-center justify-center font-bold">
               {unread > 9 ? '9+' : unread}
             </span>
           )}
@@ -58,8 +58,8 @@ export default function DashboardTopbar({ title, onMenuClick }) {
 
         <div className="relative" ref={userMenuRef}>
           <button onClick={() => setUserMenuOpen((v) => !v)}
-            className="flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-full border border-gray-200 hover:border-[#0ea5e9] transition-colors bg-white">
-            <div className="h-7 w-7 rounded-full bg-[#003580] flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
+            className="flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-full border border-gray-200 hover:border-brand transition-colors bg-white">
+            <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
               {user?.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : user?.name?.[0]?.toUpperCase()}
             </div>
             <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">{user?.name}</span>
@@ -84,7 +84,7 @@ export default function DashboardTopbar({ title, onMenuClick }) {
               </Link>
               <hr className="my-1 border-gray-100" />
               <button onClick={async () => { await logout(); navigate('/'); setUserMenuOpen(false); }}
-                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-danger hover:bg-danger-light transition-colors">
                 <LogOut className="h-4 w-4" /> Déconnexion
               </button>
             </div>

@@ -13,21 +13,21 @@ export default function DashboardSidebar({ subtitle, sections, activeId, onSelec
 
   const itemClasses = (active) =>
     `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-      active ? 'bg-[#0ea5e9] text-white' : 'text-blue-100 hover:bg-white/10'
+      active ? 'bg-brand text-white' : 'text-brand-light hover:bg-white/10'
     }`;
 
   const content = (
-    <div className="flex flex-col h-full bg-[#04214a] text-blue-100">
+    <div className="flex flex-col h-full bg-[#04214a] text-brand-light">
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 h-16 shrink-0 border-b border-white/10">
-        <div className="h-9 w-9 bg-[#0ea5e9] rounded-lg flex items-center justify-center shrink-0">
+        <div className="h-9 w-9 bg-brand rounded-lg flex items-center justify-center shrink-0">
           <GraduationCap className="h-5 w-5 text-white" />
         </div>
         <div className="leading-tight min-w-0">
           <p className="font-bold text-white text-sm truncate">EduMaster</p>
-          <p className="text-xs text-blue-300 truncate">{subtitle}</p>
+          <p className="text-xs text-brand-light truncate">{subtitle}</p>
         </div>
-        <button onClick={onClose} className="md:hidden ml-auto p-1 text-blue-300 hover:text-white">
+        <button onClick={onClose} className="md:hidden ml-auto p-1 text-brand-light hover:text-white">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -36,7 +36,7 @@ export default function DashboardSidebar({ subtitle, sections, activeId, onSelec
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
         {sections.map((section) => (
           <div key={section.label}>
-            <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-400">{section.label}</p>
+            <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-brand">{section.label}</p>
             <div className="space-y-1">
               {section.items.map((item) =>
                 item.to ? (
@@ -68,12 +68,12 @@ export default function DashboardSidebar({ subtitle, sections, activeId, onSelec
 
       {/* Footer */}
       <div className="border-t border-white/10 p-3 space-y-1 shrink-0">
-        <Link to="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-blue-100 hover:bg-white/10 transition-colors">
+        <Link to="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-brand-light hover:bg-white/10 transition-colors">
           <User className="h-4 w-4 shrink-0" /> Mon profil
         </Link>
         <button
           onClick={async () => { await logout(); navigate('/'); }}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-300 hover:bg-red-500/10 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-danger/40 hover:bg-danger-light0/10 transition-colors"
         >
           <LogOut className="h-4 w-4 shrink-0" /> Déconnexion
         </button>

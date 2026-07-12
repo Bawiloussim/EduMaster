@@ -50,25 +50,25 @@ export default function CourseDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white py-12">
+      <div className="bg-gradient-to-r from-primary to-primary-dark text-white py-12">
         <PageWrapper>
           <div className="max-w-4xl">
             <div className="flex items-center gap-2 mb-4">
-              <Link to="/catalog" className="text-blue-200 hover:text-white text-sm">Catalogue</Link>
-              <ChevronRight className="h-4 w-4 text-blue-300" />
-              <span className="text-sm text-blue-100">{data.classe}</span>
-              <ChevronRight className="h-4 w-4 text-blue-300" />
-              <span className="text-sm text-blue-100">{data.subject}</span>
+              <Link to="/catalog" className="text-brand-light hover:text-white text-sm">Catalogue</Link>
+              <ChevronRight className="h-4 w-4 text-brand-light" />
+              <span className="text-sm text-brand-light">{data.classe}</span>
+              <ChevronRight className="h-4 w-4 text-brand-light" />
+              <span className="text-sm text-brand-light">{data.subject}</span>
             </div>
             <h1 className="text-3xl font-bold mb-4">{data.title}</h1>
-            <p className="text-blue-100 mb-6 max-w-2xl">{data.description}</p>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-blue-100">
+            <p className="text-brand-light mb-6 max-w-2xl">{data.description}</p>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-brand-light">
               <span className="flex items-center gap-1"><Users className="h-4 w-4" />{data.enrollmentCount || 0} inscrits</span>
               <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" />{lessons.length} leçons</span>
               {data.estimatedDuration > 0 && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{data.estimatedDuration}h estimées</span>}
               <span className="bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold">{data.classe}</span>
               {data.serie && (
-                <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-blue-500' : 'bg-purple-500'}`}>Série {data.serie}</span>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-brand/100' : 'bg-purple-500'}`}>Série {data.serie}</span>
               )}
             </div>
           </div>
@@ -132,12 +132,12 @@ export default function CourseDetail() {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-24">
               {data.coverImage && <img src={data.coverImage} alt="" className="w-full h-40 object-cover rounded-xl mb-5" />}
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl font-extrabold text-green-600">100% Gratuit</span>
-                <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">Toujours gratuit</span>
+                <span className="text-2xl font-extrabold text-success">100% Gratuit</span>
+                <span className="text-xs bg-success-light text-success font-bold px-2 py-0.5 rounded-full">Toujours gratuit</span>
               </div>
               {isEnrolled ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+                  <div className="flex items-center gap-2 text-success text-sm font-medium">
                     <Award className="h-4 w-4" /> Inscrit · {enrollment?.progress || 0}% complété
                   </div>
                   <Button className="w-full" onClick={() => navigate(`/courses/${id}/learn`)}>

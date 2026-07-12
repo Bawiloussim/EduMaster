@@ -39,12 +39,12 @@ const SIDEBAR_SECTIONS = [
 const APPRECIATION_COLOR = {
   Honorable: 'text-purple-600 bg-purple-50',
   Excellent: 'text-emerald-600 bg-emerald-50',
-  'Très bien': 'text-green-600 bg-green-50',
-  Bien: 'text-blue-600 bg-blue-50',
+  'Très bien': 'text-success bg-success-light',
+  Bien: 'text-brand-dark bg-brand/10',
   'Assez bien': 'text-sky-600 bg-sky-50',
-  Passable: 'text-orange-600 bg-orange-50',
-  Insuffisant: 'text-red-600 bg-red-50',
-  'Très insuffisant': 'text-red-700 bg-red-100',
+  Passable: 'text-warning bg-warning-light',
+  Insuffisant: 'text-danger bg-danger-light',
+  'Très insuffisant': 'text-danger bg-danger-light',
 };
 
 const getPdfUrl = (url) => {
@@ -55,9 +55,9 @@ const getPdfUrl = (url) => {
 
 const TYPE_LABELS = { interrogation: 'Interrogation', devoir: 'Devoir', composition: 'Composition' };
 const TYPE_COLORS = {
-  interrogation: 'bg-blue-50 text-blue-700 border-blue-200',
-  devoir: 'bg-orange-50 text-orange-700 border-orange-200',
-  composition: 'bg-red-50 text-red-700 border-red-200',
+  interrogation: 'bg-brand/10 text-brand-dark border-brand/25',
+  devoir: 'bg-warning-light text-warning border-warning/30',
+  composition: 'bg-danger-light text-danger border-danger/30',
 };
 
 function fmt(v) {
@@ -68,7 +68,7 @@ function fmt(v) {
 function noteCell(val) {
   if (val === null || val === undefined) return <td className="px-3 py-2 text-center text-gray-300">—</td>;
   const n = parseFloat(val);
-  const color = n >= 14 ? 'text-green-700' : n >= 10 ? 'text-gray-800' : 'text-red-600';
+  const color = n >= 14 ? 'text-success' : n >= 10 ? 'text-gray-800' : 'text-danger';
   return <td className={`px-3 py-2 text-center font-semibold ${color}`}>{n.toFixed(2)}</td>;
 }
 
@@ -107,10 +107,10 @@ async function downloadAttestation(certId, courseTitle) {
 /* ── stat card ───────────────────────────────────────────────────── */
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   const colors = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
+    blue: 'bg-brand/10 text-brand-dark',
+    green: 'bg-success-light text-success',
     purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
+    orange: 'bg-warning-light text-warning',
   };
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-center gap-4">
@@ -155,7 +155,7 @@ function BulletinTab() {
         {[1, 2, 3].map(t => (
           <button key={t} onClick={() => setTri(t)}
             className={`px-5 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${
-              tri === t ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-600 hover:border-[#003580]'
+              tri === t ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-600 hover:border-primary'
             }`}>
             Trimestre {t}
           </button>
@@ -164,7 +164,7 @@ function BulletinTab() {
           <button onClick={() => downloadBulletinPDF(tri)}
             className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
               data.isComplete
-                ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white'
+                ? 'bg-brand hover:bg-brand-dark text-white'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
             disabled={!data.isComplete}
@@ -186,7 +186,7 @@ function BulletinTab() {
         <>
           {/* Status banner */}
           {!data.isComplete && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-center gap-2 text-orange-700 text-sm">
+            <div className="bg-warning-light border border-warning/30 rounded-xl p-3 mb-4 flex items-center gap-2 text-warning text-sm">
               <Clock className="h-4 w-4 shrink-0" />
               Le bulletin sera disponible en PDF une fois que toutes les évaluations de toutes les matières seront notées (2 interrogations, 1 devoir, 1 composition).
             </div>
@@ -196,7 +196,7 @@ function BulletinTab() {
           <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto mb-6">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#003580] text-white text-xs">
+                <tr className="bg-primary text-white text-xs">
                   <th className="px-4 py-3 text-left font-semibold">Matière</th>
                   <th className="px-3 py-3 text-center font-semibold">Interro 1</th>
                   <th className="px-3 py-3 text-center font-semibold">Interro 2</th>
@@ -218,11 +218,11 @@ function BulletinTab() {
                       {[i1, i2, dv, co].map((v, vi) => (
                         <td key={vi} className="px-3 py-2 text-center">
                           {v === 'Abs' ? (
-                            <span className="text-xs text-orange-500 font-bold">Abs</span>
+                            <span className="text-xs text-warning-light0 font-bold">Abs</span>
                           ) : v === null ? (
                             <span className="text-gray-300">—</span>
                           ) : (
-                            <span className={`font-semibold ${parseFloat(v) >= 10 ? 'text-gray-800' : 'text-red-600'}`}>
+                            <span className={`font-semibold ${parseFloat(v) >= 10 ? 'text-gray-800' : 'text-danger'}`}>
                               {parseFloat(v).toFixed(2)}
                             </span>
                           )}
@@ -240,10 +240,10 @@ function BulletinTab() {
                   );
                 })}
                 {/* General average row */}
-                <tr className="bg-[#003580]/5 border-t-2 border-[#003580]/20 font-bold">
-                  <td className="px-4 py-3 text-[#003580]">MOYENNE GÉNÉRALE</td>
+                <tr className="bg-primary/5 border-t-2 border-primary/20 font-bold">
+                  <td className="px-4 py-3 text-primary">MOYENNE GÉNÉRALE</td>
                   <td colSpan={4} />
-                  <td className="px-3 py-3 text-center text-[#003580] text-base">
+                  <td className="px-3 py-3 text-center text-primary text-base">
                     {data.moyenneGenerale !== null ? data.moyenneGenerale.toFixed(2) : '—'}
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -274,7 +274,7 @@ function BulletinTab() {
           {chartData.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <BarChart2 className="h-4 w-4 text-[#003580]" /> Moyennes par matière
+                <BarChart2 className="h-4 w-4 text-primary" /> Moyennes par matière
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
@@ -321,11 +321,11 @@ function SubmissionUpload({ evaluationId, submissionUrl, submissionName, onUploa
     <div className="flex items-center gap-2 mt-1 flex-wrap">
       {submissionUrl && (
         <a href={getPdfUrl(submissionUrl)} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+          className="flex items-center gap-1 text-xs text-brand-dark hover:underline">
           <FileText className="h-3 w-3" /> {submissionName || 'Ma copie'}
         </a>
       )}
-      <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 cursor-pointer">
+      <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-brand-dark cursor-pointer">
         <Upload className="h-3 w-3" />
         {file ? file.name.slice(0, 18) + '…' : submissionUrl ? 'Remplacer' : 'Envoyer ma copie'}
         <input ref={inputRef} type="file" accept="image/*,.pdf,application/pdf" className="hidden"
@@ -333,7 +333,7 @@ function SubmissionUpload({ evaluationId, submissionUrl, submissionName, onUploa
       </label>
       {file && (
         <button onClick={upload} disabled={uploading}
-          className="text-xs font-medium text-white bg-[#003580] hover:bg-[#002a66] disabled:opacity-50 rounded-lg px-2 py-1">
+          className="text-xs font-medium text-white bg-primary hover:bg-[#002a66] disabled:opacity-50 rounded-lg px-2 py-1">
           {uploading ? '…' : 'Envoyer'}
         </button>
       )}
@@ -365,7 +365,7 @@ function EvaluationsTab() {
         {[1, 2, 3].map((t) => (
           <button key={t} onClick={() => setTri(t)}
             className={`px-5 py-2 rounded-lg text-sm font-bold border-2 transition-colors ${
-              tri === t ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-600 hover:border-[#003580]'
+              tri === t ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-600 hover:border-primary'
             }`}>
             Trimestre {t}
           </button>
@@ -416,13 +416,13 @@ function EvaluationsTab() {
                       </div>
                       <div className="shrink-0 text-right">
                         {ev.grade?.absent ? (
-                          <span className="text-xs font-bold text-orange-500">Absent</span>
+                          <span className="text-xs font-bold text-warning-light0">Absent</span>
                         ) : score20 !== null ? (
-                          <span className={`text-sm font-bold ${score20 >= 10 ? 'text-gray-800' : 'text-red-600'}`}>
+                          <span className={`text-sm font-bold ${score20 >= 10 ? 'text-gray-800' : 'text-danger'}`}>
                             {score20.toFixed(2)}/20
                           </span>
                         ) : ev.pendingSignature ? (
-                          <span className="text-xs font-medium text-orange-400">En attente de validation</span>
+                          <span className="text-xs font-medium text-warning">En attente de validation</span>
                         ) : (
                           <span className="text-xs text-gray-300">Pas encore noté</span>
                         )}
@@ -473,11 +473,11 @@ function AttestationsTab() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium">
+            <span className="flex items-center gap-1 text-xs text-success bg-success-light px-2 py-1 rounded-full font-medium">
               <CheckCircle className="h-3 w-3" /> Cours complété
             </span>
             <button onClick={() => downloadAttestation(c._id, c.course?.title)}
-              className="flex items-center gap-1.5 bg-[#003580] hover:bg-[#002060] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+              className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
               <Download className="h-3.5 w-3.5" /> PDF
             </button>
           </div>
@@ -514,7 +514,7 @@ export default function StudentDashboard() {
                   <p className="text-gray-500 mt-1">Suivez votre progression et accédez à vos ressources</p>
                 </div>
                 {user?.classe && (
-                  <span className="text-sm font-bold px-4 py-2 rounded-full bg-[#003580] text-white">
+                  <span className="text-sm font-bold px-4 py-2 rounded-full bg-primary text-white">
                     {user.classe}{user.serie ? ` · Série ${user.serie}` : ''}
                   </span>
                 )}
@@ -535,20 +535,20 @@ export default function StudentDashboard() {
                     <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
                       <BookOpen className="h-10 w-10 text-gray-200 mx-auto mb-3" />
                       <p className="text-gray-400 mb-4">Vous n'êtes inscrit à aucun cours</p>
-                      <Link to="/catalog" className="text-[#0ea5e9] text-sm font-medium hover:underline">Découvrir le catalogue →</Link>
+                      <Link to="/catalog" className="text-brand text-sm font-medium hover:underline">Découvrir le catalogue →</Link>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {data.enrollments.map(e => (
                         <div key={e._id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
-                          <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-[#003580] to-[#0ea5e9] overflow-hidden shrink-0 flex items-center justify-center">
+                          <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-primary to-brand overflow-hidden shrink-0 flex items-center justify-center">
                             {e.course?.coverImage
                               ? <img src={e.course.coverImage} alt="" className="w-full h-full object-cover" />
                               : <BookOpen className="h-6 w-6 text-white/60" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <Link to={`/courses/${e.course?._id}/learn`}
-                              className="font-semibold text-gray-900 hover:text-[#003580] text-sm truncate block">
+                              className="font-semibold text-gray-900 hover:text-primary text-sm truncate block">
                               {e.course?.title}
                             </Link>
                             <div className="text-xs text-gray-400 mb-1.5">
@@ -558,12 +558,12 @@ export default function StudentDashboard() {
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
                             {e.progress === 100 && (
-                              <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                              <span className="flex items-center gap-1 text-xs text-success font-medium">
                                 <CheckCircle className="h-3 w-3" /> Complété
                               </span>
                             )}
                             <Link to={`/courses/${e.course?._id}/learn`}
-                              className="text-xs bg-[#003580] hover:bg-[#002060] text-white font-bold px-3 py-1.5 rounded-lg transition-colors">
+                              className="text-xs bg-primary hover:bg-primary-dark text-white font-bold px-3 py-1.5 rounded-lg transition-colors">
                               {e.progress > 0 ? 'Continuer' : 'Commencer'}
                             </Link>
                           </div>

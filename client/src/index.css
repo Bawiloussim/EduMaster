@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+@theme {
+  /* Brand */
+  --color-primary: #003580;
+  --color-primary-dark: #00224f;
+  --color-brand: #0ea5e9;
+  --color-brand-dark: #0284c7;
+  --color-brand-light: #7dd3fc;
+
+  /* Semantic status — used consistently instead of ad-hoc Tailwind colors */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+
+  /* Role badges */
+  --color-role-superadmin: #dc2626;
+  --color-role-admin: #d97706;
+  --color-role-instructor: #7c3aed;
+  --color-role-student: #0ea5e9;
+}
+
 * {
   box-sizing: border-box;
 }

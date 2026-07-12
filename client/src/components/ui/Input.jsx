@@ -12,7 +12,7 @@ export default function Input({ label, error, className = '', type, ...props }) 
         <input
           {...props}
           type={isPassword && showPassword ? 'text' : type}
-          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${isPassword ? 'pr-10' : ''} ${error ? 'border-red-400 bg-red-50' : 'border-gray-300'} ${className}`}
+          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 transition-colors ${isPassword ? 'pr-10' : ''} ${error ? 'border-danger bg-danger-light' : 'border-gray-300'} ${className}`}
         />
         {isPassword && (
           <button
@@ -26,7 +26,7 @@ export default function Input({ label, error, className = '', type, ...props }) 
           </button>
         )}
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-danger-light0">{error}</p>}
     </div>
   );
 }
