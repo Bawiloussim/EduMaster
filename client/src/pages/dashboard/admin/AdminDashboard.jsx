@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload, Layers, Trophy, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../../services/api';
-import Spinner from '../../../components/ui/Spinner';
+import Skeleton, { SkeletonStatRow, SkeletonTable } from '../../../components/ui/Skeleton';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
@@ -83,7 +83,7 @@ function OverviewTab() {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
+  if (isLoading) return <SkeletonStatRow />;
 
   return (
     <>
@@ -117,7 +117,19 @@ function OverviewTab() {
 
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Gestion des utilisateurs</h2>
-          {usersLoading ? <Spinner /> : (
+          {usersLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-1/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {usersData?.data?.map((u) => (
                 <div key={u._id} className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3">
@@ -162,7 +174,7 @@ function InstructorsTab() {
     queryFn: () => api.get('/admin/instructors').then(r => r.data.data),
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (isLoading) return <SkeletonTable rows={6} columns={4} />;
 
   return (
     <>
@@ -233,7 +245,7 @@ function StudentsTab() {
     queryFn: () => api.get('/admin/students').then(r => r.data.data),
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (isLoading) return <SkeletonTable rows={6} columns={5} />;
 
   return (
     <>
@@ -307,7 +319,7 @@ function CoursesTab() {
     onSuccess: () => { toast.success('Cours supprimé'); qc.invalidateQueries(['admin-courses']); },
   });
 
-  if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (isLoading) return <SkeletonTable rows={6} columns={7} />;
 
   const subjects = [...new Set((data?.data || []).map((c) => c.subject).filter(Boolean))];
   const rows = subjectFilter ? (data?.data || []).filter((c) => c.subject === subjectFilter) : (data?.data || []);

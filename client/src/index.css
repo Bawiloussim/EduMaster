@@ -45,3 +45,26 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Skeleton loading blocks — a soft gray shape with a light sweep animating
+   across it, in place of a spinner, so the UI reads as "about to appear"
+   rather than "stalled". */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: #e5e9f0;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: skeleton-sweep 1.6s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}

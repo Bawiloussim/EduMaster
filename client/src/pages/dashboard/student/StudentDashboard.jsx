@@ -12,6 +12,7 @@ import {
 import api from '../../../services/api';
 import { useAuthStore } from '../../../store/useAuthStore';
 import Spinner from '../../../components/ui/Spinner';
+import Skeleton, { SkeletonStatRow, SkeletonCourseGrid } from '../../../components/ui/Skeleton';
 import ProgressBar from '../../../components/ui/ProgressBar';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
@@ -507,7 +508,14 @@ export default function StudentDashboard() {
         <DashboardTopbar title={TAB_TITLES[tab]} onMenuClick={() => setMobileNavOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {isLoading ? <div className="flex h-64 items-center justify-center"><Spinner size="lg" /></div> : (
+          {isLoading ? (
+            <>
+              <Skeleton className="h-8 w-64 mb-2" />
+              <Skeleton className="h-4 w-80 mb-6" />
+              <SkeletonStatRow />
+              <SkeletonCourseGrid count={3} />
+            </>
+          ) : (
             <>
               <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
                 <div>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { School, UserCheck, Plus, Ban, PlayCircle, Trash2, Check, X } from 'lucide-react';
 import api from '../../../services/api';
-import Spinner from '../../../components/ui/Spinner';
+import Skeleton, { SkeletonTable } from '../../../components/ui/Skeleton';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Badge from '../../../components/ui/Badge';
@@ -64,7 +64,7 @@ function SchoolsTab() {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><Spinner size="lg" /></div>;
+  if (isLoading) return <SkeletonTable rows={4} columns={6} />;
 
   return (
     <div>
@@ -147,7 +147,20 @@ function ApprovalsTab() {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><Spinner size="lg" /></div>;
+  if (isLoading) return (
+    <div className="space-y-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between gap-4">
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-56" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+          <Skeleton className="h-9 w-40 shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
 
   if (!data?.length) {
     return <p className="text-center text-sm text-gray-400 py-16">Aucune demande en attente</p>;

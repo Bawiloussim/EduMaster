@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BookOpen, Users, TrendingUp, PenSquare, Trash2, Eye, Plus, ClipboardList, CheckCircle, BarChart2 } from 'lucide-react';
 import api from '../../../services/api';
-import Spinner from '../../../components/ui/Spinner';
+import Skeleton, { SkeletonStatRow, SkeletonCourseGrid } from '../../../components/ui/Skeleton';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
@@ -266,7 +266,13 @@ export default function InstructorDashboard() {
     onSuccess: () => { toast.success('Cours supprimé'); qc.invalidateQueries(['dashboard-instructor']); },
   });
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
+  if (isLoading) return (
+    <PageWrapper>
+      <SkeletonStatRow />
+      <Skeleton className="h-5 w-32 mb-4" />
+      <SkeletonCourseGrid count={3} />
+    </PageWrapper>
+  );
 
   return (
     <PageWrapper>

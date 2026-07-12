@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Search, BookOpen, Star, Users } from 'lucide-react';
 import api from '../../services/api';
-import Spinner from '../../components/ui/Spinner';
+import { SkeletonCourseGrid } from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import PageWrapper from '../../components/layout/PageWrapper';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -136,7 +136,7 @@ export default function Catalog() {
       </div>
 
       {isLoading ? (
-        <Spinner size="lg" className="py-20" />
+        <SkeletonCourseGrid count={8} />
       ) : courses.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
