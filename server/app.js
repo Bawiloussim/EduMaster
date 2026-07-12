@@ -13,8 +13,18 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginEmbedderPolicy: false,
 }));
+const configuredClientUrl = process.env.CLIENT_URL?.replace(/\/+$/, '');
+const isAllowedOrigin = (origin) =>
+  !origin ||
+  origin === configuredClientUrl ||
+  origin === 'http://localhost:5173' ||
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -23,7 +33,9 @@ app.use(cookieParser());
 
 // Serve uploaded files with CORS headers so the frontend can embed them
 app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  if (isAllowedOrigin(req.headers.origin)) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || configuredClientUrl || 'http://localhost:5173');
+  }
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Content-Disposition', 'inline');
   next();
