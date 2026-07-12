@@ -5,6 +5,7 @@ import { GraduationCap, ArrowLeft } from 'lucide-react';
 import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Footer from '../../components/layout/Footer';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -20,7 +21,8 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <button onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors mb-6">
@@ -41,6 +43,8 @@ export default function ForgotPassword() {
           <Link to="/login" className="text-brand-dark hover:underline">← Retour à la connexion</Link>
         </p>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

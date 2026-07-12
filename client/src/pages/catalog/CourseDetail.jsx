@@ -68,7 +68,7 @@ export default function CourseDetail() {
               {data.estimatedDuration > 0 && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{data.estimatedDuration}h estimées</span>}
               <span className="bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold">{data.classe}</span>
               {data.serie && (
-                <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-brand/100' : 'bg-purple-500'}`}>Série {data.serie}</span>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${data.serie === 'D' ? 'bg-brand' : 'bg-purple-500'}`}>Série {data.serie}</span>
               )}
             </div>
           </div>

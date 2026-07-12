@@ -159,13 +159,13 @@ export default function Landing() {
           <Feature icon={Award} color="bg-brand"
             title="Attestations gratuites"
             desc="Obtenez une attestation de réussite à la fin de chaque cours, sans frais." />
-          <Feature icon={CheckCircle} color="bg-success-light0"
+          <Feature icon={CheckCircle} color="bg-success"
             title="Bulletins automatiques"
             desc="Interrogations, devoirs et compositions générés automatiquement chaque trimestre." />
           <Feature icon={Users} color="bg-purple-600"
             title="Suivi par le professeur"
             desc="Le formateur note, corrige et suit la progression de chaque élève en temps réel." />
-          <Feature icon={Globe} color="bg-warning-light0"
+          <Feature icon={Globe} color="bg-warning"
             title="Accessible partout"
             desc="Aucune limite géographique. Apprenez depuis n'importe quel pays, sur mobile ou PC." />
           <Feature icon={GraduationCap} color="bg-rose-500"

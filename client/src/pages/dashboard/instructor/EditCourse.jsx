@@ -58,7 +58,7 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-brand-light0" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-danger" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-success-light0" />].filter(Boolean);
+  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-brand-light0" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-danger" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-success" />].filter(Boolean);
 
   return (
     <div className={`rounded-xl border transition-colors ${open ? 'border-brand/25 bg-brand/10/20' : 'border-gray-100 bg-white hover:bg-gray-50'}`}>
@@ -77,7 +77,7 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
           <div className="flex border-b border-gray-100">
             {[{ id: 'content', label: 'Contenu' }, { id: 'exercises', label: 'Exercices' }].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === t.id ? 'border-brand/100 text-brand-dark' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${tab === t.id ? 'border-brand text-brand-dark' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 {t.label}
               </button>
             ))}
@@ -94,21 +94,21 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><FileText className="h-3.5 w-3.5 text-danger" /> PDF / Documents</label>
                 {form.pdfUrls.map((pdf, i) => (
                   <div key={pdf.url} className="flex items-center gap-2 bg-danger-light border border-danger-light rounded-lg px-3 py-2">
-                    <FileText className="h-4 w-4 text-danger-light0 shrink-0" />
+                    <FileText className="h-4 w-4 text-danger shrink-0" />
                     <span className="text-xs text-danger flex-1 truncate">{pdf.name || 'PDF enregistré'}</span>
                     <a href={pdfHref(pdf.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-dark hover:underline">Voir</a>
-                    <button onClick={() => removeExistingPdf(i)} className="text-gray-400 hover:text-danger-light0">✕</button>
+                    <button onClick={() => removeExistingPdf(i)} className="text-gray-400 hover:text-danger">✕</button>
                   </div>
                 ))}
                 {pdfFiles.map((f, i) => (
                   <div key={`${f.name}-${i}`} className="flex items-center gap-2 bg-warning-light border border-warning-light rounded-lg px-3 py-2">
-                    <FileText className="h-4 w-4 text-warning-light0" />
+                    <FileText className="h-4 w-4 text-warning" />
                     <span className="text-xs text-warning flex-1 truncate">{f.name}</span>
                     <span className="text-xs text-orange-400">{(f.size / 1024 / 1024).toFixed(1)} Mo</span>
-                    <button onClick={() => removePendingPdf(i)} className="text-gray-400 hover:text-danger-light0">✕</button>
+                    <button onClick={() => removePendingPdf(i)} className="text-gray-400 hover:text-danger">✕</button>
                   </div>
                 ))}
-                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-danger/40 hover:text-danger-light0 cursor-pointer transition-colors">
+                <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-danger/40 hover:text-danger cursor-pointer transition-colors">
                   <FileText className="h-4 w-4" />
                   Importer un ou plusieurs fichiers PDF
                   <input type="file" accept=".pdf,application/pdf" multiple className="hidden"
@@ -121,8 +121,8 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
               </div>
 
               <div className="space-y-1">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><AlignLeft className="h-3.5 w-3.5 text-success-light0" /> Cours écrit</label>
-                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><AlignLeft className="h-3.5 w-3.5 text-success" /> Cours écrit</label>
+                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
               </div>
 
               <div className="flex items-center justify-between">
@@ -219,14 +219,14 @@ function ExerciseFormFields({ value, onChange }) {
     <>
       <div className="flex gap-2">
         <select value={value.type} onChange={e => set('type', e.target.value)}
-          className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 bg-white">
+          className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
           <option value="open">Question ouverte</option>
           <option value="qcm">QCM</option>
         </select>
       </div>
       <textarea rows={3} value={value.statement} onChange={e => set('statement', e.target.value)}
         placeholder="Énoncé de l'exercice…"
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
       {value.type === 'qcm' && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">Propositions (cochez la bonne réponse) :</p>
@@ -235,7 +235,7 @@ function ExerciseFormFields({ value, onChange }) {
               <input type="radio" name="correct" checked={value.correctOption === i} onChange={() => set('correctOption', i)} className="accent-success" />
               <input value={opt} onChange={e => { const o = [...value.options]; o[i] = e.target.value; set('options', o); }}
                 placeholder={`Option ${i + 1}…`}
-                className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100" />
+                className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
             </div>
           ))}
         </div>
@@ -345,11 +345,11 @@ function ExerciseAnswers({ exerciseId }) {
             <input type="number" min={0} max={10} step="0.5" placeholder="Note"
               defaultValue={a.grade ?? ''}
               onChange={e => setGrades(g => ({ ...g, [a._id]: e.target.value }))}
-              className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100" />
+              className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand" />
             <span className="text-xs text-gray-400">/10</span>
             <input placeholder="Commentaire…" defaultValue={a.feedback || ''}
               onChange={e => setFeedbacks(f => ({ ...f, [a._id]: e.target.value }))}
-              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100" />
+              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand" />
             <Button size="sm" loading={gradeMutation.isPending}
               onClick={() => gradeMutation.mutate({
                 answerId: a._id,
@@ -564,7 +564,7 @@ function GradesModal({ evaluationId, onClose, onSaved }) {
                   defaultValue={row.grade?.absent ? 'ABS' : (row.grade?.score ?? '')}
                   onChange={e => setScore(row.student._id, e.target.value)}
                   placeholder="—"
-                  className="w-16 text-center border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100"
+                  className="w-16 text-center border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
             ))}
@@ -610,7 +610,7 @@ function BulletinTab({ courseId }) {
 
       {enrollments?.length > 0 && (
         <select value={studentId} onChange={e => setStudentId(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100">
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
           <option value="">-- Sélectionner un élève --</option>
           {enrollments.map(e => <option key={e.student?._id} value={e.student?._id}>{e.student?.name}</option>)}
         </select>
@@ -634,7 +634,7 @@ function BulletinTab({ courseId }) {
                 {ev.grade?.absent
                   ? <span className="text-warning font-medium">ABS</span>
                   : ev.grade?.score !== null && ev.grade?.score !== undefined
-                    ? <span className={`font-bold ${ev.score20 >= 10 ? 'text-success' : 'text-danger-light0'}`}>{ev.grade.score}/{ev._maxScore || 20}</span>
+                    ? <span className={`font-bold ${ev.score20 >= 10 ? 'text-success' : 'text-danger'}`}>{ev.grade.score}/{ev._maxScore || 20}</span>
                     : <span className="text-gray-300">—</span>}
               </div>
             ))}
@@ -809,7 +809,7 @@ export default function EditCourse() {
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Matière</label>
               <select value={form.subject} onChange={e => set('subject', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100 mb-1">
+                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand mb-1">
                 <option value="">-- Choisir --</option>
                 {subjects.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -817,7 +817,7 @@ export default function EditCourse() {
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Description</label>
-              <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
+              <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
             </div>
           </div>
         </div>
@@ -828,7 +828,7 @@ export default function EditCourse() {
           <div className="flex border-b border-gray-200 mb-4">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === t.id ? 'border-brand/100 text-brand-dark' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === t.id ? 'border-brand text-brand-dark' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 <t.icon className="h-4 w-4" />
                 {t.label}
               </button>
@@ -882,7 +882,7 @@ function AddLessonInline({ courseId, modules, onSuccess }) {
       {modules.length > 0 && (
         <div>
           <label className="text-sm font-medium text-gray-700 block mb-1">Module (optionnel)</label>
-          <select value={moduleId} onChange={e => setModuleId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100">
+          <select value={moduleId} onChange={e => setModuleId(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
             <option value="">Sans module</option>
             {modules.map(m => <option key={m._id} value={m._id}>{m.title}</option>)}
           </select>

@@ -7,7 +7,7 @@ import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import { CLASSES, SERIES, requiresSerie } from '../../../../constants/academic';
 
-const selectClass = 'text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand/100 bg-white';
+const selectClass = 'text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand bg-white';
 
 const AUDIENCE_LABELS = { all: 'Tous', students: 'Élèves', instructors: 'Formateurs', classe: 'Classe précise' };
 
@@ -56,7 +56,7 @@ export default function AnnouncementsTab() {
             onChange={(e) => setBody(e.target.value)}
             required
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/100"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
         <div className="flex flex-col gap-1">

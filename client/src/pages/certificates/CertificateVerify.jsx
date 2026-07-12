@@ -29,7 +29,7 @@ export default function CertificateVerify() {
 
         {cert && (
           <div className="bg-success-light border-2 border-success/30 rounded-2xl p-10 text-center">
-            <CheckCircle className="h-16 w-16 text-success-light0 mx-auto mb-4" />
+            <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-success mb-1">Certificat authentique</h1>
             <p className="text-success mb-6">Ce certificat a été délivré par EduMaster</p>
 

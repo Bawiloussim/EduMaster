@@ -7,6 +7,7 @@ import { GraduationCap, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Footer from '../../components/layout/Footer';
 
 const schema = z.object({
   name: z.string().min(2, 'Minimum 2 caractères'),
@@ -37,7 +38,8 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <button onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors mb-6">
@@ -61,7 +63,7 @@ export default function Register() {
             <label className="text-sm font-medium text-gray-700 block mb-2">Je suis un…</label>
             <div className="grid grid-cols-2 gap-3">
               {[{ value: 'student', label: 'Apprenant', emoji: '📚' }, { value: 'instructor', label: 'Formateur', emoji: '🎓' }].map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-brand/10 has-[:checked]:border-brand/100 has-[:checked]:bg-brand/10 transition-colors">
+                <label key={opt.value} className="flex items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-brand/10 has-[:checked]:border-brand has-[:checked]:bg-brand/10 transition-colors">
                   <input type="radio" value={opt.value} {...register('role')} className="accent-brand" />
                   <span className="text-sm">{opt.emoji} {opt.label}</span>
                 </label>
@@ -79,6 +81,8 @@ export default function Register() {
           <Link to="/login" className="text-brand-dark font-medium hover:underline">Se connecter</Link>
         </p>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

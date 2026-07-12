@@ -15,6 +15,7 @@ import Spinner from '../../../components/ui/Spinner';
 import ProgressBar from '../../../components/ui/ProgressBar';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
+import Footer from '../../../components/layout/Footer';
 
 const TAB_TITLES = {
   courses: 'Mes cours',
@@ -218,7 +219,7 @@ function BulletinTab() {
                       {[i1, i2, dv, co].map((v, vi) => (
                         <td key={vi} className="px-3 py-2 text-center">
                           {v === 'Abs' ? (
-                            <span className="text-xs text-warning-light0 font-bold">Abs</span>
+                            <span className="text-xs text-warning font-bold">Abs</span>
                           ) : v === null ? (
                             <span className="text-gray-300">—</span>
                           ) : (
@@ -416,7 +417,7 @@ function EvaluationsTab() {
                       </div>
                       <div className="shrink-0 text-right">
                         {ev.grade?.absent ? (
-                          <span className="text-xs font-bold text-warning-light0">Absent</span>
+                          <span className="text-xs font-bold text-warning">Absent</span>
                         ) : score20 !== null ? (
                           <span className={`text-sm font-bold ${score20 >= 10 ? 'text-gray-800' : 'text-danger'}`}>
                             {score20.toFixed(2)}/20
@@ -499,7 +500,7 @@ export default function StudentDashboard() {
   });
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-100 via-gray-50 to-brand/5">
       <DashboardSidebar subtitle="Espace Élève" sections={SIDEBAR_SECTIONS} activeId={tab} onSelect={setTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
@@ -580,6 +581,7 @@ export default function StudentDashboard() {
             </>
           )}
         </main>
+        <Footer />
       </div>
     </div>
   );

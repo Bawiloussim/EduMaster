@@ -8,6 +8,7 @@ import { GraduationCap, BookOpen, Award } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Footer from '../../components/layout/Footer';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -94,7 +95,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid md:grid-cols-2">
 
         {/* Left panel */}
@@ -163,6 +165,8 @@ export default function Login() {
           </div>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

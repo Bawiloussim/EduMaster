@@ -107,7 +107,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
             <div className="flex flex-wrap gap-2 mb-2">
               {subjects.map(s => (
                 <button key={s} type="button" onClick={() => set('subject', s)}
-                  className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${form.subject === s ? 'border-brand/100 bg-brand/10 text-brand-dark' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                  className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${form.subject === s ? 'border-brand bg-brand/10 text-brand-dark' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                   {s}
                 </button>
               ))}
@@ -119,7 +119,7 @@ function CreateCourseModal({ open, onClose, autoOpen }) {
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">Description (optionnel)</label>
             <textarea rows={2} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Programme, objectifs, prérequis…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
           </div>
 
           <Button className="w-full" disabled={!form.subject || !form.classe || (needsSerie && !form.serie)}
@@ -220,7 +220,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
             loading={publishPending} onClick={onPublish}>
             {course.status === 'published' ? 'Dépublier' : 'Publier'}
           </Button>
-          <Button size="sm" variant="ghost" className="text-danger-light0 hover:bg-danger-light" onClick={onDelete}>
+          <Button size="sm" variant="ghost" className="text-danger hover:bg-danger-light" onClick={onDelete}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>

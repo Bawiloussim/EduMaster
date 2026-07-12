@@ -41,7 +41,7 @@ function QuestionView({ question, index, answer, onChange }) {
     return (
       <div className="space-y-3">
         {options.map((opt, i) => (
-          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${answer === i ? 'border-brand/100 bg-brand/10' : 'border-gray-200 hover:border-gray-300'}`}>
+          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${answer === i ? 'border-brand bg-brand/10' : 'border-gray-200 hover:border-gray-300'}`}>
             <input type="radio" name={`q-${question._id}`} value={i} checked={answer === i} onChange={() => onChange(i)} className="accent-brand" />
             <span className="text-gray-800">{opt}</span>
           </label>
@@ -55,7 +55,7 @@ function QuestionView({ question, index, answer, onChange }) {
     return (
       <div className="space-y-3">
         {question.options.map((opt, i) => (
-          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${selected.includes(i) ? 'border-brand/100 bg-brand/10' : 'border-gray-200 hover:border-gray-300'}`}>
+          <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${selected.includes(i) ? 'border-brand bg-brand/10' : 'border-gray-200 hover:border-gray-300'}`}>
             <input type="checkbox" checked={selected.includes(i)}
               onChange={() => onChange(selected.includes(i) ? selected.filter(x => x !== i) : [...selected, i])}
               className="accent-brand" />
@@ -72,7 +72,7 @@ function QuestionView({ question, index, answer, onChange }) {
       onChange={(e) => onChange(e.target.value)}
       rows={8}
       placeholder="Rédigez votre réponse ici…"
-      className="w-full border-2 border-gray-200 rounded-xl p-4 text-gray-800 focus:outline-none focus:border-brand/100 resize-none"
+      className="w-full border-2 border-gray-200 rounded-xl p-4 text-gray-800 focus:outline-none focus:border-brand resize-none"
     />
   );
 }

@@ -55,12 +55,12 @@ function ResultGrading({ result, onDone }) {
               <input type="number" min={0} max={q.points} step="0.5"
                 value={scores[q._id] ?? ''}
                 onChange={(e) => setScores((s) => ({ ...s, [q._id]: e.target.value }))}
-                className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100" />
+                className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
               <span className="text-xs text-gray-400">/ {q.points}</span>
             </div>
             <textarea rows={2} placeholder="Commentaire (optionnel)…" value={comments[q._id] || ''}
               onChange={(e) => setComments((c) => ({ ...c, [q._id]: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
           </div>
         );
       })}

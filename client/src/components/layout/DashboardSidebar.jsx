@@ -73,7 +73,7 @@ export default function DashboardSidebar({ subtitle, sections, activeId, onSelec
         </Link>
         <button
           onClick={async () => { await logout(); navigate('/'); }}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-danger/40 hover:bg-danger-light0/10 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-danger/40 hover:bg-danger/10 transition-colors"
         >
           <LogOut className="h-4 w-4 shrink-0" /> Déconnexion
         </button>

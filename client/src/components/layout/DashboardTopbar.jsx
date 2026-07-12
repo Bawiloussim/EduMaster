@@ -50,7 +50,7 @@ export default function DashboardTopbar({ title, onMenuClick }) {
         <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors">
           <Bell className="h-5 w-5" />
           {unread > 0 && (
-            <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-danger-light0 text-white text-[9px] flex items-center justify-center font-bold">
+            <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-danger text-white text-[9px] flex items-center justify-center font-bold">
               {unread > 9 ? '9+' : unread}
             </span>
           )}

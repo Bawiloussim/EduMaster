@@ -9,6 +9,7 @@ import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
+import Footer from '../../../components/layout/Footer';
 import { useAuthStore } from '../../../store/useAuthStore';
 import PalmaresTab from './tabs/PalmaresTab';
 import ClassesTab from './tabs/ClassesTab';
@@ -134,7 +135,7 @@ function OverviewTab() {
                       value={u.role}
                       disabled={!isSuperAdmin && u.role === 'admin'}
                       onChange={(e) => roleMutation.mutate({ id: u._id, role: e.target.value })}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand/100 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="student">Étudiant</option>
                       <option value="instructor">Formateur</option>
@@ -328,7 +329,7 @@ function CoursesTab() {
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand/100 bg-white"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand bg-white"
           >
             <option value="">Toutes les matières</option>
             {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -366,7 +367,7 @@ function CoursesTab() {
                       loading={publishMutation.isPending} onClick={() => publishMutation.mutate(c._id)}>
                       {c.status === 'published' ? 'Dépublier' : 'Publier'}
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-danger-light0 hover:bg-danger-light"
+                    <Button size="sm" variant="ghost" className="text-danger hover:bg-danger-light"
                       onClick={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(c._id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -389,7 +390,7 @@ export default function AdminDashboard() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-100 via-gray-50 to-brand/5">
       <DashboardSidebar subtitle="Administration" sections={SIDEBAR_SECTIONS} activeId={activeTab} onSelect={setActiveTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
@@ -404,6 +405,7 @@ export default function AdminDashboard() {
           {activeTab === 'palmares' && <PalmaresTab />}
           {activeTab === 'announcements' && <AnnouncementsTab />}
         </main>
+        <Footer />
       </div>
     </div>
   );

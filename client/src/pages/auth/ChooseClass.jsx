@@ -5,6 +5,7 @@ import { GraduationCap } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import { CLASSES, SERIES, SERIE_LABELS, requiresSerie } from '../../utils/schoolData';
+import Footer from '../../components/layout/Footer';
 
 export default function ChooseClass() {
   const navigate = useNavigate();
@@ -33,7 +34,8 @@ export default function ChooseClass() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center mb-3">
@@ -89,6 +91,8 @@ export default function ChooseClass() {
           </Button>
         </form>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

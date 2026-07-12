@@ -115,8 +115,8 @@ function ExercisesSection({ lessonId }) {
                           disabled={!!sub}
                           className="accent-brand" />
                         <span className="text-sm text-gray-700">{opt}</span>
-                        {isCorrect && <CheckCircle className="h-4 w-4 text-success-light0 ml-auto" />}
-                        {isWrong && <span className="text-danger-light0 ml-auto text-xs">✗</span>}
+                        {isCorrect && <CheckCircle className="h-4 w-4 text-success ml-auto" />}
+                        {isWrong && <span className="text-danger ml-auto text-xs">✗</span>}
                       </label>
                     );
                   })}
@@ -129,7 +129,7 @@ function ExercisesSection({ lessonId }) {
                     </Button>
                   )}
                   {sub?.isCorrect === true && <p className="text-success text-xs mt-1">✓ Bonne réponse</p>}
-                  {sub?.isCorrect === false && <p className="text-danger-light0 text-xs mt-1">✗ Mauvaise réponse</p>}
+                  {sub?.isCorrect === false && <p className="text-danger text-xs mt-1">✗ Mauvaise réponse</p>}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -138,7 +138,7 @@ function ExercisesSection({ lessonId }) {
                     onChange={e => !sub && setAnswers(a => ({ ...a, [ex._id]: e.target.value }))}
                     disabled={!!sub}
                     placeholder="Rédigez votre réponse ici…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/100 resize-none disabled:bg-gray-50 disabled:text-gray-500" />
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none disabled:bg-gray-50 disabled:text-gray-500" />
                   {!sub && (
                     <label className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-dark cursor-pointer w-fit">
                       <FileText className="h-3.5 w-3.5" />
@@ -156,7 +156,7 @@ function ExercisesSection({ lessonId }) {
                     </Button>
                   ) : sub.grade !== null && sub.grade !== undefined ? (
                     <div className="flex items-center gap-2 text-sm">
-                      <span className={`font-bold ${sub.grade >= 5 ? 'text-success' : 'text-danger-light0'}`}>Note : {sub.grade}/10</span>
+                      <span className={`font-bold ${sub.grade >= 5 ? 'text-success' : 'text-danger'}`}>Note : {sub.grade}/10</span>
                       {sub.feedback && <span className="text-gray-500">— {sub.feedback}</span>}
                     </div>
                   ) : (
@@ -351,9 +351,9 @@ export default function CoursePlayer() {
             const hasPdf = lesson.pdfUrls?.length > 0;
             return (
               <button key={lesson._id} onClick={() => setParams({ lesson: lesson._id })}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${active ? 'bg-brand/10 border-r-2 border-brand/100' : 'hover:bg-gray-50'}`}>
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${active ? 'bg-brand/10 border-r-2 border-brand' : 'hover:bg-gray-50'}`}>
                 {done
-                  ? <CheckCircle className="h-4 w-4 text-success-light0 shrink-0" />
+                  ? <CheckCircle className="h-4 w-4 text-success shrink-0" />
                   : <Circle className={`h-4 w-4 shrink-0 ${active ? 'text-brand' : 'text-gray-200'}`} />}
                 <div className="flex-1 min-w-0">
                   <div className={`text-sm truncate ${active ? 'font-semibold text-brand-dark' : 'text-gray-700'}`}>

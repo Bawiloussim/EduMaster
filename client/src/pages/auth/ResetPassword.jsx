@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Footer from '../../components/layout/Footer';
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -21,7 +22,8 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand/10 to-primary/10 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Nouveau mot de passe</h1>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -29,6 +31,8 @@ export default function ResetPassword() {
           <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>Réinitialiser</Button>
         </form>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }
