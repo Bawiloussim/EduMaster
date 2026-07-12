@@ -10,13 +10,13 @@ export default defineConfig({
       // Allow YouTube, Vimeo, local uploads and Cloudinary-hosted files (covers, PDFs) to be embedded
       'Content-Security-Policy':
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-        "style-src 'self' 'unsafe-inline'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/client; " +
+        "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; " +
         "img-src 'self' data: blob: https:; " +
         "media-src 'self' blob: https:; " +
         "object-src 'self' https://res.cloudinary.com; " +
-        "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://youtube.com http://localhost:5000 https://res.cloudinary.com; " +
-        "connect-src 'self' http://localhost:5000 ws://localhost:5173 https://res.cloudinary.com;",
+        "frame-src 'self' https://www.youtube.com https://player.vimeo.com https://youtube.com http://localhost:5000 https://res.cloudinary.com https://accounts.google.com; " +
+        "connect-src 'self' http://localhost:5000 ws://localhost:5173 https://res.cloudinary.com https://accounts.google.com;",
     },
     proxy: {
       '/api': { target: 'http://localhost:5000', changeOrigin: true },
