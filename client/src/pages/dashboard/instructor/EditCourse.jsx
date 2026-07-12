@@ -112,7 +112,11 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
                   <FileText className="h-4 w-4" />
                   Importer un ou plusieurs fichiers PDF
                   <input type="file" accept=".pdf,application/pdf" multiple className="hidden"
-                    onChange={e => { if (e.target.files.length) setPdfFiles(fs => [...fs, ...Array.from(e.target.files)]); e.target.value = ''; }} />
+                    onChange={e => {
+                      const files = Array.from(e.target.files);
+                      if (files.length) setPdfFiles(fs => [...fs, ...files]);
+                      e.target.value = '';
+                    }} />
                 </label>
               </div>
 
@@ -326,9 +330,17 @@ function ExerciseAnswers({ exerciseId }) {
             <span className="text-xs font-medium text-gray-700">{a.student?.name}</span>
             {a.grade != null && <span className="text-xs text-green-600 font-medium">Noté : {a.grade}/10</span>}
           </div>
-          <p className="text-sm text-gray-800 bg-gray-50 rounded-lg p-2 whitespace-pre-wrap">
-            {a.answer || <span className="text-gray-400 italic">Pas de réponse</span>}
-          </p>
+          {(a.answer || !a.answerFileUrl) && (
+            <p className="text-sm text-gray-800 bg-gray-50 rounded-lg p-2 whitespace-pre-wrap">
+              {a.answer || <span className="text-gray-400 italic">Pas de réponse</span>}
+            </p>
+          )}
+          {a.answerFileUrl && (
+            <a href={pdfHref(a.answerFileUrl)} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline w-fit">
+              <FileText className="h-3.5 w-3.5" /> {a.answerFileName || 'Voir le fichier envoyé'}
+            </a>
+          )}
           <div className="flex items-center gap-2">
             <input type="number" min={0} max={10} step="0.5" placeholder="Note"
               defaultValue={a.grade ?? ''}
@@ -541,6 +553,13 @@ function GradesModal({ evaluationId, onClose, onSaved }) {
                   {row.student.name?.[0]?.toUpperCase()}
                 </div>
                 <span className="text-sm flex-1 truncate">{row.student.name}</span>
+                {row.grade?.submissionUrl && (
+                  <a href={pdfHref(row.grade.submissionUrl)} target="_blank" rel="noopener noreferrer"
+                    title={row.grade.submissionName || 'Voir la copie'}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline shrink-0">
+                    <FileText className="h-3.5 w-3.5" /> Copie
+                  </a>
+                )}
                 <input
                   defaultValue={row.grade?.absent ? 'ABS' : (row.grade?.score ?? '')}
                   onChange={e => setScore(row.student._id, e.target.value)}

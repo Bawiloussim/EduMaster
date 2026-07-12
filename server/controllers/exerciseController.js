@@ -5,6 +5,7 @@ const Course = require('../models/Course');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const emailService = require('../services/emailService');
+const { getFileUrl } = require('../middlewares/upload');
 
 exports.createForLesson = async (req, res) => {
   const lesson = await Lesson.findById(req.params.lessonId);
@@ -100,14 +101,22 @@ exports.submitAnswer = async (req, res) => {
   if (!exercise) return res.status(404).json({ success: false, message: 'Exercice introuvable' });
 
   const { answer } = req.body;
+  const hasFile = !!req.file;
+  if (!answer && !hasFile) {
+    return res.status(422).json({ success: false, message: 'Réponse ou fichier requis' });
+  }
+
   let isCorrect = null;
   if (exercise.type === 'qcm') {
     isCorrect = parseInt(answer) === exercise.correctOption;
   }
 
+  const fileFields = hasFile ? { answerFileUrl: getFileUrl(req.file), answerFileName: req.file.originalname } : {};
+
   const existing = await ExerciseAnswer.findOne({ exercise: exercise._id, student: req.user._id });
   if (existing) {
-    existing.answer = answer;
+    if (answer !== undefined) existing.answer = answer;
+    if (hasFile) { existing.answerFileUrl = fileFields.answerFileUrl; existing.answerFileName = fileFields.answerFileName; }
     existing.isCorrect = isCorrect;
     existing.submittedAt = new Date();
     await existing.save();
@@ -118,7 +127,8 @@ exports.submitAnswer = async (req, res) => {
   const a = await ExerciseAnswer.create({
     exercise: exercise._id,
     student: req.user._id,
-    answer,
+    answer: answer || '',
+    ...fileFields,
     isCorrect,
     submittedAt: new Date(),
   });

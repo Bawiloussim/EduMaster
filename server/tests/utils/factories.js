@@ -4,6 +4,8 @@ const Course = require('../../models/Course');
 const Enrollment = require('../../models/Enrollment');
 const Evaluation = require('../../models/Evaluation');
 const Grade = require('../../models/Grade');
+const Lesson = require('../../models/Lesson');
+const Exercise = require('../../models/Exercise');
 
 let counter = 0;
 const uniq = () => `${Date.now()}-${counter++}`;
@@ -70,4 +72,23 @@ async function createGrade(overrides = {}) {
   });
 }
 
-module.exports = { createUser, getAuthToken, createCourse, createEnrollment, createEvaluation, createGrade };
+async function createLesson(overrides = {}) {
+  return Lesson.create({
+    course: overrides.course,
+    title: overrides.title || `Leçon ${uniq()}`,
+    order: overrides.order || 0,
+  });
+}
+
+async function createExercise(overrides = {}) {
+  return Exercise.create({
+    lesson: overrides.lesson,
+    course: overrides.course,
+    statement: overrides.statement || 'Énoncé test',
+    type: overrides.type || 'open',
+    options: overrides.options || [],
+    correctOption: overrides.correctOption ?? null,
+  });
+}
+
+module.exports = { createUser, getAuthToken, createCourse, createEnrollment, createEvaluation, createGrade, createLesson, createExercise };

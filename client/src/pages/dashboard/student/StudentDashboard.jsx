@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   BookOpen, Award, TrendingUp, Clock, Download, FileText,
-  CheckCircle, BarChart2, GraduationCap, ClipboardList,
+  CheckCircle, BarChart2, GraduationCap, ClipboardList, Upload,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -17,12 +17,20 @@ import PageWrapper from '../../../components/layout/PageWrapper';
 
 /* ── helpers ─────────────────────────────────────────────────────── */
 const APPRECIATION_COLOR = {
+  Honorable: 'text-purple-600 bg-purple-50',
   Excellent: 'text-emerald-600 bg-emerald-50',
   'Très bien': 'text-green-600 bg-green-50',
   Bien: 'text-blue-600 bg-blue-50',
   'Assez bien': 'text-sky-600 bg-sky-50',
   Passable: 'text-orange-600 bg-orange-50',
   Insuffisant: 'text-red-600 bg-red-50',
+  'Très insuffisant': 'text-red-700 bg-red-100',
+};
+
+const getPdfUrl = (url) => {
+  if (!url) return null;
+  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  return url.startsWith('/uploads/') ? `${API_BASE}${url}` : url;
 };
 
 const TYPE_LABELS = { interrogation: 'Interrogation', devoir: 'Devoir', composition: 'Composition' };
@@ -281,10 +289,55 @@ function BulletinTab() {
   );
 }
 
+/* ── Envoi de copie pour une évaluation non signée ───────────────────── */
+function SubmissionUpload({ evaluationId, submissionUrl, submissionName, onUploaded }) {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef();
+
+  const upload = async () => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('submissionFile', file);
+      await api.post(`/evaluations/${evaluationId}/submission`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Copie envoyée');
+      setFile(null);
+      onUploaded();
+    } catch (e) { toast.error(e.response?.data?.message || 'Erreur'); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-1 flex-wrap">
+      {submissionUrl && (
+        <a href={getPdfUrl(submissionUrl)} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+          <FileText className="h-3 w-3" /> {submissionName || 'Ma copie'}
+        </a>
+      )}
+      <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 cursor-pointer">
+        <Upload className="h-3 w-3" />
+        {file ? file.name.slice(0, 18) + '…' : submissionUrl ? 'Remplacer' : 'Envoyer ma copie'}
+        <input ref={inputRef} type="file" accept="image/*,.pdf,application/pdf" className="hidden"
+          onChange={e => setFile(e.target.files[0] || null)} />
+      </label>
+      {file && (
+        <button onClick={upload} disabled={uploading}
+          className="text-xs font-medium text-white bg-[#003580] hover:bg-[#002a66] disabled:opacity-50 rounded-lg px-2 py-1">
+          {uploading ? '…' : 'Envoyer'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ── Évaluations tab (interrogations / devoirs / compositions) ──────── */
 function EvaluationsTab() {
   const [tri, setTri] = useState(1);
   const { user } = useAuthStore();
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-evaluations', tri],
@@ -343,6 +396,14 @@ function EvaluationsTab() {
                           <p className="text-xs text-gray-400">
                             {new Date(ev.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </p>
+                        )}
+                        {!ev.signed && (
+                          <SubmissionUpload
+                            evaluationId={ev._id}
+                            submissionUrl={ev.submissionUrl}
+                            submissionName={ev.submissionName}
+                            onUploaded={() => qc.invalidateQueries(['my-evaluations', tri])}
+                          />
                         )}
                       </div>
                       <div className="shrink-0 text-right">

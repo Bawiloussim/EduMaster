@@ -21,6 +21,7 @@ router.patch('/:id/signature', protect, requireRole('instructor', 'admin'), ec.s
 
 // Student: all my evaluations (interrogations/devoirs/compositions) for my classe
 router.get('/me', protect, requireRole('student'), ec.myEvaluations);
+router.post('/:id/submission', protect, requireRole('student'), optionalUpload('submissionFile'), ec.uploadSubmission);
 
 // Bulletin
 router.get('/bulletin/:trimestre/me', protect, requireRole('student'), ec.myBulletin);

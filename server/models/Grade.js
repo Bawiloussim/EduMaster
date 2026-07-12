@@ -9,6 +9,9 @@ const gradeSchema = new mongoose.Schema({
   absent: { type: Boolean, default: false },
   comment: { type: String, default: '' },
   gradedAt: { type: Date, default: Date.now },
+  submissionUrl: { type: String, default: '' },
+  submissionName: { type: String, default: '' },
+  submittedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 gradeSchema.index({ evaluation: 1, student: 1 }, { unique: true });

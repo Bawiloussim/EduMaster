@@ -33,6 +33,7 @@ function getPdfUrl(url) {
 function ExercisesSection({ lessonId }) {
   const qc = useQueryClient();
   const [answers, setAnswers] = useState({});
+  const [files, setFiles] = useState({});
   const [submitted, setSubmitted] = useState({});
 
   const { data: exercises, isLoading } = useQuery({
@@ -57,10 +58,19 @@ function ExercisesSection({ lessonId }) {
   }, [myAnswers]);
 
   const submitMutation = useMutation({
-    mutationFn: ({ exerciseId, answer }) => api.post(`/exercises/${exerciseId}/answer`, { answer }),
+    mutationFn: ({ exerciseId, answer, file }) => {
+      if (file) {
+        const fd = new FormData();
+        fd.append('answer', answer || '');
+        fd.append('answerFile', file);
+        return api.post(`/exercises/${exerciseId}/answer`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      }
+      return api.post(`/exercises/${exerciseId}/answer`, { answer });
+    },
     onSuccess: (res, vars) => {
       const data = res.data;
       setSubmitted(s => ({ ...s, [vars.exerciseId]: data.data }));
+      setFiles(f => ({ ...f, [vars.exerciseId]: null }));
       if (data.isCorrect === true) toast.success('Bonne réponse !');
       else if (data.isCorrect === false) toast.error('Mauvaise réponse, essayez encore.');
       else toast.success('Réponse envoyée au professeur.');
@@ -129,11 +139,19 @@ function ExercisesSection({ lessonId }) {
                     disabled={!!sub}
                     placeholder="Rédigez votre réponse ici…"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-50 disabled:text-gray-500" />
+                  {!sub && (
+                    <label className="flex items-center gap-2 text-xs text-gray-500 hover:text-blue-600 cursor-pointer w-fit">
+                      <FileText className="h-3.5 w-3.5" />
+                      {files[ex._id] ? files[ex._id].name : 'Ou joindre une photo / un PDF de votre copie'}
+                      <input type="file" accept="image/*,.pdf,application/pdf" className="hidden"
+                        onChange={e => { const f = e.target.files[0] || null; setFiles(fl => ({ ...fl, [ex._id]: f })); e.target.value = ''; }} />
+                    </label>
+                  )}
                   {!sub ? (
                     <Button size="sm"
-                      disabled={!myAnswer.trim()}
+                      disabled={!myAnswer.trim() && !files[ex._id]}
                       loading={submitMutation.isPending}
-                      onClick={() => submitMutation.mutate({ exerciseId: ex._id, answer: myAnswer })}>
+                      onClick={() => submitMutation.mutate({ exerciseId: ex._id, answer: myAnswer, file: files[ex._id] })}>
                       Envoyer au professeur
                     </Button>
                   ) : sub.grade !== null && sub.grade !== undefined ? (
@@ -143,6 +161,12 @@ function ExercisesSection({ lessonId }) {
                     </div>
                   ) : (
                     <p className="text-xs text-orange-600">✓ Réponse envoyée — en attente de correction</p>
+                  )}
+                  {sub?.answerFileUrl && (
+                    <a href={getPdfUrl(sub.answerFileUrl)} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline w-fit">
+                      <FileText className="h-3.5 w-3.5" /> {sub.answerFileName || 'Voir le fichier envoyé'}
+                    </a>
                   )}
                 </div>
               )}
@@ -352,6 +376,9 @@ export default function CoursePlayer() {
         <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shrink-0">
           <button onClick={() => setSidebarOpen(v => !v)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
             {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+          <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 hover:bg-gray-100 px-2 py-1.5 rounded-lg shrink-0">
+            <ChevronLeft className="h-4 w-4" /> Mon espace
           </button>
           <span className="text-sm font-semibold text-gray-800 flex-1 truncate uppercase">
             {currentLesson?.title}

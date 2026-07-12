@@ -9,6 +9,7 @@ const Notification = require('../models/Notification');
 const { getFileUrl, optionalUpload } = require('../middlewares/upload');
 const bulletinService = require('../services/bulletinService');
 const emailService = require('../services/emailService');
+const { getAppreciation } = require('../utils/appreciation');
 
 const EVAL_LABEL = (ev) => ev.type === 'interrogation' ? `Interrogation ${ev.sequence}` : ev.type === 'devoir' ? 'Devoir' : 'Composition';
 
@@ -118,6 +119,43 @@ exports.delete = async (req, res) => {
   res.json({ success: true, message: 'Évaluation supprimée' });
 };
 
+// Student: upload a photo/scan/PDF of their completed work for an evaluation.
+// Upserts onto the student's Grade row without touching any grading fields —
+// the instructor may not have entered a score yet, in which case this creates
+// the Grade row; if a score already exists, it must survive untouched.
+exports.uploadSubmission = async (req, res) => {
+  const evaluation = await Evaluation.findById(req.params.id);
+  if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
+
+  const enrollment = await Enrollment.findOne({ student: req.user._id, course: evaluation.course });
+  if (!enrollment) return res.status(403).json({ success: false, message: 'Accès interdit' });
+
+  if (evaluation.signed) {
+    return res.status(409).json({ success: false, message: 'Cette évaluation est déjà signée, vous ne pouvez plus envoyer de copie.' });
+  }
+  if (!req.file) return res.status(422).json({ success: false, message: 'Aucun fichier envoyé' });
+
+  const grade = await Grade.findOneAndUpdate(
+    { evaluation: evaluation._id, student: req.user._id },
+    {
+      $set: {
+        submissionUrl: getFileUrl(req.file),
+        submissionName: req.file.originalname,
+        submittedAt: new Date(),
+      },
+      $setOnInsert: {
+        evaluation: evaluation._id,
+        student: req.user._id,
+        course: evaluation.course,
+        trimestre: evaluation.trimestre,
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  res.json({ success: true, data: grade });
+};
+
 // ─── Grades ──────────────────────────────────────────────────────────────────
 
 // Get all grades for an evaluation (instructor view)
@@ -154,17 +192,22 @@ exports.saveGrades = async (req, res) => {
 
   const { grades } = req.body; // [{ studentId, score, absent, comment }]
   await Promise.all(grades.map(async (g) => {
+    // $set only touches grading fields — never clobbers a student's submissionUrl/submissionName/submittedAt
     await Grade.findOneAndUpdate(
       { evaluation: evaluation._id, student: g.studentId },
       {
-        evaluation: evaluation._id,
-        student: g.studentId,
-        course: evaluation.course,
-        trimestre: evaluation.trimestre,
-        score: g.absent ? null : parseFloat(g.score),
-        absent: g.absent || false,
-        comment: g.comment || '',
-        gradedAt: new Date(),
+        $set: {
+          score: g.absent ? null : parseFloat(g.score),
+          absent: g.absent || false,
+          comment: g.comment || '',
+          gradedAt: new Date(),
+        },
+        $setOnInsert: {
+          evaluation: evaluation._id,
+          student: g.studentId,
+          course: evaluation.course,
+          trimestre: evaluation.trimestre,
+        },
       },
       { upsert: true, new: true }
     );
@@ -260,6 +303,9 @@ exports.myEvaluations = async (req, res) => {
       signed: !!ev.signed,
       pendingSignature: !!g && !ev.signed,
       grade: g && ev.signed ? { score: g.score, absent: g.absent, comment: g.comment } : null,
+      submissionUrl: g?.submissionUrl || '',
+      submissionName: g?.submissionName || '',
+      submittedAt: g?.submittedAt || null,
     };
   });
 
@@ -273,7 +319,8 @@ exports.myEvaluations = async (req, res) => {
 async function computeStudentBulletin(studentId, trimestre) {
   // All courses the student is enrolled in
   const enrollments = await Enrollment.find({ student: studentId })
-    .populate('course', 'subject classe serie instructor').lean();
+    .populate({ path: 'course', select: 'subject classe serie instructor', populate: { path: 'instructor', select: 'name' } })
+    .lean();
 
   const bulletin = await Promise.all(enrollments.map(async (enr) => {
     const course = enr.course;
@@ -318,6 +365,7 @@ async function computeStudentBulletin(studentId, trimestre) {
 
     return {
       course: { _id: course._id, subject: course.subject, classe: course.classe, serie: course.serie },
+      instructorName: course.instructor?.name || '',
       evaluations: evalDetails,
       moyenne,
       appreciation: getAppreciation(moyenne),
@@ -352,16 +400,6 @@ exports.getBulletin = async (req, res) => {
   const data = await computeStudentBulletin(studentId, trimestre);
   res.json({ success: true, data });
 };
-
-function getAppreciation(note) {
-  if (note === null) return '';
-  if (note >= 18) return 'Excellent';
-  if (note >= 16) return 'Très bien';
-  if (note >= 14) return 'Bien';
-  if (note >= 12) return 'Assez bien';
-  if (note >= 10) return 'Passable';
-  return 'Insuffisant';
-}
 
 // My bulletin (student)
 exports.myBulletin = async (req, res) => {
