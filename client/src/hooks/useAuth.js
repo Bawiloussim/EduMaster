@@ -10,8 +10,9 @@ export const useAuth = () => {
     return data.data;
   };
 
-  const register = async (name, email, password, role) => {
-    const { data } = await api.post('/auth/register', { name, email, password, role });
+  const register = async (payload) => {
+    const { data } = await api.post('/auth/register', payload);
+    if (data.pending) return { pending: true, message: data.message };
     setAuth(data.data, data.accessToken);
     return data.data;
   };

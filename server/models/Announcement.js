@@ -8,6 +8,7 @@ const announcementSchema = new mongoose.Schema({
   classe: { type: String, enum: [...CLASSES, null], default: null },
   serie: { type: String, enum: [...SERIES, null], default: null },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Announcement', announcementSchema);

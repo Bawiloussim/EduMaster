@@ -14,5 +14,6 @@ router.patch('/me/classe', protect, requireRole('student'), auth.setClasse);
 router.put('/profile', protect, upload.single('avatar'), auth.updateProfile);
 router.post('/forgot-password', auth.forgotPassword);
 router.post('/reset-password', auth.resetPassword);
+router.post('/verify-email', auth.verifyEmail);
 
 module.exports = router;

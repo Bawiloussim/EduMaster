@@ -79,13 +79,13 @@ export default function Login() {
 
   // Dashboard roots are role-gated (see AppRouter); a stale `from` pointing into
   // another role's area must not be trusted just because the user is now authenticated.
-  const ROLE_RESTRICTED_ROOTS = ['/admin', '/instructor', '/student', '/choose-class'];
+  const ROLE_RESTRICTED_ROOTS = ['/admin', '/superadmin', '/instructor', '/student', '/choose-class'];
 
   const onSubmit = async (data) => {
     try {
       const user = await login(data.email, data.password);
       toast.success(`Bienvenue, ${user.name} !`);
-      const defaultRedirects = { admin: '/admin', superadmin: '/admin', instructor: '/instructor', student: '/home' };
+      const defaultRedirects = { admin: '/admin', superadmin: '/superadmin', instructor: '/instructor', student: '/home' };
       const dashLink = defaultRedirects[user.role] || '/home';
       const fromIsRestricted = from && ROLE_RESTRICTED_ROOTS.some((root) => from.startsWith(root)) && !from.startsWith(dashLink);
       navigate(fromIsRestricted ? dashLink : from || dashLink);

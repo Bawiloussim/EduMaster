@@ -8,6 +8,7 @@ const User = require('../models/User');
 const certificateService = require('../services/certificateService');
 const emailService = require('../services/emailService');
 const Notification = require('../models/Notification');
+const { canManageCourse } = require('../utils/schoolAuth');
 
 const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
@@ -195,15 +196,12 @@ exports.submit = async (req, res) => {
 
 exports.getResult = async (req, res) => {
   const result = await Result.findById(req.params.resultId)
-    .populate('exam')
+    .populate({ path: 'exam', populate: 'course' })
     .populate('questions')
     .lean();
   if (!result) return res.status(404).json({ success: false, message: 'Résultat introuvable' });
-  if (result.student.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-    const exam = await Exam.findById(result.exam).populate('course');
-    if (!exam || exam.course.instructor.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Accès interdit' });
-    }
+  if (result.student.toString() !== req.user._id.toString() && !canManageCourse(result.exam.course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   res.json({ success: true, data: result });
 };
@@ -211,7 +209,7 @@ exports.getResult = async (req, res) => {
 exports.gradeOpenQuestion = async (req, res) => {
   const result = await Result.findById(req.params.resultId).populate({ path: 'exam', populate: 'course' });
   if (!result) return res.status(404).json({ success: false, message: 'Résultat introuvable' });
-  if (result.exam.course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(result.exam.course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -278,7 +276,7 @@ exports.myResults = async (req, res) => {
 exports.instructorResults = async (req, res) => {
   const exam = await Exam.findById(req.params.examId).populate('course');
   if (!exam) return res.status(404).json({ success: false, message: 'Examen introuvable' });
-  if (exam.course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(exam.course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   const results = await Result.find({ exam: exam._id })

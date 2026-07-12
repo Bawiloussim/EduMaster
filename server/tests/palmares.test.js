@@ -1,6 +1,6 @@
 const request = require('supertest');
 const testDb = require('./utils/testDb');
-const { createUser, getAuthToken, createCourse, createEnrollment, createEvaluation, createGrade } = require('./utils/factories');
+const { createUser, getAuthToken, createCourse, createSchool, createEnrollment, createEvaluation, createGrade } = require('./utils/factories');
 
 let app;
 
@@ -11,9 +11,9 @@ beforeAll(async () => {
 afterEach(async () => testDb.clearDatabase());
 afterAll(async () => testDb.closeDatabase());
 
-async function gradedStudent({ classe, serie, score }) {
-  const student = await createUser({ role: 'student', classe, serie });
-  const course = await createCourse({ classe, serie: serie ?? null });
+async function gradedStudent({ school, classe, serie, score }) {
+  const student = await createUser({ role: 'student', school, classe, serie });
+  const course = await createCourse({ school, classe, serie: serie ?? null });
   await createEnrollment({ student: student._id, course: course._id });
   const ev = await createEvaluation({ course: course._id, type: 'devoir' });
   await createGrade({ evaluation: ev._id, student: student._id, course: course._id, score });
@@ -22,9 +22,10 @@ async function gradedStudent({ classe, serie, score }) {
 
 describe('GET /api/admin/palmares', () => {
   test('classe les élèves par moyenne décroissante', async () => {
-    const admin = await createUser({ role: 'admin' });
-    const top = await gradedStudent({ classe: 'Terminale', serie: 'D', score: 18 });
-    const bottom = await gradedStudent({ classe: 'Terminale', serie: 'D', score: 8 });
+    const school = await createSchool();
+    const admin = await createUser({ role: 'admin', school: school._id });
+    const top = await gradedStudent({ school: school._id, classe: 'Terminale', serie: 'D', score: 18 });
+    const bottom = await gradedStudent({ school: school._id, classe: 'Terminale', serie: 'D', score: 8 });
 
     const res = await request(app).get('/api/admin/palmares')
       .query({ classe: 'Terminale', serie: 'D', trimestre: 1 })
@@ -39,9 +40,10 @@ describe('GET /api/admin/palmares', () => {
   });
 
   test('les élèves sans moyenne sont non classés, en fin de liste', async () => {
-    const admin = await createUser({ role: 'admin' });
-    await gradedStudent({ classe: 'Première', serie: 'A4', score: 14 });
-    await createUser({ role: 'student', classe: 'Première', serie: 'A4' }); // pas de note
+    const school = await createSchool();
+    const admin = await createUser({ role: 'admin', school: school._id });
+    await gradedStudent({ school: school._id, classe: 'Première', serie: 'A4', score: 14 });
+    await createUser({ role: 'student', school: school._id, classe: 'Première', serie: 'A4' }); // pas de note
 
     const res = await request(app).get('/api/admin/palmares')
       .query({ classe: 'Première', serie: 'A4', trimestre: 1 })
@@ -64,8 +66,9 @@ describe('GET /api/admin/palmares', () => {
   });
 
   test('fonctionne sans serie pour une classe de collège', async () => {
-    const admin = await createUser({ role: 'admin' });
-    const student = await gradedStudent({ classe: '5ème', serie: null, score: 11 });
+    const school = await createSchool();
+    const admin = await createUser({ role: 'admin', school: school._id });
+    const student = await gradedStudent({ school: school._id, classe: '5ème', serie: null, score: 11 });
 
     const res = await request(app).get('/api/admin/palmares')
       .query({ classe: '5ème', trimestre: 1 })

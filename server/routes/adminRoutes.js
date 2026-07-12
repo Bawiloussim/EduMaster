@@ -7,8 +7,9 @@ const ic = require('../controllers/importController');
 const csvUpload = require('../middlewares/csvUpload');
 const { protect } = require('../middlewares/auth');
 const requireRole = require('../middlewares/role');
+const { attachSchoolFilter } = require('../middlewares/school');
 
-router.use(protect, requireRole('admin'));
+router.use(protect, requireRole('admin'), attachSchoolFilter);
 
 router.get('/users', ac.adminList);
 router.patch('/users/:id/role', ac.updateUserRole);

@@ -8,7 +8,7 @@ import api from '../../services/api';
 
 const ROLE_META = {
   superadmin: { label: 'Super Admin', badge: 'bg-danger-light text-danger' },
-  admin: { label: 'Admin', badge: 'bg-danger-light text-danger' },
+  admin: { label: "Chef d'établissement", badge: 'bg-danger-light text-danger' },
   instructor: { label: 'Formateur', badge: 'bg-purple-100 text-purple-700' },
   student: { label: 'Élève', badge: 'bg-brand/15 text-brand-dark' },
 };

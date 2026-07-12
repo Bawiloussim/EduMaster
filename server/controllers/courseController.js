@@ -3,6 +3,7 @@ const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const { syncCourseEnrollments } = require('./enrollmentController');
 const { requiresSerie } = require('../constants/academic');
+const { schoolId, canManageCourse } = require('../utils/schoolAuth');
 
 exports.list = async (req, res) => {
   const { search, page = 1, limit = 12 } = req.query;
@@ -13,6 +14,14 @@ exports.list = async (req, res) => {
     serie = req.user.serie;
   }
   const filter = { status: 'published' };
+  // Logged-in users only ever see their own school's catalog; anonymous
+  // visitors may browse any school's public catalog (optionally narrowed
+  // via ?schoolId=), same as the classe/serie override above.
+  if (req.user && req.user.role !== 'superadmin') {
+    filter.school = schoolId(req.user);
+  } else if (req.query.schoolId) {
+    filter.school = req.query.schoolId;
+  }
   if (classe) filter.classe = classe;
   if (serie) filter.serie = serie;
   if (search) filter.$text = { $search: search };
@@ -34,6 +43,9 @@ exports.list = async (req, res) => {
 exports.getOne = async (req, res) => {
   const course = await Course.findById(req.params.id).populate('instructor', 'name avatar bio');
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (req.user && req.user.role !== 'superadmin' && course.school.toString() !== schoolId(req.user)) {
+    return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  }
 
   const lessons = await Lesson.find({ course: course._id }).sort({ order: 1 }).lean();
 
@@ -54,6 +66,9 @@ exports.getOne = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+  if (!req.user.school) {
+    return res.status(422).json({ success: false, message: "Ce compte n'est rattaché à aucun établissement" });
+  }
   const { title, description, subject, classe, serie, price, tags, language, estimatedDuration } = req.body;
   const finalClasse = classe || 'Seconde';
   const course = await Course.create({
@@ -66,6 +81,7 @@ exports.create = async (req, res) => {
     language: language || 'fr',
     estimatedDuration: estimatedDuration || 0,
     instructor: req.user._id,
+    school: schoolId(req.user),
     coverImage: req.file ? (req.file.path || req.file.secure_url) : '',
   });
   res.status(201).json({ success: true, data: course });
@@ -74,7 +90,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   const allowed = ['title', 'description', 'subject', 'classe', 'serie', 'tags', 'language', 'estimatedDuration'];
@@ -88,7 +104,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   await Lesson.deleteMany({ course: course._id });
@@ -99,7 +115,7 @@ exports.delete = async (req, res) => {
 exports.publish = async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   course.status = course.status === 'published' ? 'draft' : 'published';
@@ -114,7 +130,7 @@ exports.addModule = async (req, res) => {
   const { title, order } = req.body;
   const course = await Course.findById(req.params.id);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   course.modules.push({ title, order: order !== undefined ? order : course.modules.length });
@@ -131,8 +147,8 @@ exports.adminList = async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const [courses, total] = await Promise.all([
-    Course.find().populate('instructor', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
-    Course.countDocuments(),
+    Course.find(req.schoolFilter).populate('instructor', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
+    Course.countDocuments(req.schoolFilter),
   ]);
   res.json({ success: true, data: courses, total });
 };

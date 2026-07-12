@@ -10,6 +10,7 @@ const courseSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   description: { type: String, default: '' },
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
   subject: { type: String, required: true },
   classe: { type: String, enum: CLASSES, required: true },
   serie: { type: String, enum: [...SERIES, null], default: null, required: function () { return requiresSerie(this.classe); } },
@@ -27,5 +28,6 @@ const courseSchema = new mongoose.Schema({
 
 courseSchema.index({ title: 'text', description: 'text', tags: 'text' });
 courseSchema.index({ classe: 1, serie: 1, status: 1 });
+courseSchema.index({ school: 1 });
 
 module.exports = mongoose.model('Course', courseSchema);

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
+const School = require('../../models/School');
 const Course = require('../../models/Course');
 const Enrollment = require('../../models/Enrollment');
 const Evaluation = require('../../models/Evaluation');
@@ -10,12 +11,28 @@ const Exercise = require('../../models/Exercise');
 let counter = 0;
 const uniq = () => `${Date.now()}-${counter++}`;
 
+async function createSchool(overrides = {}) {
+  return School.create({
+    name: overrides.name || `École ${uniq()}`,
+    city: overrides.city || 'Douala',
+    status: overrides.status || 'active',
+  });
+}
+
 async function createUser(overrides = {}) {
+  const role = overrides.role || 'student';
+  let school = overrides.school;
+  if (school === undefined && role !== 'superadmin') {
+    school = (await createSchool())._id;
+  }
   return User.create({
     name: overrides.name || `Test User ${uniq()}`,
     email: overrides.email || `user-${uniq()}@example.com`,
     password: overrides.password || 'Test1234!',
-    role: overrides.role || 'student',
+    role,
+    school: school ?? null,
+    status: overrides.status || 'active',
+    emailVerified: overrides.emailVerified ?? true,
     classe: overrides.classe ?? null,
     serie: overrides.serie ?? null,
   });
@@ -27,10 +44,13 @@ function getAuthToken(user) {
 
 async function createCourse(overrides = {}) {
   let instructor = overrides.instructor;
+  let school = overrides.school;
   if (!instructor) {
-    const instructorUser = await createUser({ role: 'instructor' });
+    const instructorUser = await createUser({ role: 'instructor', school });
     instructor = instructorUser._id;
+    school = instructorUser.school;
   }
+  if (!school) school = (await createSchool())._id;
   return Course.create({
     title: overrides.title || `Cours ${uniq()}`,
     subject: overrides.subject || 'Mathématiques',
@@ -38,6 +58,7 @@ async function createCourse(overrides = {}) {
     serie: overrides.serie !== undefined ? overrides.serie : 'D',
     status: overrides.status || 'published',
     instructor,
+    school,
   });
 }
 
@@ -91,4 +112,4 @@ async function createExercise(overrides = {}) {
   });
 }
 
-module.exports = { createUser, getAuthToken, createCourse, createEnrollment, createEvaluation, createGrade, createLesson, createExercise };
+module.exports = { createSchool, createUser, getAuthToken, createCourse, createEnrollment, createEvaluation, createGrade, createLesson, createExercise };

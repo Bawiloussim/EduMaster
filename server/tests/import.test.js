@@ -51,7 +51,7 @@ describe('POST /api/admin/import/instructors', () => {
 describe('POST /api/admin/import/courses', () => {
   test('crée un cours en brouillon avec le formateur résolu par email', async () => {
     const admin = await createUser({ role: 'admin' });
-    const instructor = await createUser({ role: 'instructor', name: 'Prof Test', email: 'prof.test@example.com' });
+    const instructor = await createUser({ role: 'instructor', name: 'Prof Test', email: 'prof.test@example.com', school: admin.school });
     const file = csv(['matiere,classe,serie,email_formateur', `Maths,Terminale,D,${instructor.email}`]);
 
     const res = await request(app).post('/api/admin/import/courses')
@@ -80,7 +80,7 @@ describe('POST /api/admin/import/courses', () => {
 
   test('accepte un cours de collège sans serie et rejette un cours de lycée sans serie', async () => {
     const admin = await createUser({ role: 'admin' });
-    const instructor = await createUser({ role: 'instructor', email: 'prof2@example.com' });
+    const instructor = await createUser({ role: 'instructor', email: 'prof2@example.com', school: admin.school });
     const file = csv([
       'matiere,classe,serie,email_formateur',
       `Français,6ème,,${instructor.email}`,

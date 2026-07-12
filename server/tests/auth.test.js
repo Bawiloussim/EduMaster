@@ -1,6 +1,6 @@
 const request = require('supertest');
 const testDb = require('./utils/testDb');
-const { createUser, getAuthToken } = require('./utils/factories');
+const { createUser, createSchool, getAuthToken } = require('./utils/factories');
 
 let app;
 
@@ -13,26 +13,37 @@ afterAll(async () => testDb.closeDatabase());
 
 describe('POST /api/auth/register', () => {
   test('crée un compte student par défaut', async () => {
+    const school = await createSchool();
     const res = await request(app).post('/api/auth/register').send({
-      name: 'Alice', email: 'alice@example.com', password: 'Test1234!',
+      name: 'Alice', email: 'alice@example.com', password: 'Test1234!', schoolId: school._id,
     });
     expect(res.status).toBe(201);
     expect(res.body.data.role).toBe('student');
     expect(res.body.accessToken).toBeDefined();
   });
 
-  test('ignore un rôle admin demandé à l\'inscription', async () => {
+  test('un chef d\'établissement reste en attente de validation et ne reçoit pas de session', async () => {
+    const school = await createSchool();
     const res = await request(app).post('/api/auth/register').send({
-      name: 'Mallory', email: 'mallory@example.com', password: 'Test1234!', role: 'admin',
+      name: 'Mallory', email: 'mallory@example.com', password: 'Test1234!', role: 'admin', schoolId: school._id,
     });
     expect(res.status).toBe(201);
-    expect(res.body.data.role).toBe('student');
+    expect(res.body.pending).toBe(true);
+    expect(res.body.accessToken).toBeUndefined();
+  });
+
+  test('refuse un établissement invalide ou manquant', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      name: 'NoSchool', email: 'noschool@example.com', password: 'Test1234!',
+    });
+    expect(res.status).toBe(422);
   });
 
   test('refuse un email déjà utilisé', async () => {
-    await createUser({ email: 'dup@example.com' });
+    const school = await createSchool();
+    await createUser({ email: 'dup@example.com', school: school._id });
     const res = await request(app).post('/api/auth/register').send({
-      name: 'Dup', email: 'dup@example.com', password: 'Test1234!',
+      name: 'Dup', email: 'dup@example.com', password: 'Test1234!', schoolId: school._id,
     });
     expect(res.status).toBe(409);
   });
@@ -40,8 +51,9 @@ describe('POST /api/auth/register', () => {
 
 describe('POST /api/auth/login', () => {
   test('connecte avec les bons identifiants', async () => {
+    const school = await createSchool();
     await request(app).post('/api/auth/register').send({
-      name: 'Bob', email: 'bob@example.com', password: 'Test1234!',
+      name: 'Bob', email: 'bob@example.com', password: 'Test1234!', schoolId: school._id,
     });
     const res = await request(app).post('/api/auth/login').send({
       email: 'bob@example.com', password: 'Test1234!',
@@ -51,13 +63,32 @@ describe('POST /api/auth/login', () => {
   });
 
   test('refuse un mauvais mot de passe', async () => {
+    const school = await createSchool();
     await request(app).post('/api/auth/register').send({
-      name: 'Carl', email: 'carl@example.com', password: 'Test1234!',
+      name: 'Carl', email: 'carl@example.com', password: 'Test1234!', schoolId: school._id,
     });
     const res = await request(app).post('/api/auth/login').send({
       email: 'carl@example.com', password: 'wrong',
     });
     expect(res.status).toBe(401);
+  });
+
+  test('bloque un chef d\'établissement tant qu\'il n\'est pas approuvé', async () => {
+    const school = await createSchool();
+    const user = await createUser({ role: 'admin', school: school._id, status: 'pending', emailVerified: true, password: 'Test1234!' });
+    const res = await request(app).post('/api/auth/login').send({
+      email: user.email, password: 'Test1234!',
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test('bloque un chef d\'établissement dont l\'email n\'est pas vérifié', async () => {
+    const school = await createSchool();
+    const user = await createUser({ role: 'admin', school: school._id, status: 'active', emailVerified: false, password: 'Test1234!' });
+    const res = await request(app).post('/api/auth/login').send({
+      email: user.email, password: 'Test1234!',
+    });
+    expect(res.status).toBe(403);
   });
 });
 

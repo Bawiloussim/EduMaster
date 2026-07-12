@@ -5,6 +5,7 @@ const Course = require('../models/Course');
 const { syncClassEnrollments } = require('./enrollmentController');
 const emailService = require('../services/emailService');
 const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
+const { schoolId } = require('../utils/schoolAuth');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -69,9 +70,11 @@ exports.importStudents = async (req, res) => {
     const tempPassword = crypto.randomBytes(6).toString('base64url');
     const user = await User.create({
       name: c.nom, email: c.email, password: tempPassword,
-      role: 'student', classe: c.classe, serie: c.serie,
+      role: 'student', school: schoolId(req.user), classe: c.classe, serie: c.serie,
+      // CSV imports are vouched for by the school's own admin — skip self-verification.
+      emailVerified: true,
     });
-    await syncClassEnrollments(user._id, c.classe, c.serie);
+    await syncClassEnrollments(user._id, schoolId(req.user), c.classe, c.serie);
     emailService.sendStudentImported(user, tempPassword).catch(() => {});
     created.push({ name: user.name, email: user.email, tempPassword });
   }
@@ -130,6 +133,7 @@ exports.importInstructors = async (req, res) => {
     const tempPassword = crypto.randomBytes(6).toString('base64url');
     const user = await User.create({
       name: c.nom, email: c.email, password: tempPassword, role: 'instructor',
+      school: schoolId(req.user), emailVerified: true,
     });
     emailService.sendStudentImported(user, tempPassword).catch(() => {});
     created.push({ name: user.name, email: user.email, tempPassword });
@@ -181,6 +185,7 @@ exports.importCourses = async (req, res) => {
     const instructors = await User.find({
       email: { $in: candidates.map((c) => c.emailFormateur) },
       role: { $in: ['instructor', 'admin'] },
+      school: schoolId(req.user),
     }).select('email name').lean();
     const instructorByEmail = new Map(instructors.map((u) => [u.email, u]));
 
@@ -196,7 +201,7 @@ exports.importCourses = async (req, res) => {
       const instructor = instructorByEmail.get(c.emailFormateur);
       const course = await Course.create({
         title: c.matiere, subject: c.matiere, description: c.description,
-        classe: c.classe, serie: c.serie, instructor: instructor._id,
+        classe: c.classe, serie: c.serie, instructor: instructor._id, school: schoolId(req.user),
       });
       created.push({ title: course.title, classe: course.classe, serie: course.serie, formateur: instructor.name });
     }

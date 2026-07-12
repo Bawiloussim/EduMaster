@@ -1,13 +1,14 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 const { getFileUrl } = require('../middlewares/upload');
+const { canManageCourse } = require('../utils/schoolAuth');
 
-const checkOwner = async (lessonId, userId, userRole) => {
+const checkOwner = async (lessonId, user) => {
   const lesson = await Lesson.findById(lessonId);
   if (!lesson) return { lesson: null, error: 'Leçon introuvable' };
   const course = await Course.findById(lesson.course);
   if (!course) return { lesson: null, error: 'Cours introuvable' };
-  if (course.instructor.toString() !== userId.toString() && userRole !== 'admin') {
+  if (!canManageCourse(course, user)) {
     return { lesson: null, error: 'Accès interdit' };
   }
   return { lesson, course };
@@ -16,7 +17,7 @@ const checkOwner = async (lessonId, userId, userRole) => {
 exports.create = async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -35,7 +36,7 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const { lesson, error } = await checkOwner(req.params.id, req.user._id, req.user.role);
+  const { lesson, error } = await checkOwner(req.params.id, req.user);
   if (error) return res.status(404).json({ success: false, message: error });
 
   const allowed = ['title', 'order', 'duration', 'isFreePreview', 'content', 'videoUrl', 'moduleId'];
@@ -57,7 +58,7 @@ exports.update = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  const { lesson, error } = await checkOwner(req.params.id, req.user._id, req.user.role);
+  const { lesson, error } = await checkOwner(req.params.id, req.user);
   if (error) return res.status(404).json({ success: false, message: error });
   await lesson.deleteOne();
   res.json({ success: true, message: 'Leçon supprimée' });

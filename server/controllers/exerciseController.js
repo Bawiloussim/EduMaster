@@ -6,13 +6,14 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const emailService = require('../services/emailService');
 const { getFileUrl } = require('../middlewares/upload');
+const { canManageCourse } = require('../utils/schoolAuth');
 
 exports.createForLesson = async (req, res) => {
   const lesson = await Lesson.findById(req.params.lessonId);
   if (!lesson) return res.status(404).json({ success: false, message: 'Leçon introuvable' });
 
   const course = await Course.findById(lesson.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -39,7 +40,7 @@ exports.listAnswers = async (req, res) => {
   const exercise = await Exercise.findById(req.params.id);
   if (!exercise) return res.status(404).json({ success: false, message: 'Exercice introuvable' });
   const course = await Course.findById(exercise.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   const answers = await ExerciseAnswer.find({ exercise: exercise._id })
@@ -53,7 +54,7 @@ exports.update = async (req, res) => {
   const exercise = await Exercise.findById(req.params.id);
   if (!exercise) return res.status(404).json({ success: false, message: 'Exercice introuvable' });
   const course = await Course.findById(exercise.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   const allowed = ['statement', 'type', 'options', 'correctOption', 'order'];
@@ -66,7 +67,7 @@ exports.delete = async (req, res) => {
   const exercise = await Exercise.findById(req.params.id);
   if (!exercise) return res.status(404).json({ success: false, message: 'Exercice introuvable' });
   const course = await Course.findById(exercise.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   await exercise.deleteOne();

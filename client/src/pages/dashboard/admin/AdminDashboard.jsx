@@ -386,12 +386,13 @@ function CoursesTab() {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-100 via-gray-50 to-brand/5">
-      <DashboardSidebar subtitle="Administration" sections={SIDEBAR_SECTIONS} activeId={activeTab} onSelect={setActiveTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <DashboardSidebar subtitle={user?.school?.name || "Chef d'établissement"} sections={SIDEBAR_SECTIONS} activeId={activeTab} onSelect={setActiveTab} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <DashboardTopbar title={TAB_TITLES[activeTab]} onMenuClick={() => setMobileNavOpen(true)} />

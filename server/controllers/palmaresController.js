@@ -11,7 +11,7 @@ exports.getPalmares = async (req, res) => {
     return res.status(422).json({ success: false, message: 'serie est requise pour cette classe' });
   }
 
-  const filter = { role: 'student', classe };
+  const filter = { ...req.schoolFilter, role: 'student', classe };
   if (requiresSerie(classe)) filter.serie = serie;
   const students = await User.find(filter)
     .select('_id name email avatar').lean();

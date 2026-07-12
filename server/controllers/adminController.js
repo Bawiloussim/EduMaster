@@ -11,8 +11,8 @@ exports.adminList = async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const [users, total] = await Promise.all([
-    User.find().sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
-    User.countDocuments(),
+    User.find(req.schoolFilter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
+    User.countDocuments(req.schoolFilter),
   ]);
   res.json({ success: true, data: users, total });
 };
@@ -35,6 +35,10 @@ exports.updateUserRole = async (req, res) => {
   if (existing.role === 'superadmin' && !isSuperAdmin) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
+  // A chef d'établissement can only manage users of their own school
+  if (!isSuperAdmin && existing.school?.toString() !== req.user.school?._id?.toString()) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
 
   const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).lean();
   res.json({ success: true, data: user });
@@ -43,7 +47,7 @@ exports.updateUserRole = async (req, res) => {
 // ─── Instructors overview ───────────────────────────────────────────────────
 
 exports.listInstructors = async (req, res) => {
-  const instructors = await User.find({ role: 'instructor' }).select('name email avatar createdAt').lean();
+  const instructors = await User.find({ ...req.schoolFilter, role: 'instructor' }).select('name email avatar createdAt').lean();
 
   const data = await Promise.all(instructors.map(async (instructor) => {
     const courses = await Course.find({ instructor: instructor._id }).select('_id').lean();
@@ -74,7 +78,7 @@ exports.listInstructors = async (req, res) => {
 // ─── Students overview ───────────────────────────────────────────────────────
 
 exports.listStudents = async (req, res) => {
-  const students = await User.find({ role: 'student' }).select('name email avatar classe serie createdAt').lean();
+  const students = await User.find({ ...req.schoolFilter, role: 'student' }).select('name email avatar classe serie createdAt').lean();
 
   const data = await Promise.all(students.map(async (student) => {
     const enrollments = await Enrollment.find({ student: student._id }).lean();
@@ -101,8 +105,8 @@ exports.classesOverview = async (req, res) => {
 
   const data = await Promise.all(combos.map(async ({ classe, serie }) => {
     const [studentsCount, coursesCount] = await Promise.all([
-      User.countDocuments({ role: 'student', classe, ...(serie ? { serie } : {}) }),
-      Course.countDocuments({ classe, ...(serie ? { serie } : {}) }),
+      User.countDocuments({ ...req.schoolFilter, role: 'student', classe, ...(serie ? { serie } : {}) }),
+      Course.countDocuments({ ...req.schoolFilter, classe, ...(serie ? { serie } : {}) }),
     ]);
     return { classe, serie, studentsCount, coursesCount };
   }));

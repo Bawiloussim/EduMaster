@@ -1,6 +1,7 @@
 const Certificate = require('../models/Certificate');
 const certificateService = require('../services/certificateService');
 const Result = require('../models/Result');
+const { canManageCourse } = require('../utils/schoolAuth');
 
 exports.mine = async (req, res) => {
   const certs = await Certificate.find({ student: req.user._id })
@@ -26,10 +27,10 @@ exports.forCourse = async (req, res) => {
 exports.downloadAttestation = async (req, res) => {
   const cert = await Certificate.findById(req.params.id)
     .populate('student', 'name')
-    .populate('course', 'title subject classe serie instructor');
+    .populate('course', 'title subject classe serie instructor school');
 
   if (!cert) return res.status(404).json({ success: false, message: 'Attestation introuvable' });
-  if (cert.student._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (cert.student._id.toString() !== req.user._id.toString() && !canManageCourse(cert.course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -54,12 +55,12 @@ exports.verify = async (req, res) => {
 exports.download = async (req, res) => {
   const cert = await Certificate.findById(req.params.id)
     .populate('student', 'name')
-    .populate('course', 'title')
+    .populate('course', 'title instructor school')
     .populate('exam', 'title')
     .populate('result');
 
   if (!cert) return res.status(404).json({ success: false, message: 'Certificat introuvable' });
-  if (cert.student._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (cert.student._id.toString() !== req.user._id.toString() && !canManageCourse(cert.course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 

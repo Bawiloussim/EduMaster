@@ -5,13 +5,14 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const certificateService = require('../services/certificateService');
 const { requiresSerie } = require('../constants/academic');
+const { canManageCourse, schoolId } = require('../utils/schoolAuth');
 
-// Enroll a student in every published course matching their classe/serie
+// Enroll a student in every published course matching their school/classe/serie
 // (called when a student picks their classe, and covers courses that already exist)
-exports.syncClassEnrollments = async (studentId, classe, serie) => {
-  if (!classe) return;
+exports.syncClassEnrollments = async (studentId, school, classe, serie) => {
+  if (!classe || !school) return;
   if (requiresSerie(classe) && !serie) return;
-  const filter = { status: 'published', classe };
+  const filter = { status: 'published', school, classe };
   if (requiresSerie(classe)) filter.serie = serie;
   const courses = await Course.find(filter).select('_id').lean();
   await Promise.all(courses.map(async (course) => {
@@ -22,11 +23,11 @@ exports.syncClassEnrollments = async (studentId, classe, serie) => {
   }));
 };
 
-// Enroll every student of a classe/serie into a course that just got published
+// Enroll every student of the course's school/classe/serie when it's published
 // (called when an instructor publishes a course, so existing students of that class get it too)
 exports.syncCourseEnrollments = async (course) => {
   if (course.status !== 'published') return;
-  const filter = { role: 'student', classe: course.classe };
+  const filter = { role: 'student', school: course.school, classe: course.classe };
   if (requiresSerie(course.classe)) filter.serie = course.serie;
   const students = await User.find(filter).select('_id').lean();
   await Promise.all(students.map(async (student) => {
@@ -40,7 +41,7 @@ exports.syncCourseEnrollments = async (course) => {
 exports.enroll = async (req, res) => {
   const { courseId } = req.body;
   const course = await Course.findById(courseId);
-  if (!course || course.status !== 'published') {
+  if (!course || course.status !== 'published' || course.school.toString() !== schoolId(req.user)) {
     return res.status(404).json({ success: false, message: 'Cours introuvable ou non publié' });
   }
 
@@ -73,7 +74,7 @@ exports.myEnrollments = async (req, res) => {
 exports.listForCourse = async (req, res) => {
   const course = await Course.findById(req.query.course);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   const enrollments = await Enrollment.find({ course: course._id })

@@ -10,12 +10,18 @@ const { getFileUrl, optionalUpload } = require('../middlewares/upload');
 const bulletinService = require('../services/bulletinService');
 const emailService = require('../services/emailService');
 const { getAppreciation } = require('../utils/appreciation');
+const { canManageCourse, schoolId } = require('../utils/schoolAuth');
 
 const EVAL_LABEL = (ev) => ev.type === 'interrogation' ? `Interrogation ${ev.sequence}` : ev.type === 'devoir' ? 'Devoir' : 'Composition';
 
 // ─── Instructor ─────────────────────────────────────────────────────────────
 
 exports.listForCourse = async (req, res) => {
+  const course = await Course.findById(req.params.courseId).select('school').lean();
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (req.user.role !== 'superadmin' && course.school.toString() !== schoolId(req.user)) {
+    return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  }
   const evaluations = await Evaluation.find({ course: req.params.courseId })
     .sort({ trimestre: 1, type: 1, sequence: 1 }).lean();
   res.json({ success: true, data: evaluations });
@@ -26,7 +32,7 @@ exports.listForCourse = async (req, res) => {
 exports.getStudentsOverview = async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   const trimestre = parseInt(req.params.trimestre);
@@ -77,7 +83,7 @@ exports.getStudentsOverview = async (req, res) => {
 exports.create = async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -98,7 +104,7 @@ exports.uploadCorrection = async (req, res) => {
   const evaluation = await Evaluation.findById(req.params.id);
   if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
   const course = await Course.findById(evaluation.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   if (!req.file) return res.status(400).json({ success: false, message: 'Aucun fichier PDF envoyé' });
@@ -111,7 +117,7 @@ exports.delete = async (req, res) => {
   const evaluation = await Evaluation.findById(req.params.id);
   if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
   const course = await Course.findById(evaluation.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   await Grade.deleteMany({ evaluation: evaluation._id });
@@ -162,6 +168,10 @@ exports.uploadSubmission = async (req, res) => {
 exports.getGrades = async (req, res) => {
   const evaluation = await Evaluation.findById(req.params.id);
   if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
+  const course = await Course.findById(evaluation.course).select('school instructor').lean();
+  if (!canManageCourse(course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
 
   // Get enrolled students
   const enrollments = await Enrollment.find({ course: evaluation.course })
@@ -183,7 +193,7 @@ exports.saveGrades = async (req, res) => {
   const evaluation = await Evaluation.findById(req.params.id);
   if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
   const course = await Course.findById(evaluation.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   if (evaluation.signed) {
@@ -223,7 +233,7 @@ exports.setSignature = async (req, res) => {
   const evaluation = await Evaluation.findById(req.params.id);
   if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
   const course = await Course.findById(evaluation.course);
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -397,6 +407,12 @@ exports.computeStudentBulletin = computeStudentBulletin;
 
 exports.getBulletin = async (req, res) => {
   const { studentId, trimestre } = req.params;
+  if (studentId !== req.user._id.toString() && req.user.role !== 'superadmin') {
+    const student = await User.findById(studentId).select('school').lean();
+    if (!student || student.school?.toString() !== schoolId(req.user)) {
+      return res.status(404).json({ success: false, message: 'Élève introuvable' });
+    }
+  }
   const data = await computeStudentBulletin(studentId, trimestre);
   res.json({ success: true, data });
 };
@@ -437,8 +453,11 @@ exports.getBulletinPDF = async (req, res) => {
   try {
     const { studentId, trimestre } = req.params;
 
-    const student = await User.findById(studentId).select('name email').lean();
+    const student = await User.findById(studentId).select('name email school').lean();
     if (!student) return res.status(404).json({ success: false, message: 'Élève introuvable' });
+    if (req.user.role !== 'superadmin' && student.school?.toString() !== schoolId(req.user)) {
+      return res.status(404).json({ success: false, message: 'Élève introuvable' });
+    }
 
     const data = await computeStudentBulletin(studentId, trimestre);
     data.studentName = student.name || student.email || 'Élève';

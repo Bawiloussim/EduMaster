@@ -22,12 +22,13 @@ exports.create = async (req, res) => {
     classe: audience === 'classe' ? classe : null,
     serie: audience === 'classe' ? finalSerie : null,
     createdBy: req.user._id,
+    school: req.schoolFilter.school,
   });
 
-  const filter = audience === 'all' ? { role: { $in: ['student', 'instructor'] } }
-    : audience === 'students' ? { role: 'student' }
-    : audience === 'instructors' ? { role: 'instructor' }
-    : { role: 'student', classe, ...(finalSerie ? { serie: finalSerie } : {}) };
+  const filter = audience === 'all' ? { ...req.schoolFilter, role: { $in: ['student', 'instructor'] } }
+    : audience === 'students' ? { ...req.schoolFilter, role: 'student' }
+    : audience === 'instructors' ? { ...req.schoolFilter, role: 'instructor' }
+    : { ...req.schoolFilter, role: 'student', classe, ...(finalSerie ? { serie: finalSerie } : {}) };
 
   const targetUsers = await User.find(filter).select('_id').lean();
   if (targetUsers.length) {
@@ -44,6 +45,6 @@ exports.create = async (req, res) => {
 };
 
 exports.list = async (req, res) => {
-  const announcements = await Announcement.find().sort({ createdAt: -1 }).populate('createdBy', 'name').lean();
+  const announcements = await Announcement.find(req.schoolFilter).sort({ createdAt: -1 }).populate('createdBy', 'name').lean();
   res.json({ success: true, data: announcements });
 };

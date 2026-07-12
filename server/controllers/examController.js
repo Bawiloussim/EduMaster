@@ -2,11 +2,12 @@ const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const { canManageCourse, schoolId } = require('../utils/schoolAuth');
 
-const checkInstructor = async (examId, userId, userRole) => {
+const checkInstructor = async (examId, user) => {
   const exam = await Exam.findById(examId).populate('course');
   if (!exam) return { exam: null, error: 'Examen introuvable' };
-  if (exam.course.instructor.toString() !== userId.toString() && userRole !== 'admin') {
+  if (!canManageCourse(exam.course, user)) {
     return { exam: null, error: 'Accès interdit' };
   }
   return { exam };
@@ -15,7 +16,7 @@ const checkInstructor = async (examId, userId, userRole) => {
 exports.create = async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -32,7 +33,7 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const { exam, error } = await checkInstructor(req.params.id, req.user._id, req.user.role);
+  const { exam, error } = await checkInstructor(req.params.id, req.user);
   if (error) return res.status(404).json({ success: false, message: error });
 
   const allowed = ['title', 'description', 'duration', 'passingScore', 'maxAttempts', 'questionCount', 'isRandomized', 'isPublished'];
@@ -42,7 +43,7 @@ exports.update = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  const { exam, error } = await checkInstructor(req.params.id, req.user._id, req.user.role);
+  const { exam, error } = await checkInstructor(req.params.id, req.user);
   if (error) return res.status(404).json({ success: false, message: error });
   await Question.deleteMany({ exam: exam._id });
   await exam.deleteOne();
@@ -50,11 +51,13 @@ exports.delete = async (req, res) => {
 };
 
 exports.getOne = async (req, res) => {
-  const exam = await Exam.findById(req.params.id).populate('course', 'title instructor');
+  const exam = await Exam.findById(req.params.id).populate('course', 'title instructor school');
   if (!exam) return res.status(404).json({ success: false, message: 'Examen introuvable' });
+  if (req.user.role !== 'superadmin' && exam.course.school.toString() !== schoolId(req.user)) {
+    return res.status(404).json({ success: false, message: 'Examen introuvable' });
+  }
 
-  const isInstructor = req.user.role === 'admin' ||
-    exam.course.instructor.toString() === req.user._id.toString();
+  const isInstructor = canManageCourse(exam.course, req.user);
 
   if (!isInstructor) {
     const enrollment = await Enrollment.findOne({ student: req.user._id, course: exam.course._id });
@@ -71,9 +74,11 @@ exports.getOne = async (req, res) => {
 exports.getForCourse = async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (req.user.role !== 'superadmin' && course.school.toString() !== schoolId(req.user)) {
+    return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  }
 
-  const isInstructor = req.user.role === 'admin' ||
-    course.instructor.toString() === req.user._id.toString();
+  const isInstructor = canManageCourse(course, req.user);
 
   const filter = { course: course._id };
   if (!isInstructor) filter.isPublished = true;
@@ -83,7 +88,7 @@ exports.getForCourse = async (req, res) => {
 };
 
 exports.addQuestion = async (req, res) => {
-  const { exam, error } = await checkInstructor(req.params.id, req.user._id, req.user.role);
+  const { exam, error } = await checkInstructor(req.params.id, req.user);
   if (error) return res.status(404).json({ success: false, message: error });
 
   const { type, text, options, correctAnswers, explanation, points } = req.body;
@@ -100,7 +105,7 @@ exports.addQuestion = async (req, res) => {
 exports.updateQuestion = async (req, res) => {
   const question = await Question.findById(req.params.questionId).populate({ path: 'exam', populate: 'course' });
   if (!question) return res.status(404).json({ success: false, message: 'Question introuvable' });
-  if (question.exam.course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(question.exam.course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -113,7 +118,7 @@ exports.updateQuestion = async (req, res) => {
 exports.deleteQuestion = async (req, res) => {
   const question = await Question.findById(req.params.questionId).populate({ path: 'exam', populate: 'course' });
   if (!question) return res.status(404).json({ success: false, message: 'Question introuvable' });
-  if (question.exam.course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!canManageCourse(question.exam.course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
   await question.deleteOne();

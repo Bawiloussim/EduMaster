@@ -4,11 +4,12 @@ const cc = require('../controllers/courseController');
 const lc = require('../controllers/lessonController');
 const { protect, optionalAuth } = require('../middlewares/auth');
 const requireRole = require('../middlewares/role');
+const { attachSchoolFilter } = require('../middlewares/school');
 const { optionalUpload } = require('../middlewares/upload');
 
 router.get('/', optionalAuth, cc.list);
 router.get('/mine', protect, requireRole('instructor', 'admin'), cc.instructorCourses);
-router.get('/admin/all', protect, requireRole('admin'), cc.adminList);
+router.get('/admin/all', protect, requireRole('admin'), attachSchoolFilter, cc.adminList);
 router.get('/:id', optionalAuth, cc.getOne);
 router.post('/', protect, requireRole('instructor', 'admin'), optionalUpload('coverImage'), cc.create);
 router.put('/:id', protect, requireRole('instructor', 'admin'), optionalUpload('coverImage'), cc.update);

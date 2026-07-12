@@ -10,6 +10,7 @@ const Login = lazy(() => import('../pages/auth/Login'));
 const Register = lazy(() => import('../pages/auth/Register'));
 const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'));
+const VerifyEmail = lazy(() => import('../pages/auth/VerifyEmail'));
 
 const Catalog = lazy(() => import('../pages/catalog/Catalog'));
 const CourseDetail = lazy(() => import('../pages/catalog/CourseDetail'));
@@ -23,6 +24,7 @@ const ChooseClass = lazy(() => import('../pages/auth/ChooseClass'));
 const StudentDashboard = lazy(() => import('../pages/dashboard/student/StudentDashboard'));
 const InstructorDashboard = lazy(() => import('../pages/dashboard/instructor/InstructorDashboard'));
 const AdminDashboard = lazy(() => import('../pages/dashboard/admin/AdminDashboard'));
+const SuperAdminDashboard = lazy(() => import('../pages/dashboard/superadmin/SuperAdminDashboard'));
 
 const CertificateVerify = lazy(() => import('../pages/certificates/CertificateVerify'));
 const Notifications = lazy(() => import('../pages/Notifications'));
@@ -57,6 +59,7 @@ export default function AppRouter() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Public — certificate verification only */}
         <Route path="/certificates/verify/:hash" element={<Layout><CertificateVerify /></Layout>} />
@@ -88,9 +91,14 @@ export default function AppRouter() {
           <Route path="/instructor/grading" element={<InstructorLayout><Grading /></InstructorLayout>} />
         </Route>
 
-        {/* Protected — Admin (own sidebar layout, no global Navbar) */}
+        {/* Protected — Admin / chef d'établissement (own sidebar layout, no global Navbar) */}
         <Route element={<ProtectedRoute roles={['admin', 'superadmin']} />}>
           <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
+
+        {/* Protected — SuperAdmin (own sidebar layout, no global Navbar) */}
+        <Route element={<ProtectedRoute roles={['superadmin']} />}>
+          <Route path="/superadmin" element={<SuperAdminDashboard />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

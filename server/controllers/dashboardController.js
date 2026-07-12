@@ -5,6 +5,7 @@ const Certificate = require('../models/Certificate');
 const User = require('../models/User');
 const Exam = require('../models/Exam');
 const Lesson = require('../models/Lesson');
+const { canManageCourse } = require('../utils/schoolAuth');
 
 exports.student = async (req, res) => {
   const [enrollments, results, certificates] = await Promise.all([
@@ -70,8 +71,8 @@ exports.courseStats = async (req, res) => {
   const course = await Course.findById(req.params.id).lean();
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
 
-  // Only the instructor of the course or an admin may access this
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  // Only the instructor of the course or their school's admin may access this
+  if (!canManageCourse(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
 
@@ -93,15 +94,20 @@ exports.courseStats = async (req, res) => {
 };
 
 exports.admin = async (req, res) => {
+  const schoolCourses = await Course.find(req.schoolFilter).select('_id').lean();
+  const courseIds = schoolCourses.map((c) => c._id);
+  const schoolExams = courseIds.length ? await Exam.find({ course: { $in: courseIds } }).select('_id').lean() : [];
+  const examIds = schoolExams.map((e) => e._id);
+
   const [usersCount, coursesCount, enrollmentsCount, resultsCount] = await Promise.all([
-    User.countDocuments(),
-    Course.countDocuments(),
-    Enrollment.countDocuments(),
-    Result.countDocuments({ status: 'graded' }),
+    User.countDocuments(req.schoolFilter),
+    Course.countDocuments(req.schoolFilter),
+    courseIds.length ? Enrollment.countDocuments({ course: { $in: courseIds } }) : 0,
+    examIds.length ? Result.countDocuments({ exam: { $in: examIds }, status: 'graded' }) : 0,
   ]);
 
-  const recentUsers = await User.find().sort({ createdAt: -1 }).limit(10).lean();
-  const popularCourses = await Course.find({ status: 'published' }).sort({ enrollmentCount: -1 }).limit(5).populate('instructor', 'name').lean();
+  const recentUsers = await User.find(req.schoolFilter).sort({ createdAt: -1 }).limit(10).lean();
+  const popularCourses = await Course.find({ ...req.schoolFilter, status: 'published' }).sort({ enrollmentCount: -1 }).limit(5).populate('instructor', 'name').lean();
 
   res.json({
     success: true,

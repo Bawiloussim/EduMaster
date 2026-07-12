@@ -7,11 +7,17 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, select: false },
   role: { type: String, enum: ['superadmin', 'admin', 'instructor', 'student'], default: 'student' },
+  // null only for superadmin — every other role belongs to exactly one school
+  school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
+  // 'pending'/'rejected' only ever apply to role 'admin' (chef d'établissement approval flow)
+  status: { type: String, enum: ['active', 'pending', 'rejected'], default: 'active' },
   classe: { type: String, enum: [...CLASSES, null], default: null },
   serie: { type: String, enum: [...SERIES, null], default: null },
   avatar: { type: String, default: '' },
   bio: { type: String, default: '' },
-  isVerified: { type: Boolean, default: false },
+  emailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String, select: false },
+  emailVerificationExpires: { type: Date, select: false },
   refreshToken: { type: String, select: false },
   resetPasswordToken: { type: String, select: false },
   resetPasswordExpires: { type: Date, select: false },

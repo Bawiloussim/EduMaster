@@ -43,7 +43,7 @@ function Stat({ value, label }) {
 
 export default function Landing() {
   const { user } = useAuthStore();
-  const dashLink = ['admin', 'superadmin'].includes(user?.role) ? '/admin' : user?.role === 'instructor' ? '/instructor' : '/student';
+  const dashLink = user?.role === 'superadmin' ? '/superadmin' : user?.role === 'admin' ? '/admin' : user?.role === 'instructor' ? '/instructor' : '/student';
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
