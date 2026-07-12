@@ -14,6 +14,8 @@ import PalmaresTab from './tabs/PalmaresTab';
 import ClassesTab from './tabs/ClassesTab';
 import AnnouncementsTab from './tabs/AnnouncementsTab';
 import ImportStudentsModal from './tabs/ImportStudentsModal';
+import ImportInstructorsModal from './tabs/ImportInstructorsModal';
+import ImportCoursesModal from './tabs/ImportCoursesModal';
 
 const TAB_TITLES = {
   overview: "Vue d'ensemble",
@@ -129,6 +131,8 @@ function OverviewTab() {
 
 // ─── Instructors tab ──────────────────────────────────────────────────────────
 function InstructorsTab() {
+  const qc = useQueryClient();
+  const [importOpen, setImportOpen] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['admin-instructors'],
     queryFn: () => api.get('/admin/instructors').then(r => r.data.data),
@@ -137,6 +141,17 @@ function InstructorsTab() {
   if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
 
   return (
+    <>
+      <div className="flex justify-end mb-4">
+        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+          <Upload className="h-4 w-4" /> Importer CSV
+        </Button>
+      </div>
+      <ImportInstructorsModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => qc.invalidateQueries(['admin-instructors'])}
+      />
     <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
@@ -165,6 +180,7 @@ function InstructorsTab() {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -251,6 +267,7 @@ function StudentsTab() {
 function CoursesTab() {
   const qc = useQueryClient();
   const [subjectFilter, setSubjectFilter] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['admin-courses'],
     queryFn: () => api.get('/courses/admin/all').then(r => r.data),
@@ -273,6 +290,16 @@ function CoursesTab() {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+          <Upload className="h-4 w-4" /> Importer CSV
+        </Button>
+      </div>
+      <ImportCoursesModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => qc.invalidateQueries(['admin-courses'])}
+      />
       {subjects.length > 0 && (
         <div className="mb-4">
           <select

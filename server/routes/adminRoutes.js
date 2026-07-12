@@ -19,5 +19,7 @@ router.get('/classes', ac.classesOverview);
 router.post('/announcements', anc.create);
 router.get('/announcements', anc.list);
 router.post('/import/students', csvUpload.single('file'), ic.importStudents);
+router.post('/import/instructors', csvUpload.single('file'), ic.importInstructors);
+router.post('/import/courses', csvUpload.single('file'), ic.importCourses);
 
 module.exports = router;
