@@ -11,10 +11,11 @@ const signAccess = (id) =>
 const signRefresh = (id) =>
   jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d' });
 
+const isProd = process.env.NODE_ENV === 'production';
 const cookieOpts = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  secure: isProd,
+  sameSite: isProd ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -70,7 +71,7 @@ exports.logout = async (req, res) => {
   if (token) {
     await User.findOneAndUpdate({ refreshToken: token }, { refreshToken: '' }).catch(() => {});
   }
-  res.clearCookie('refreshToken');
+  res.clearCookie('refreshToken', { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' });
   res.json({ success: true, message: 'Déconnecté' });
 };
 
