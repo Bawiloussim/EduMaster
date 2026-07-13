@@ -14,12 +14,20 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['superadmin', 'admin', 'instructor', 'student'], default: 'student' },
   // null only for superadmin — every other role belongs to exactly one school
   school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
-  // 'pending'/'rejected' only ever apply to role 'admin' (chef d'établissement approval flow)
-  status: { type: String, enum: ['active', 'pending', 'rejected'], default: 'active' },
+  // 'pending'/'rejected' only ever apply to role 'admin' (chef d'établissement approval flow);
+  // 'suspended' is a chef d'établissement disabling a student/instructor account — same login gate.
+  status: { type: String, enum: ['active', 'pending', 'rejected', 'suspended'], default: 'active' },
   classe: { type: String, enum: [...CLASSES, null], default: null },
   serie: { type: String, enum: [...SERIES, null], default: null },
   avatar: { type: String, default: '' },
   bio: { type: String, default: '' },
+  matricule: { type: String, default: '', trim: true },
+  phone: { type: String, default: '', trim: true },
+  gender: { type: String, enum: ['M', 'F', null], default: null },
+  birthDate: { type: Date, default: null },
+  // Instructor-only, informational (doesn't gate course creation)
+  assignedClasses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
+  subjects: [String],
   emailVerified: { type: Boolean, default: false },
   emailVerificationToken: { type: String, select: false },
   emailVerificationExpires: { type: Date, select: false },

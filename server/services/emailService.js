@@ -59,3 +59,7 @@ exports.sendGradeSigned = (student, { evalLabel, courseTitle, instructorName }) 
 exports.sendStudentImported = (user, tempPassword) =>
   send(user.email, 'Votre compte EduMaster a été créé',
     `<p>Bonjour ${user.name},</p><p>Un compte EduMaster a été créé pour vous par votre établissement.</p><p>Email : <strong>${user.email}</strong><br/>Mot de passe temporaire : <strong>${tempPassword}</strong></p><p>Merci de vous connecter et de changer votre mot de passe dès que possible.</p>`);
+
+exports.sendPasswordResetByAdmin = (user, tempPassword) =>
+  send(user.email, 'Votre mot de passe EduMaster a été réinitialisé',
+    `<p>Bonjour ${user.name},</p><p>Votre établissement a réinitialisé votre mot de passe.</p><p>Nouveau mot de passe temporaire : <strong>${tempPassword}</strong></p><p>Merci de vous connecter et de le changer dès que possible.</p>`);

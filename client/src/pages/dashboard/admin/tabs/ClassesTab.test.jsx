@@ -8,21 +8,22 @@ vi.mock('../../../../services/api', () => ({
   default: { get: vi.fn() },
 }));
 
-const FIXTURE = [
-  { classe: '6ème', serie: null, studentsCount: 3, coursesCount: 1 },
-  { classe: '5ème', serie: null, studentsCount: 2, coursesCount: 0 },
-  { classe: '4ème', serie: null, studentsCount: 0, coursesCount: 0 },
-  { classe: '3ème', serie: null, studentsCount: 1, coursesCount: 2 },
-  { classe: 'Seconde', serie: 'A4', studentsCount: 0, coursesCount: 0 },
-  { classe: 'Seconde', serie: 'D', studentsCount: 5, coursesCount: 1 },
-  { classe: 'Première', serie: 'A4', studentsCount: 0, coursesCount: 0 },
-  { classe: 'Première', serie: 'D', studentsCount: 0, coursesCount: 0 },
-  { classe: 'Terminale', serie: 'A4', studentsCount: 0, coursesCount: 0 },
-  { classe: 'Terminale', serie: 'D', studentsCount: 4, coursesCount: 0 },
+const CLASSES_FIXTURE = [
+  { _id: 'c1', classe: '6ème', serie: null, studentsCount: 3, mainTeacher: null },
+  { _id: 'c2', classe: '5ème', serie: null, studentsCount: 2, mainTeacher: null },
+  { _id: 'c3', classe: '4ème', serie: null, studentsCount: 0, mainTeacher: null },
+  { _id: 'c4', classe: '3ème', serie: null, studentsCount: 1, mainTeacher: null },
+  { _id: 'c5', classe: 'Seconde', serie: 'A4', studentsCount: 0, mainTeacher: null },
+  { _id: 'c6', classe: 'Terminale', serie: 'A4', studentsCount: 0, mainTeacher: null },
+  { _id: 'c7', classe: 'Terminale', serie: 'D', studentsCount: 4, mainTeacher: { _id: 't1', name: 'Prof Test' } },
 ];
 
 beforeEach(() => {
-  api.get.mockReset().mockResolvedValue({ data: { data: FIXTURE } });
+  api.get.mockReset().mockImplementation((url) => {
+    if (url === '/classes') return Promise.resolve({ data: { data: CLASSES_FIXTURE } });
+    if (url === '/admin/instructors') return Promise.resolve({ data: { data: [{ _id: 't1', name: 'Prof Test' }] } });
+    return Promise.resolve({ data: { data: [] } });
+  });
 });
 
 describe('ClassesTab', () => {
@@ -56,14 +57,18 @@ describe('ClassesTab', () => {
     expect(terminaleCell.closest('td')).toHaveAttribute('rowspan', '2');
   });
 
-  test('les totaux par section correspondent à la somme des lignes', async () => {
+  test('le total élèves par section correspond à la somme des lignes', async () => {
     renderWithProviders(<ClassesTab />);
     await waitFor(() => expect(screen.getByText('Collège')).toBeInTheDocument());
 
     const collegeSection = screen.getByText('Collège').closest('div.bg-white');
-    // total élèves collège = 3+2+0+1 = 6, total cours = 1+0+0+2 = 3
-    // (le total d'en-tête a la classe text-xl, contrairement aux pastilles de valeur par ligne qui sont en text-sm, pour éviter toute ambiguïté)
+    // total élèves collège = 3+2+0+1 = 6
     expect(within(collegeSection).getByText('6', { selector: 'span.text-xl' })).toBeInTheDocument();
-    expect(within(collegeSection).getByText('3', { selector: 'span.text-xl' })).toBeInTheDocument();
+  });
+
+  test('affiche le professeur principal déjà affecté', async () => {
+    renderWithProviders(<ClassesTab />);
+    await waitFor(() => expect(screen.getByText('Lycée')).toBeInTheDocument());
+    expect(screen.getByDisplayValue('Prof Test')).toBeInTheDocument();
   });
 });

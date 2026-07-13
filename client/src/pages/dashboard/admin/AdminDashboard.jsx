@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload, Layers, Trophy, Megaphone } from 'lucide-react';
+import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload, Layers, Trophy, Megaphone, Search, Plus, Pencil, KeyRound, Ban, CheckCircle2, ArrowUpDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../../services/api';
 import Skeleton, { SkeletonStatRow, SkeletonTable } from '../../../components/ui/Skeleton';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
+import ActionMenu from '../../../components/ui/ActionMenu';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
 import SchoolBanner from '../../../components/layout/SchoolBanner';
@@ -18,6 +19,8 @@ import AnnouncementsTab from './tabs/AnnouncementsTab';
 import ImportStudentsModal from './tabs/ImportStudentsModal';
 import ImportInstructorsModal from './tabs/ImportInstructorsModal';
 import ImportCoursesModal from './tabs/ImportCoursesModal';
+import StudentFormModal from './tabs/StudentFormModal';
+import InstructorFormModal from './tabs/InstructorFormModal';
 
 const ROLE_LABELS = {
   student: 'Étudiant',
@@ -178,25 +181,85 @@ function OverviewTab() {
 function InstructorsTab() {
   const qc = useQueryClient();
   const [importOpen, setImportOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('name');
+
   const { data, isLoading } = useQuery({
     queryKey: ['admin-instructors'],
     queryFn: () => api.get('/admin/instructors').then(r => r.data.data),
   });
 
-  if (isLoading) return <SkeletonTable rows={6} columns={4} />;
+  const invalidate = () => qc.invalidateQueries(['admin-instructors']);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/admin/instructors/${id}`),
+    onSuccess: () => { toast.success('Formateur supprimé'); invalidate(); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (id) => api.patch(`/admin/instructors/${id}/reset-password`),
+    onSuccess: (res) => toast.success(`Mot de passe réinitialisé : ${res.data.data.tempPassword}`, { duration: 15000 }),
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: (id) => api.patch(`/admin/instructors/${id}/status`),
+    onSuccess: () => { toast.success('Statut mis à jour'); invalidate(); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const rows = useMemo(() => {
+    let list = data || [];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q) || i.email.toLowerCase().includes(q));
+    }
+    return [...list].sort((a, b) => sortKey === 'name'
+      ? a.name.localeCompare(b.name)
+      : (b.coursesCount || 0) - (a.coursesCount || 0));
+  }, [data, search, sortKey]);
+
+  if (isLoading) return <SkeletonTable rows={6} columns={5} />;
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-          <Upload className="h-4 w-4" /> Importer CSV
-        </Button>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un formateur…"
+            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand bg-white"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSortKey((k) => k === 'name' ? 'coursesCount' : 'name')}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" /> Trier par {sortKey === 'name' ? 'nom' : 'cours'}
+          </button>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importer
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4" /> Ajouter
+          </Button>
+        </div>
       </div>
-      <ImportInstructorsModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImported={() => qc.invalidateQueries(['admin-instructors'])}
+
+      <ImportInstructorsModal open={importOpen} onClose={() => setImportOpen(false)} onImported={invalidate} />
+      <InstructorFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        instructor={editing}
+        onSaved={() => { setFormOpen(false); invalidate(); }}
       />
+
     <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
@@ -205,10 +268,12 @@ function InstructorsTab() {
             <th className="px-4 py-3 text-center font-semibold">Cours</th>
             <th className="px-4 py-3 text-center font-semibold">Élèves</th>
             <th className="px-4 py-3 text-center font-semibold">Taux de réussite</th>
+            <th className="px-4 py-3 text-center font-semibold">Statut</th>
+            <th className="px-4 py-3 text-right font-semibold">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {data?.map((i) => (
+          {rows.map((i) => (
             <tr key={i._id}>
               <td className="px-4 py-3">
                 <div className="font-medium text-gray-900">{i.name}</div>
@@ -217,10 +282,21 @@ function InstructorsTab() {
               <td className="px-4 py-3 text-center">{i.coursesCount}</td>
               <td className="px-4 py-3 text-center">{i.studentsCount}</td>
               <td className="px-4 py-3 text-center">{i.avgPassRate}%</td>
+              <td className="px-4 py-3 text-center">
+                <Badge color={i.status === 'suspended' ? 'red' : 'green'}>{i.status === 'suspended' ? 'Désactivé' : 'Actif'}</Badge>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <ActionMenu actions={[
+                  { label: 'Modifier', icon: Pencil, onClick: () => { setEditing(i); setFormOpen(true); } },
+                  { label: 'Réinitialiser mot de passe', icon: KeyRound, onClick: () => resetPasswordMutation.mutate(i._id) },
+                  { label: i.status === 'suspended' ? 'Réactiver' : 'Désactiver', icon: i.status === 'suspended' ? CheckCircle2 : Ban, onClick: () => statusMutation.mutate(i._id) },
+                  { label: 'Supprimer', icon: Trash2, danger: true, onClick: () => window.confirm('Supprimer ce formateur ?') && deleteMutation.mutate(i._id) },
+                ]} />
+              </td>
             </tr>
           ))}
-          {data?.length === 0 && (
-            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Aucun formateur</td></tr>
+          {rows.length === 0 && (
+            <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Aucun formateur</td></tr>
           )}
         </tbody>
       </table>
@@ -249,25 +325,101 @@ async function downloadStudentBulletin(studentId, studentName) {
 function StudentsTab() {
   const qc = useQueryClient();
   const [importOpen, setImportOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [search, setSearch] = useState('');
+  const [classeFilter, setClasseFilter] = useState('');
+  const [sortKey, setSortKey] = useState('name');
+
   const { data, isLoading } = useQuery({
     queryKey: ['admin-students'],
     queryFn: () => api.get('/admin/students').then(r => r.data.data),
   });
 
-  if (isLoading) return <SkeletonTable rows={6} columns={5} />;
+  const invalidate = () => qc.invalidateQueries(['admin-students']);
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/admin/students/${id}`),
+    onSuccess: () => { toast.success('Élève supprimé'); invalidate(); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (id) => api.patch(`/admin/students/${id}/reset-password`),
+    onSuccess: (res) => toast.success(`Mot de passe réinitialisé : ${res.data.data.tempPassword}`, { duration: 15000 }),
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: (id) => api.patch(`/admin/students/${id}/status`),
+    onSuccess: () => { toast.success('Statut mis à jour'); invalidate(); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const classes = useMemo(() => [...new Set((data || []).map((s) => s.classe).filter(Boolean))], [data]);
+
+  const rows = useMemo(() => {
+    let list = data || [];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q));
+    }
+    if (classeFilter) list = list.filter((s) => s.classe === classeFilter);
+    return [...list].sort((a, b) => sortKey === 'name'
+      ? a.name.localeCompare(b.name)
+      : (a.classe || '').localeCompare(b.classe || ''));
+  }, [data, search, classeFilter, sortKey]);
+
+  if (isLoading) return <SkeletonTable rows={6} columns={6} />;
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-          <Upload className="h-4 w-4" /> Importer CSV
-        </Button>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un élève…"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand bg-white"
+            />
+          </div>
+          {classes.length > 0 && (
+            <select
+              value={classeFilter}
+              onChange={(e) => setClasseFilter(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand bg-white"
+            >
+              <option value="">Toutes les classes</option>
+              {classes.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSortKey((k) => k === 'name' ? 'classe' : 'name')}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" /> Trier par {sortKey === 'name' ? 'nom' : 'classe'}
+          </button>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importer
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4" /> Ajouter
+          </Button>
+        </div>
       </div>
-      <ImportStudentsModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImported={() => qc.invalidateQueries(['admin-students'])}
+
+      <ImportStudentsModal open={importOpen} onClose={() => setImportOpen(false)} onImported={invalidate} />
+      <StudentFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        student={editing}
+        onSaved={() => { setFormOpen(false); invalidate(); }}
       />
+
     <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
@@ -276,11 +428,13 @@ function StudentsTab() {
             <th className="px-4 py-3 text-center font-semibold">Niveau</th>
             <th className="px-4 py-3 text-center font-semibold">Cours</th>
             <th className="px-4 py-3 text-center font-semibold">Progression</th>
+            <th className="px-4 py-3 text-center font-semibold">Statut</th>
             <th className="px-4 py-3 text-center font-semibold">Bulletin</th>
+            <th className="px-4 py-3 text-right font-semibold">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {data?.map((s) => (
+          {rows.map((s) => (
             <tr key={s._id}>
               <td className="px-4 py-3">
                 <div className="font-medium text-gray-900">{s.name}</div>
@@ -292,14 +446,25 @@ function StudentsTab() {
               <td className="px-4 py-3 text-center">{s.coursesCount}</td>
               <td className="px-4 py-3 text-center">{s.avgProgress}%</td>
               <td className="px-4 py-3 text-center">
+                <Badge color={s.status === 'suspended' ? 'red' : 'green'}>{s.status === 'suspended' ? 'Désactivé' : 'Actif'}</Badge>
+              </td>
+              <td className="px-4 py-3 text-center">
                 <button onClick={() => downloadStudentBulletin(s._id, s.name)} className="text-brand-dark hover:underline text-xs flex items-center gap-1 justify-center w-full">
                   <Download className="h-3 w-3" /> PDF
                 </button>
               </td>
+              <td className="px-4 py-3 text-right">
+                <ActionMenu actions={[
+                  { label: 'Modifier', icon: Pencil, onClick: () => { setEditing(s); setFormOpen(true); } },
+                  { label: 'Réinitialiser mot de passe', icon: KeyRound, onClick: () => resetPasswordMutation.mutate(s._id) },
+                  { label: s.status === 'suspended' ? 'Réactiver' : 'Désactiver', icon: s.status === 'suspended' ? CheckCircle2 : Ban, onClick: () => statusMutation.mutate(s._id) },
+                  { label: 'Supprimer', icon: Trash2, danger: true, onClick: () => window.confirm('Supprimer cet élève ?') && deleteMutation.mutate(s._id) },
+                ]} />
+              </td>
             </tr>
           ))}
-          {data?.length === 0 && (
-            <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Aucun élève</td></tr>
+          {rows.length === 0 && (
+            <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Aucun élève</td></tr>
           )}
         </tbody>
       </table>
