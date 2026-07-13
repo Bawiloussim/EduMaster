@@ -10,6 +10,8 @@ import Badge from '../../../components/ui/Badge';
 import Modal from '../../../components/ui/Modal';
 import Input from '../../../components/ui/Input';
 import PageWrapper from '../../../components/layout/PageWrapper';
+import SchoolBanner from '../../../components/layout/SchoolBanner';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { CLASSES, SERIES, SERIE_LABELS, SUBJECTS_BY_SERIE, SUBJECTS_COLLEGE, requiresSerie } from '../../../utils/schoolData';
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
@@ -247,6 +249,7 @@ function CourseRow({ course, onPublish, onDelete, publishPending }) {
 }
 
 export default function InstructorDashboard() {
+  const { user } = useAuthStore();
   const [params] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(params.get('new') === 'true');
   const qc = useQueryClient();
@@ -268,6 +271,7 @@ export default function InstructorDashboard() {
 
   if (isLoading) return (
     <PageWrapper>
+      <SchoolBanner school={user?.school} />
       <SkeletonStatRow />
       <Skeleton className="h-5 w-32 mb-4" />
       <SkeletonCourseGrid count={3} />
@@ -276,6 +280,7 @@ export default function InstructorDashboard() {
 
   return (
     <PageWrapper>
+      <SchoolBanner school={user?.school} />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Espace Formateur</h1>

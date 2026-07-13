@@ -16,6 +16,7 @@ import Skeleton, { SkeletonStatRow, SkeletonCourseGrid } from '../../../componen
 import ProgressBar from '../../../components/ui/ProgressBar';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
+import SchoolBanner from '../../../components/layout/SchoolBanner';
 import Footer from '../../../components/layout/Footer';
 
 const TAB_TITLES = {
@@ -508,6 +509,7 @@ export default function StudentDashboard() {
         <DashboardTopbar title={TAB_TITLES[tab]} onMenuClick={() => setMobileNavOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <SchoolBanner school={user?.school} />
           {isLoading ? (
             <>
               <Skeleton className="h-8 w-64 mb-2" />

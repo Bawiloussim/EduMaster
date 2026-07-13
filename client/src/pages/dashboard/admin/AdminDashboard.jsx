@@ -9,6 +9,7 @@ import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
+import SchoolBanner from '../../../components/layout/SchoolBanner';
 import Footer from '../../../components/layout/Footer';
 import { useAuthStore } from '../../../store/useAuthStore';
 import PalmaresTab from './tabs/PalmaresTab';
@@ -418,6 +419,7 @@ export default function AdminDashboard() {
         <DashboardTopbar title={TAB_TITLES[activeTab]} onMenuClick={() => setMobileNavOpen(true)} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <SchoolBanner school={user?.school} />
           {activeTab === 'overview' && <OverviewTab />}
           {activeTab === 'instructors' && <InstructorsTab />}
           {activeTab === 'students' && <StudentsTab />}

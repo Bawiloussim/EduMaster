@@ -91,7 +91,7 @@ async function createAccountAndRespond(res, { name, email, password, googleId, e
   res.cookie('refreshToken', refreshToken, cookieOpts);
   res.status(201).json({
     success: true,
-    data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: user.school, avatar: user.avatar, classe: user.classe, serie: user.serie },
+    data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: { _id: school._id, name: school.name, status: school.status }, avatar: user.avatar, classe: user.classe, serie: user.serie },
     accessToken,
   });
 }
@@ -127,7 +127,7 @@ exports.google = async (req, res) => {
   }
 
   const email = payload.email.toLowerCase();
-  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'status');
+  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status');
 
   if (existing) {
     if (!existing.googleId) {
@@ -173,7 +173,7 @@ exports.login = async (req, res) => {
   if (!email || !password) {
     return res.status(422).json({ success: false, message: 'Email et mot de passe requis' });
   }
-  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'status');
+  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status');
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
   }
