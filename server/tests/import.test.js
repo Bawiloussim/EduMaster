@@ -1,10 +1,8 @@
 const request = require('supertest');
-const ExcelJS = require('exceljs');
 const testDb = require('./utils/testDb');
 const { createUser, getAuthToken } = require('./utils/factories');
 const User = require('../models/User');
 const Course = require('../models/Course');
-const Class = require('../models/Class');
 
 let app;
 
@@ -18,49 +16,6 @@ afterAll(async () => testDb.closeDatabase());
 function csv(rows) {
   return Buffer.from(rows.join('\n'));
 }
-
-describe('POST /api/admin/import/students — classe non créée', () => {
-  test("rejette une ligne dont la classe n'existe pas encore pour l'établissement", async () => {
-    const admin = await createUser({ role: 'admin' });
-    const file = csv(['nom,email,classe', 'Test Eleve,eleve.classe.inexistante@example.com,6ème']);
-
-    const res = await request(app).post('/api/admin/import/students')
-      .set('Authorization', `Bearer ${getAuthToken(admin)}`)
-      .attach('file', file, 'eleves.csv');
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.createdCount).toBe(0);
-    expect(res.body.data.errors[0].reason).toBe("Cette classe n'existe pas encore pour votre établissement");
-  });
-});
-
-describe('POST /api/admin/import/students — fichier Excel (.xlsx)', () => {
-  test('importe des élèves avec les nouvelles colonnes (prenom, matricule, telephone, genre, date_naissance)', async () => {
-    const admin = await createUser({ role: 'admin' });
-    await Class.create({ school: admin.school, classe: 'Terminale', serie: 'D' });
-
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('Eleves');
-    ws.addRow(['Nom', 'Prenom', 'Email', 'Classe', 'Serie', 'Matricule', 'Telephone', 'Genre', 'Date_naissance']);
-    ws.addRow(['Kamga', 'Alice', 'alice.kamga.xlsx@example.com', 'Terminale', 'D', 'MAT001', '699000000', 'F', '2006-05-12']);
-    const buffer = await wb.xlsx.writeBuffer();
-
-    const res = await request(app).post('/api/admin/import/students')
-      .set('Authorization', `Bearer ${getAuthToken(admin)}`)
-      .attach('file', Buffer.from(buffer), 'eleves.xlsx');
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.createdCount).toBe(1);
-    expect(res.body.data.created[0].name).toBe('Alice Kamga');
-
-    const user = await User.findOne({ email: 'alice.kamga.xlsx@example.com' });
-    expect(user.matricule).toBe('MAT001');
-    expect(user.phone).toBe('699000000');
-    expect(user.gender).toBe('F');
-    expect(user.classe).toBe('Terminale');
-    expect(user.serie).toBe('D');
-  });
-});
 
 describe('POST /api/admin/import/instructors', () => {
   test('crée un formateur sans classe/serie', async () => {

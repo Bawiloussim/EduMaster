@@ -4,7 +4,6 @@ const User = require('../models/User');
 const STATUS_MESSAGES = {
   pending: 'Votre compte est en attente de validation par un super administrateur',
   rejected: "Votre demande de compte n'a pas été approuvée",
-  suspended: 'Votre compte a été désactivé par votre établissement',
 };
 
 const protect = async (req, res, next) => {
