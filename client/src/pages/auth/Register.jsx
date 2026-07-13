@@ -70,16 +70,19 @@ export default function Register() {
   const [schoolId, setSchoolId] = useState('');
   const [classe, setClasse] = useState('');
   const [serie, setSerie] = useState('');
-  const [pending, setPending] = useState(null);
+  const [awaitingVerification, setAwaitingVerification] = useState(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const needsSerie = classe && requiresSerie(classe);
+  const isPrincipal = role === 'admin';
 
   const { data: schools } = useQuery({
     queryKey: ['schools-public'],
     queryFn: () => api.get('/schools/public').then((r) => r.data.data),
+    enabled: !isPrincipal,
   });
 
   const validatePrerequisites = () => {
+    if (isPrincipal) return true; // creates their own school next, in the onboarding wizard
     if (!schoolId) { toast.error('Choisissez votre établissement'); return false; }
     if (role === 'student' && (!classe || (needsSerie && !serie))) {
       toast.error(needsSerie ? 'Choisissez votre classe et votre série' : 'Choisissez votre classe');
@@ -92,15 +95,15 @@ export default function Register() {
     if (!validatePrerequisites()) return;
     try {
       const result = await signup({
-        ...data, role, schoolId,
+        ...data, role, ...(isPrincipal ? {} : { schoolId }),
         ...(role === 'student' ? { classe, serie: needsSerie ? serie : null } : {}),
       });
-      if (result.pending) {
-        setPending(result.message);
+      if (result.requiresVerification) {
+        setAwaitingVerification(result.message);
         return;
       }
       toast.success('Compte créé ! Bienvenue sur EduMaster.');
-      navigate('/home');
+      navigate(isPrincipal ? '/onboarding/school' : '/home');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Erreur lors de la création du compte');
     }
@@ -111,15 +114,15 @@ export default function Register() {
     setGoogleLoading(true);
     try {
       const result = await registerWithGoogle({
-        credential: credentialResponse.credential, role, schoolId,
+        credential: credentialResponse.credential, role, ...(isPrincipal ? {} : { schoolId }),
         ...(role === 'student' ? { classe, serie: needsSerie ? serie : null } : {}),
       });
-      if (result.pending) {
-        setPending(result.message);
+      if (result.requiresVerification) {
+        setAwaitingVerification(result.message);
         return;
       }
       toast.success('Compte créé ! Bienvenue sur EduMaster.');
-      navigate('/home');
+      navigate(isPrincipal ? '/onboarding/school' : '/home');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Erreur lors de la connexion Google');
     } finally {
@@ -127,7 +130,7 @@ export default function Register() {
     }
   };
 
-  if (pending) {
+  if (awaitingVerification) {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center p-4">
@@ -139,9 +142,9 @@ export default function Register() {
               <div className="h-14 w-14 bg-brand/15 rounded-full flex items-center justify-center mb-4">
                 <MailCheck className="h-7 w-7 text-brand-dark" />
               </div>
-              <h1 className="text-xl font-bold text-gray-900 mb-2">Demande envoyée</h1>
-              <p className="text-sm text-gray-500 mb-6">{pending}</p>
-              <Link to="/login" className="text-brand-dark font-medium hover:underline text-sm">Retour à la connexion</Link>
+              <h1 className="text-xl font-bold text-gray-900 mb-2">Vérifiez votre email</h1>
+              <p className="text-sm text-gray-500 mb-6">{awaitingVerification}</p>
+              <Link to="/login" className="text-brand-dark font-medium hover:underline text-sm">Aller à la connexion</Link>
             </div>
           </div>
         </div>
@@ -203,16 +206,18 @@ export default function Register() {
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">Mon établissement</label>
-              <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
-                <option value="">Choisissez un établissement…</option>
-                {schools?.map((s) => (
-                  <option key={s._id} value={s._id}>{s.name}{s.city ? ` — ${s.city}` : ''}</option>
-                ))}
-              </select>
-            </div>
+            {!isPrincipal && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">Mon établissement</label>
+                <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
+                  <option value="">Choisissez un établissement…</option>
+                  {schools?.map((s) => (
+                    <option key={s._id} value={s._id}>{s.name}{s.city ? ` — ${s.city}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {role === 'student' && (
               <div>
@@ -238,9 +243,9 @@ export default function Register() {
               </div>
             )}
 
-            {role === 'admin' && (
+            {isPrincipal && (
               <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                Votre compte sera activé après validation par un super administrateur EduMaster.
+                Après vérification de votre email, vous serez guidé pas à pas pour créer votre établissement.
               </p>
             )}
           </div>

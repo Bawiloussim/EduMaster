@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const School = require('../models/School');
-const Notification = require('../models/Notification');
 const emailService = require('../services/emailService');
 const { syncClassEnrollments } = require('./enrollmentController');
 const { schoolId: resolveSchoolId } = require('../utils/schoolAuth');
@@ -31,17 +30,22 @@ const cookieOpts = {
 async function createAccountAndRespond(res, { name, email, password, googleId, emailVerified, role, schoolId, classe, serie }) {
   const allowedRoles = ['student', 'instructor', 'admin'];
   const finalRole = allowedRoles.includes(role) ? role : 'student';
+  const isPrincipal = finalRole === 'admin';
 
-  const school = await School.findOne({ _id: schoolId, status: 'active' });
-  if (!school) {
-    res.status(422).json({ success: false, message: 'Établissement invalide' });
-    return;
+  // A principal creates their own school through the onboarding wizard after
+  // this — they never join an existing one, so there's no schoolId to resolve.
+  let school = null;
+  if (!isPrincipal) {
+    school = await School.findOne({ _id: schoolId, status: 'active' });
+    if (!school) {
+      res.status(422).json({ success: false, message: 'Établissement invalide' });
+      return;
+    }
   }
 
-  const isPrincipal = finalRole === 'admin';
   const userData = {
-    name, email, role: finalRole, school: school._id,
-    status: isPrincipal ? 'pending' : 'active',
+    name, email, role: finalRole, school: school?._id || null,
+    status: 'active',
     emailVerified: !!emailVerified,
   };
   if (password) userData.password = password;
@@ -66,19 +70,13 @@ async function createAccountAndRespond(res, { name, email, password, googleId, e
 
   if (userData.classe) await syncClassEnrollments(user._id, school._id, userData.classe, userData.serie);
 
-  if (isPrincipal) {
-    const superadmins = await User.find({ role: 'superadmin' }).select('_id');
-    await Promise.all(superadmins.map((sa) => Notification.create({
-      user: sa._id,
-      type: 'general',
-      title: "Nouvelle demande chef d'établissement",
-      message: `${name} demande un compte chef d'établissement pour ${school.name}.`,
-      link: '/superadmin',
-    })));
+  // A principal must verify their email before logging in (checked in `login`,
+  // never here) — issuing a token immediately would let them skip that gate,
+  // since register never goes through the login controller's own check.
+  if (isPrincipal && !emailVerified) {
     res.status(201).json({
       success: true,
-      pending: true,
-      message: 'Votre demande a été envoyée. Un super administrateur doit valider votre compte avant que vous puissiez vous connecter.',
+      message: 'Compte créé — vérifiez votre email puis connectez-vous pour créer votre établissement.',
     });
     return;
   }
@@ -91,7 +89,7 @@ async function createAccountAndRespond(res, { name, email, password, googleId, e
   res.cookie('refreshToken', refreshToken, cookieOpts);
   res.status(201).json({
     success: true,
-    data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: { _id: school._id, name: school.name, status: school.status }, avatar: user.avatar, classe: user.classe, serie: user.serie },
+    data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: school ? { _id: school._id, name: school.name, status: school.status, logo: school.logo } : null, avatar: user.avatar, classe: user.classe, serie: user.serie },
     accessToken,
   });
 }
@@ -100,6 +98,9 @@ exports.register = async (req, res) => {
   const { name, email, password, role, schoolId, classe, serie } = req.body;
   if (!name || !email || !password) {
     return res.status(422).json({ success: false, message: 'Tous les champs sont requis' });
+  }
+  if (role === 'admin' && schoolId) {
+    return res.status(422).json({ success: false, message: "Un chef d'établissement crée son propre établissement, il ne rejoint pas un établissement existant" });
   }
   await createAccountAndRespond(res, { name, email, password, emailVerified: false, role, schoolId, classe, serie });
 };
@@ -127,7 +128,7 @@ exports.google = async (req, res) => {
   }
 
   const email = payload.email.toLowerCase();
-  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status');
+  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status logo');
 
   if (existing) {
     if (!existing.googleId) {
@@ -156,7 +157,7 @@ exports.google = async (req, res) => {
     });
   }
 
-  if (!schoolId) {
+  if (role !== 'admin' && !schoolId) {
     return res.status(422).json({ success: false, message: 'Choisissez votre établissement' });
   }
   await createAccountAndRespond(res, {
@@ -173,7 +174,7 @@ exports.login = async (req, res) => {
   if (!email || !password) {
     return res.status(422).json({ success: false, message: 'Email et mot de passe requis' });
   }
-  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status');
+  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status logo');
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
   }
@@ -181,7 +182,7 @@ exports.login = async (req, res) => {
     return res.status(403).json({ success: false, message: STATUS_MESSAGES[user.status] || 'Compte inactif' });
   }
   if (user.role === 'admin' && !user.emailVerified) {
-    return res.status(403).json({ success: false, message: 'Vérifiez votre email avant de vous connecter' });
+    return res.status(403).json({ success: false, code: 'EMAIL_NOT_VERIFIED', message: 'Vérifiez votre email avant de vous connecter' });
   }
   if (user.school && user.school.status === 'suspended') {
     return res.status(403).json({ success: false, message: 'Votre établissement a été suspendu' });
@@ -288,6 +289,21 @@ exports.updateProfile = async (req, res) => {
     success: true,
     data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, bio: user.bio },
   });
+};
+
+exports.resendVerification = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  const generic = { success: true, message: "Si ce compte existe et n'est pas encore vérifié, un email a été envoyé" };
+  if (!user || user.emailVerified) return res.json(generic);
+
+  const token = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+
+  emailService.sendVerificationEmail(user, token).catch(() => {});
+  res.json(generic);
 };
 
 exports.forgotPassword = async (req, res) => {

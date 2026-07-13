@@ -16,6 +16,14 @@ async function createSchool(overrides = {}) {
     name: overrides.name || `École ${uniq()}`,
     city: overrides.city || 'Douala',
     status: overrides.status || 'active',
+    logo: overrides.logo || '',
+    address: overrides.address || '',
+    phone: overrides.phone || '',
+    email: overrides.email || '',
+    currency: overrides.currency || 'XAF',
+    academicYearLabel: overrides.academicYearLabel || '',
+    academicYearStart: overrides.academicYearStart || null,
+    academicYearEnd: overrides.academicYearEnd || null,
   });
 }
 
@@ -35,6 +43,10 @@ async function createUser(overrides = {}) {
     emailVerified: overrides.emailVerified ?? true,
     classe: overrides.classe ?? null,
     serie: overrides.serie ?? null,
+    matricule: overrides.matricule || '',
+    phone: overrides.phone || '',
+    gender: overrides.gender ?? null,
+    birthDate: overrides.birthDate ?? null,
   });
 }
 

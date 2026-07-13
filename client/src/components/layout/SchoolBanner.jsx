@@ -49,8 +49,12 @@ export default function SchoolBanner({ school }) {
       {/* Subtle brand wash on hover — kept behind the content */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-brand/[0.04] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-      <div className="relative h-12 w-12 rounded-xl bg-primary flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105">
-        <School className="h-6 w-6 text-brand" />
+      <div className="relative h-12 w-12 rounded-xl bg-primary flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-300 group-hover:scale-105">
+        {school.logo ? (
+          <img src={school.logo} alt={school.name} className="h-full w-full object-cover" />
+        ) : (
+          <School className="h-6 w-6 text-brand" />
+        )}
       </div>
 
       <div className="relative min-w-0 flex-1">

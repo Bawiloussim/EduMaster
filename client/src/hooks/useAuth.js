@@ -10,16 +10,19 @@ export const useAuth = () => {
     return data.data;
   };
 
+  // A principal (chef d'établissement) registering with a password gets no
+  // session yet — they must verify their email first, then log in explicitly
+  // to start the onboarding wizard (see authController.createAccountAndRespond).
   const register = async (payload) => {
     const { data } = await api.post('/auth/register', payload);
-    if (data.pending) return { pending: true, message: data.message };
+    if (!data.accessToken) return { requiresVerification: true, message: data.message };
     setAuth(data.data, data.accessToken);
     return data.data;
   };
 
   const registerWithGoogle = async (payload) => {
     const { data } = await api.post('/auth/google', payload);
-    if (data.pending) return { pending: true, message: data.message };
+    if (!data.accessToken) return { requiresVerification: true, message: data.message };
     setAuth(data.data, data.accessToken);
     return data.data;
   };

@@ -34,6 +34,15 @@ const Grading = lazy(() => import('../pages/dashboard/instructor/Grading'));
 const Home = lazy(() => import('../pages/Home'));
 const Landing = lazy(() => import('../pages/Landing'));
 
+const OnboardingLayout = lazy(() => import('../pages/onboarding/OnboardingLayout'));
+const SchoolStep = lazy(() => import('../pages/onboarding/steps/SchoolStep'));
+const AcademicYearStep = lazy(() => import('../pages/onboarding/steps/AcademicYearStep'));
+const ClassesStep = lazy(() => import('../pages/onboarding/steps/ClassesStep'));
+const TeachersStep = lazy(() => import('../pages/onboarding/steps/TeachersStep'));
+const StudentsStep = lazy(() => import('../pages/onboarding/steps/StudentsStep'));
+const SubjectsStep = lazy(() => import('../pages/onboarding/steps/SubjectsStep'));
+const InvitesStep = lazy(() => import('../pages/onboarding/steps/InvitesStep'));
+
 function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
@@ -94,6 +103,20 @@ export default function AppRouter() {
         {/* Protected — Admin / chef d'établissement (own sidebar layout, no global Navbar) */}
         <Route element={<ProtectedRoute roles={['admin', 'superadmin']} />}>
           <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
+
+        {/* Protected — Onboarding wizard (admin only, its own full-page chrome) */}
+        <Route element={<ProtectedRoute roles={['admin']} />}>
+          <Route path="/onboarding" element={<OnboardingLayout />}>
+            <Route index element={<Navigate to="school" replace />} />
+            <Route path="school" element={<SchoolStep />} />
+            <Route path="academic-year" element={<AcademicYearStep />} />
+            <Route path="classes" element={<ClassesStep />} />
+            <Route path="teachers" element={<TeachersStep />} />
+            <Route path="students" element={<StudentsStep />} />
+            <Route path="subjects" element={<SubjectsStep />} />
+            <Route path="invites" element={<InvitesStep />} />
+          </Route>
         </Route>
 
         {/* Protected — SuperAdmin (own sidebar layout, no global Navbar) */}

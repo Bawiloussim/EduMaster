@@ -12,14 +12,17 @@ const userSchema = new mongoose.Schema({
   // defaulting it would collide every non-Google account into one index entry.
   googleId: { type: String, unique: true, sparse: true },
   role: { type: String, enum: ['superadmin', 'admin', 'instructor', 'student'], default: 'student' },
-  // null only for superadmin — every other role belongs to exactly one school
+  // null for superadmin, and for an admin who hasn't created their school yet
   school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
-  // 'pending'/'rejected' only ever apply to role 'admin' (chef d'établissement approval flow)
-  status: { type: String, enum: ['active', 'pending', 'rejected'], default: 'active' },
+  status: { type: String, enum: ['active', 'suspended'], default: 'active' },
   classe: { type: String, enum: [...CLASSES, null], default: null },
   serie: { type: String, enum: [...SERIES, null], default: null },
   avatar: { type: String, default: '' },
   bio: { type: String, default: '' },
+  matricule: { type: String, default: '', trim: true },
+  phone: { type: String, default: '', trim: true },
+  gender: { type: String, enum: ['M', 'F', null], default: null },
+  birthDate: { type: Date, default: null },
   emailVerified: { type: Boolean, default: false },
   emailVerificationToken: { type: String, select: false },
   emailVerificationExpires: { type: Date, select: false },

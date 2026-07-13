@@ -14,9 +14,21 @@ router.use(protect, requireRole('admin'), attachSchoolFilter);
 router.get('/users', ac.adminList);
 router.patch('/users/:id/role', ac.updateUserRole);
 router.get('/instructors', ac.listInstructors);
+router.post('/instructors', ac.createInstructor);
+router.patch('/instructors/:id', ac.updateInstructor);
+router.delete('/instructors/:id', ac.deleteInstructor);
+router.patch('/instructors/:id/reset-password', ac.resetInstructorPassword);
+
 router.get('/students', ac.listStudents);
+router.post('/students', ac.createStudent);
+router.patch('/students/:id', ac.updateStudent);
+router.delete('/students/:id', ac.deleteStudent);
+router.patch('/students/:id/reset-password', ac.resetStudentPassword);
+
+router.get('/invites', ac.listCoAdmins);
+router.post('/invites', ac.inviteAdmin);
+
 router.get('/palmares', pc.getPalmares);
-router.get('/classes', ac.classesOverview);
 router.post('/announcements', anc.create);
 router.get('/announcements', anc.list);
 router.post('/import/students', csvUpload.single('file'), ic.importStudents);

@@ -97,37 +97,3 @@ describe('Isolation entre établissements', () => {
     expect(res.body.data.errors[0].reason).toBe('Formateur introuvable');
   });
 });
-
-describe('Approbation chef d\'établissement', () => {
-  test('un superadmin peut approuver puis le compte peut se connecter', async () => {
-    const school = await createSchool();
-    const superadmin = await createUser({ role: 'superadmin' });
-    const registerRes = await request(app).post('/api/auth/register').send({
-      name: 'Nouveau Principal', email: 'principal@example.com', password: 'Test1234!',
-      role: 'admin', schoolId: school._id,
-    });
-    expect(registerRes.status).toBe(201);
-    expect(registerRes.body.pending).toBe(true);
-
-    const loginBeforeApproval = await request(app).post('/api/auth/login').send({
-      email: 'principal@example.com', password: 'Test1234!',
-    });
-    expect(loginBeforeApproval.status).toBe(403);
-
-    const pendingRes = await request(app).get('/api/schools/principals/pending')
-      .set('Authorization', `Bearer ${getAuthToken(superadmin)}`);
-    expect(pendingRes.status).toBe(200);
-    const pendingUser = pendingRes.body.data.find((u) => u.email === 'principal@example.com');
-    expect(pendingUser).toBeDefined();
-
-    const approveRes = await request(app).patch(`/api/schools/principals/${pendingUser._id}/approve`)
-      .set('Authorization', `Bearer ${getAuthToken(superadmin)}`);
-    expect(approveRes.status).toBe(200);
-
-    // Still blocked — email not verified yet
-    const loginAfterApprovalUnverified = await request(app).post('/api/auth/login').send({
-      email: 'principal@example.com', password: 'Test1234!',
-    });
-    expect(loginAfterApprovalUnverified.status).toBe(403);
-  });
-});

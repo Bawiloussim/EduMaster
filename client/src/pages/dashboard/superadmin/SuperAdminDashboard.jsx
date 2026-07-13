@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { School, UserCheck, Plus, Ban, PlayCircle, Trash2, Check, X } from 'lucide-react';
+import { School, Plus, Ban, PlayCircle, Trash2 } from 'lucide-react';
 import api from '../../../services/api';
-import Skeleton, { SkeletonTable } from '../../../components/ui/Skeleton';
+import { SkeletonTable } from '../../../components/ui/Skeleton';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Badge from '../../../components/ui/Badge';
@@ -12,14 +12,13 @@ import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
 import Footer from '../../../components/layout/Footer';
 
-const TAB_TITLES = { schools: 'Établissements', approvals: "Demandes d'approbation" };
+const TAB_TITLES = { schools: 'Établissements' };
 
 const SIDEBAR_SECTIONS = [
   {
     label: 'Général',
     items: [
       { id: 'schools', label: 'Établissements', icon: School },
-      { id: 'approvals', label: "Demandes d'approbation", icon: UserCheck },
     ],
   },
 ];
@@ -129,66 +128,6 @@ function SchoolsTab() {
   );
 }
 
-function ApprovalsTab() {
-  const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ['pending-principals'],
-    queryFn: () => api.get('/schools/principals/pending').then((r) => r.data.data),
-  });
-
-  const approve = useMutation({
-    mutationFn: (id) => api.patch(`/schools/principals/${id}/approve`),
-    onSuccess: () => { toast.success('Demande approuvée'); qc.invalidateQueries({ queryKey: ['pending-principals'] }); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
-  });
-  const reject = useMutation({
-    mutationFn: (id) => api.patch(`/schools/principals/${id}/reject`),
-    onSuccess: () => { toast.success('Demande refusée'); qc.invalidateQueries({ queryKey: ['pending-principals'] }); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
-  });
-
-  if (isLoading) return (
-    <div className="space-y-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between gap-4">
-          <div className="space-y-2 flex-1">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-56" />
-            <Skeleton className="h-3 w-32" />
-          </div>
-          <Skeleton className="h-9 w-40 shrink-0" />
-        </div>
-      ))}
-    </div>
-  );
-
-  if (!data?.length) {
-    return <p className="text-center text-sm text-gray-400 py-16">Aucune demande en attente</p>;
-  }
-
-  return (
-    <div className="space-y-3">
-      {data.map((p) => (
-        <div key={p._id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="font-semibold text-gray-900">{p.name}</p>
-            <p className="text-sm text-gray-500">{p.email}</p>
-            <p className="text-xs text-gray-400 mt-1">Établissement : {p.school?.name || '—'}{p.school?.city ? ` (${p.school.city})` : ''}</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button size="sm" variant="danger" loading={reject.isPending} onClick={() => reject.mutate(p._id)}>
-              <X className="h-4 w-4" /> Refuser
-            </Button>
-            <Button size="sm" loading={approve.isPending} onClick={() => approve.mutate(p._id)}>
-              <Check className="h-4 w-4" /> Approuver
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState('schools');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -202,7 +141,6 @@ export default function SuperAdminDashboard() {
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {activeTab === 'schools' && <SchoolsTab />}
-          {activeTab === 'approvals' && <ApprovalsTab />}
         </main>
         <Footer />
       </div>

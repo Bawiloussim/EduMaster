@@ -22,14 +22,24 @@ describe('POST /api/auth/register', () => {
     expect(res.body.accessToken).toBeDefined();
   });
 
-  test('un chef d\'établissement reste en attente de validation et ne reçoit pas de session', async () => {
-    const school = await createSchool();
+  test('un chef d\'établissement s\'inscrit sans école et ne reçoit pas de session avant vérification', async () => {
     const res = await request(app).post('/api/auth/register').send({
-      name: 'Mallory', email: 'mallory@example.com', password: 'Test1234!', role: 'admin', schoolId: school._id,
+      name: 'Mallory', email: 'mallory@example.com', password: 'Test1234!', role: 'admin',
     });
     expect(res.status).toBe(201);
-    expect(res.body.pending).toBe(true);
     expect(res.body.accessToken).toBeUndefined();
+
+    const created = await require('../models/User').findOne({ email: 'mallory@example.com' });
+    expect(created.school).toBeNull();
+    expect(created.status).toBe('active');
+  });
+
+  test('refuse un chef d\'établissement qui tente de rejoindre un établissement existant', async () => {
+    const school = await createSchool();
+    const res = await request(app).post('/api/auth/register').send({
+      name: 'Mallory', email: 'mallory2@example.com', password: 'Test1234!', role: 'admin', schoolId: school._id,
+    });
+    expect(res.status).toBe(422);
   });
 
   test('refuse un établissement invalide ou manquant', async () => {
@@ -73,22 +83,31 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(401);
   });
 
-  test('bloque un chef d\'établissement tant qu\'il n\'est pas approuvé', async () => {
-    const school = await createSchool();
-    const user = await createUser({ role: 'admin', school: school._id, status: 'pending', emailVerified: true, password: 'Test1234!' });
+  test('bloque un chef d\'établissement dont l\'email n\'est pas vérifié', async () => {
+    const user = await createUser({ role: 'admin', school: null, status: 'active', emailVerified: false, password: 'Test1234!' });
     const res = await request(app).post('/api/auth/login').send({
       email: user.email, password: 'Test1234!',
     });
     expect(res.status).toBe(403);
+    expect(res.body.code).toBe('EMAIL_NOT_VERIFIED');
+  });
+});
+
+describe('POST /api/auth/resend-verification', () => {
+  test('régénère le token de vérification pour un compte non vérifié', async () => {
+    const user = await createUser({ role: 'admin', school: null, emailVerified: false });
+    const res = await request(app).post('/api/auth/resend-verification').send({ email: user.email });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const updated = await require('../models/User').findOne({ email: user.email }).select('+emailVerificationToken');
+    expect(updated.emailVerificationToken).toBeDefined();
   });
 
-  test('bloque un chef d\'établissement dont l\'email n\'est pas vérifié', async () => {
-    const school = await createSchool();
-    const user = await createUser({ role: 'admin', school: school._id, status: 'active', emailVerified: false, password: 'Test1234!' });
-    const res = await request(app).post('/api/auth/login').send({
-      email: user.email, password: 'Test1234!',
-    });
-    expect(res.status).toBe(403);
+  test('répond de façon générique pour un email inconnu (anti-énumération)', async () => {
+    const res = await request(app).post('/api/auth/resend-verification').send({ email: 'ghost@example.com' });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 });
 

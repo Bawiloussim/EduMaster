@@ -50,6 +50,7 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/google', authLimiter);
+app.use('/api/auth/resend-verification', authLimiter);
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
@@ -64,6 +65,8 @@ app.use('/api/exercises', require('./routes/exerciseRoutes'));
 app.use('/api/evaluations', require('./routes/evaluationRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/schools', require('./routes/schoolRoutes'));
+app.use('/api/classes', require('./routes/classRoutes'));
+app.use('/api/subjects', require('./routes/subjectRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'EduMaster API running' }));
 

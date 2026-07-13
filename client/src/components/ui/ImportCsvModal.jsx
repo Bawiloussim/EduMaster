@@ -7,7 +7,7 @@ import Modal from './Modal';
 import Button from './Button';
 import FileInput from './FileInput';
 
-export default function ImportCsvModal({ open, onClose, onImported, title, endpoint, helpText, createdHeading, toastMessage, renderCreatedItem }) {
+export default function ImportCsvModal({ open, onClose, onImported, title, endpoint, helpText, createdHeading, toastMessage, renderCreatedItem, accept = '.csv,text/csv' }) {
   const [file, setFile] = useState(null);
 
   const importMutation = useMutation({
@@ -35,7 +35,7 @@ export default function ImportCsvModal({ open, onClose, onImported, title, endpo
     <Modal open={open} onClose={close} title={title} size="lg">
       <p className="text-sm text-gray-500 mb-4">{helpText}</p>
 
-      <FileInput accept=".csv,text/csv" onChange={setFile} label="Fichier CSV" />
+      <FileInput accept={accept} onChange={setFile} label="Fichier CSV ou Excel" />
 
       <div className="flex justify-end mt-4">
         <Button disabled={!file} loading={importMutation.isPending} onClick={() => importMutation.mutate()}>

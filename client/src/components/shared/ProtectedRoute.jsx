@@ -11,5 +11,9 @@ export default function ProtectedRoute({ roles }) {
   if (user.role === 'student' && !user.classe && location.pathname !== '/choose-class') {
     return <Navigate to="/choose-class" replace />;
   }
+  // A principal without a school yet must create one before reaching any dashboard.
+  if (user.role === 'admin' && !user.school && !location.pathname.startsWith('/onboarding')) {
+    return <Navigate to="/onboarding/school" replace />;
+  }
   return <Outlet />;
 }

@@ -2,8 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const STATUS_MESSAGES = {
-  pending: 'Votre compte est en attente de validation par un super administrateur',
-  rejected: "Votre demande de compte n'a pas été approuvée",
+  suspended: 'Votre compte a été suspendu',
 };
 
 const protect = async (req, res, next) => {
@@ -18,7 +17,7 @@ const protect = async (req, res, next) => {
   } catch {
     return res.status(401).json({ success: false, message: 'Token invalide ou expiré' });
   }
-  req.user = await User.findById(decoded.id).populate('school', 'name status');
+  req.user = await User.findById(decoded.id).populate('school', 'name status logo');
   if (!req.user) {
     return res.status(401).json({ success: false, message: 'Utilisateur introuvable' });
   }

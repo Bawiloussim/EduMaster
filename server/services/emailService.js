@@ -27,14 +27,6 @@ exports.sendVerificationEmail = (user, token) => {
   return send(user.email, 'Vérifiez votre adresse email', `<p>Bonjour ${user.name},</p><p>Cliquez <a href="${url}">ici</a> pour vérifier votre adresse email et activer votre compte EduMaster.</p>`);
 };
 
-exports.sendPrincipalApproved = (user) =>
-  send(user.email, 'Votre compte chef d\'établissement est approuvé',
-    `<p>Bonjour ${user.name},</p><p>Votre demande de compte "Chef d'établissement" a été approuvée. Vous pouvez maintenant vous connecter à EduMaster.</p>`);
-
-exports.sendPrincipalRejected = (user) =>
-  send(user.email, 'Votre demande de compte a été refusée',
-    `<p>Bonjour ${user.name},</p><p>Votre demande de compte "Chef d'établissement" sur EduMaster n'a pas été approuvée. Contactez l'équipe EduMaster pour plus d'informations.</p>`);
-
 exports.sendExamResult = (user, exam, score, passed) =>
   send(user.email, `Résultat : ${exam.title}`, `<p>Bonjour ${user.name},</p><p>Vous avez obtenu <strong>${score}%</strong> à l'examen "${exam.title}". Résultat : ${passed ? '✅ Réussi' : '❌ Échoué'}</p>`);
 
@@ -59,3 +51,7 @@ exports.sendGradeSigned = (student, { evalLabel, courseTitle, instructorName }) 
 exports.sendStudentImported = (user, tempPassword) =>
   send(user.email, 'Votre compte EduMaster a été créé',
     `<p>Bonjour ${user.name},</p><p>Un compte EduMaster a été créé pour vous par votre établissement.</p><p>Email : <strong>${user.email}</strong><br/>Mot de passe temporaire : <strong>${tempPassword}</strong></p><p>Merci de vous connecter et de changer votre mot de passe dès que possible.</p>`);
+
+exports.sendPasswordResetByAdmin = (user, tempPassword) =>
+  send(user.email, 'Votre mot de passe EduMaster a été réinitialisé',
+    `<p>Bonjour ${user.name},</p><p>Votre établissement a réinitialisé votre mot de passe.</p><p>Nouveau mot de passe temporaire : <strong>${tempPassword}</strong></p><p>Merci de vous connecter et de le changer dès que possible.</p>`);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Users, BookOpen, BarChart, Award, GraduationCap, Download, Trash2, Eye, Upload, Layers, Trophy, Megaphone } from 'lucide-react';
+import { Users, BookOpen, BarChart, Award, GraduationCap, Trash2, Eye, Upload, Layers, Trophy, Megaphone, BookMarked } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../../services/api';
 import Skeleton, { SkeletonStatRow, SkeletonTable } from '../../../components/ui/Skeleton';
@@ -10,14 +10,16 @@ import Button from '../../../components/ui/Button';
 import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
 import SchoolBanner from '../../../components/layout/SchoolBanner';
+import SetupChecklist from '../../../components/layout/SetupChecklist';
 import Footer from '../../../components/layout/Footer';
 import { useAuthStore } from '../../../store/useAuthStore';
 import PalmaresTab from './tabs/PalmaresTab';
 import ClassesTab from './tabs/ClassesTab';
+import SubjectsTab from './tabs/SubjectsTab';
 import AnnouncementsTab from './tabs/AnnouncementsTab';
-import ImportStudentsModal from './tabs/ImportStudentsModal';
-import ImportInstructorsModal from './tabs/ImportInstructorsModal';
 import ImportCoursesModal from './tabs/ImportCoursesModal';
+import TeachersManager from '../../../components/shared/TeachersManager';
+import StudentsManager from '../../../components/shared/StudentsManager';
 
 const ROLE_LABELS = {
   student: 'Étudiant',
@@ -32,6 +34,7 @@ const TAB_TITLES = {
   students: 'Élèves',
   courses: 'Cours',
   classes: 'Classes',
+  subjects: 'Matières',
   palmares: 'Palmarès',
   announcements: 'Annonces',
 };
@@ -48,6 +51,7 @@ const SIDEBAR_SECTIONS = [
       { id: 'students', label: 'Élèves', icon: Users },
       { id: 'courses', label: 'Cours', icon: BookOpen },
       { id: 'classes', label: 'Classes', icon: Layers },
+      { id: 'subjects', label: 'Matières', icon: BookMarked },
     ],
   },
   {
@@ -176,136 +180,11 @@ function OverviewTab() {
 
 // ─── Instructors tab ──────────────────────────────────────────────────────────
 function InstructorsTab() {
-  const qc = useQueryClient();
-  const [importOpen, setImportOpen] = useState(false);
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-instructors'],
-    queryFn: () => api.get('/admin/instructors').then(r => r.data.data),
-  });
-
-  if (isLoading) return <SkeletonTable rows={6} columns={4} />;
-
-  return (
-    <>
-      <div className="flex justify-end mb-4">
-        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-          <Upload className="h-4 w-4" /> Importer CSV
-        </Button>
-      </div>
-      <ImportInstructorsModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImported={() => qc.invalidateQueries(['admin-instructors'])}
-      />
-    <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <th className="px-4 py-3 text-left font-semibold">Formateur</th>
-            <th className="px-4 py-3 text-center font-semibold">Cours</th>
-            <th className="px-4 py-3 text-center font-semibold">Élèves</th>
-            <th className="px-4 py-3 text-center font-semibold">Taux de réussite</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {data?.map((i) => (
-            <tr key={i._id}>
-              <td className="px-4 py-3">
-                <div className="font-medium text-gray-900">{i.name}</div>
-                <div className="text-xs text-gray-400">{i.email}</div>
-              </td>
-              <td className="px-4 py-3 text-center">{i.coursesCount}</td>
-              <td className="px-4 py-3 text-center">{i.studentsCount}</td>
-              <td className="px-4 py-3 text-center">{i.avgPassRate}%</td>
-            </tr>
-          ))}
-          {data?.length === 0 && (
-            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Aucun formateur</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-    </>
-  );
-}
-
-// ─── Students tab ──────────────────────────────────────────────────────────────
-async function downloadStudentBulletin(studentId, studentName) {
-  try {
-    const res = await api.get(`/evaluations/bulletin/1/pdf/student/${studentId}`, { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bulletin-${studentName || studentId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch {
-    toast.error('Bulletin non disponible');
-  }
+  return <TeachersManager />;
 }
 
 function StudentsTab() {
-  const qc = useQueryClient();
-  const [importOpen, setImportOpen] = useState(false);
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-students'],
-    queryFn: () => api.get('/admin/students').then(r => r.data.data),
-  });
-
-  if (isLoading) return <SkeletonTable rows={6} columns={5} />;
-
-  return (
-    <>
-      <div className="flex justify-end mb-4">
-        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-          <Upload className="h-4 w-4" /> Importer CSV
-        </Button>
-      </div>
-      <ImportStudentsModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImported={() => qc.invalidateQueries(['admin-students'])}
-      />
-    <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <th className="px-4 py-3 text-left font-semibold">Élève</th>
-            <th className="px-4 py-3 text-center font-semibold">Niveau</th>
-            <th className="px-4 py-3 text-center font-semibold">Cours</th>
-            <th className="px-4 py-3 text-center font-semibold">Progression</th>
-            <th className="px-4 py-3 text-center font-semibold">Bulletin</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {data?.map((s) => (
-            <tr key={s._id}>
-              <td className="px-4 py-3">
-                <div className="font-medium text-gray-900">{s.name}</div>
-                <div className="text-xs text-gray-400">{s.email}</div>
-              </td>
-              <td className="px-4 py-3 text-center">
-                {s.classe ? <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s.classe}{s.serie ? ` · ${s.serie}` : ''}</span> : <span className="text-gray-300">—</span>}
-              </td>
-              <td className="px-4 py-3 text-center">{s.coursesCount}</td>
-              <td className="px-4 py-3 text-center">{s.avgProgress}%</td>
-              <td className="px-4 py-3 text-center">
-                <button onClick={() => downloadStudentBulletin(s._id, s.name)} className="text-brand-dark hover:underline text-xs flex items-center gap-1 justify-center w-full">
-                  <Download className="h-3 w-3" /> PDF
-                </button>
-              </td>
-            </tr>
-          ))}
-          {data?.length === 0 && (
-            <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Aucun élève</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-    </>
-  );
+  return <StudentsManager />;
 }
 
 // ─── Courses tab ────────────────────────────────────────────────────────────────
@@ -420,11 +299,13 @@ export default function AdminDashboard() {
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <SchoolBanner school={user?.school} />
+          <SetupChecklist />
           {activeTab === 'overview' && <OverviewTab />}
           {activeTab === 'instructors' && <InstructorsTab />}
           {activeTab === 'students' && <StudentsTab />}
           {activeTab === 'courses' && <CoursesTab />}
           {activeTab === 'classes' && <ClassesTab />}
+          {activeTab === 'subjects' && <SubjectsTab />}
           {activeTab === 'palmares' && <PalmaresTab />}
           {activeTab === 'announcements' && <AnnouncementsTab />}
         </main>
