@@ -181,7 +181,7 @@ exports.login = async (req, res) => {
     return res.status(403).json({ success: false, message: STATUS_MESSAGES[user.status] || 'Compte inactif' });
   }
   if (user.role === 'admin' && !user.emailVerified) {
-    return res.status(403).json({ success: false, message: 'Vérifiez votre email avant de vous connecter' });
+    return res.status(403).json({ success: false, code: 'EMAIL_NOT_VERIFIED', message: 'Vérifiez votre email avant de vous connecter' });
   }
   if (user.school && user.school.status === 'suspended') {
     return res.status(403).json({ success: false, message: 'Votre établissement a été suspendu' });
@@ -288,6 +288,21 @@ exports.updateProfile = async (req, res) => {
     success: true,
     data: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, bio: user.bio },
   });
+};
+
+exports.resendVerification = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  const generic = { success: true, message: "Si ce compte existe et n'est pas encore vérifié, un email a été envoyé" };
+  if (!user || user.emailVerified) return res.json(generic);
+
+  const token = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+
+  emailService.sendVerificationEmail(user, token).catch(() => {});
+  res.json(generic);
 };
 
 exports.forgotPassword = async (req, res) => {

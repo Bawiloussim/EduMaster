@@ -16,5 +16,6 @@ router.put('/profile', protect, upload.single('avatar'), auth.updateProfile);
 router.post('/forgot-password', auth.forgotPassword);
 router.post('/reset-password', auth.resetPassword);
 router.post('/verify-email', auth.verifyEmail);
+router.post('/resend-verification', auth.resendVerification);
 
 module.exports = router;
