@@ -6,7 +6,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { GraduationCap, BookOpen, Award, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -75,8 +74,6 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from;
   const [rememberMe, setRememberMe] = useState(true);
-  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
-  const [resending, setResending] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema) });
 
   // Dashboard roots are role-gated (see AppRouter); a stale `from` pointing into
@@ -84,7 +81,6 @@ export default function Login() {
   const ROLE_RESTRICTED_ROOTS = ['/admin', '/superadmin', '/instructor', '/student', '/choose-class'];
 
   const onSubmit = async (data) => {
-    setUnverifiedEmail(null);
     try {
       const user = await login(data.email, data.password);
       toast.success(`Bienvenue, ${user.name} !`);
@@ -94,19 +90,6 @@ export default function Login() {
       navigate(fromIsRestricted ? dashLink : from || dashLink);
     } catch (e) {
       toast.error(e.response?.data?.message || 'Identifiants incorrects');
-      if (e.response?.data?.code === 'EMAIL_NOT_VERIFIED') setUnverifiedEmail(data.email);
-    }
-  };
-
-  const resendVerification = async () => {
-    setResending(true);
-    try {
-      await api.post('/auth/resend-verification', { email: unverifiedEmail });
-      toast.success('Email de vérification renvoyé — pensez à vérifier vos spams');
-    } catch {
-      toast.error("Erreur lors de l'envoi, réessayez plus tard");
-    } finally {
-      setResending(false);
     }
   };
 
@@ -168,15 +151,6 @@ export default function Login() {
               Se connecter
             </Button>
           </form>
-
-          {unverifiedEmail && (
-            <p className="text-center text-sm text-gray-500 mt-4">
-              Vous n'avez pas reçu l'email ?{' '}
-              <button type="button" onClick={resendVerification} disabled={resending} className="text-brand-dark font-medium hover:underline disabled:opacity-50">
-                Renvoyer l'email de vérification
-              </button>
-            </p>
-          )}
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Pas encore de compte ?{' '}
