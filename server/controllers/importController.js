@@ -7,6 +7,7 @@ const emailService = require('../services/emailService');
 const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
 const { schoolId } = require('../utils/schoolAuth');
 const { parseImportFile } = require('../utils/importParser');
+const { generateMatricule } = require('../utils/matricule');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -103,7 +104,7 @@ exports.importStudents = async (req, res) => {
     const user = await User.create({
       name: c.name, email: c.email, password: tempPassword,
       role: 'student', school: schoolId(req.user), classe: c.classe, serie: c.serie,
-      matricule: c.matricule, phone: c.phone, gender: c.gender, birthDate: c.birthDate,
+      matricule: c.matricule || await generateMatricule(schoolId(req.user)), phone: c.phone, gender: c.gender, birthDate: c.birthDate,
       // CSV/Excel imports are vouched for by the school's own admin — skip self-verification.
       emailVerified: true,
     });

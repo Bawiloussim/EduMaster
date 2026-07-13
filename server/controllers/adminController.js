@@ -8,6 +8,7 @@ const Result = require('../models/Result');
 const emailService = require('../services/emailService');
 const { syncClassEnrollments } = require('./enrollmentController');
 const { CLASSES, SERIES, requiresSerie } = require('../constants/academic');
+const { generateMatricule } = require('../utils/matricule');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -127,7 +128,7 @@ exports.createStudent = async (req, res) => {
   const user = await User.create({
     name, email, password: tempPassword, role: 'student', school: schoolId,
     classe: classe || null, serie: finalSerie,
-    matricule: matricule || '', phone: phone || '', gender: gender || null,
+    matricule: matricule || await generateMatricule(schoolId), phone: phone || '', gender: gender || null,
     birthDate: birthDate || null, emailVerified: true,
   });
 

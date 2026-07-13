@@ -11,6 +11,7 @@ export default function ImportStudentsModal(props) {
         <>
           Colonnes attendues : <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">nom, prenom, email, mot_de_passe, classe, serie, matricule, telephone, genre, date_naissance</code>
           <br />Seules <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">nom</code> et <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">email</code> sont obligatoires (avec <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">classe</code>, et <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">serie</code> pour le lycée). La classe doit déjà exister dans l'onglet Classes. Fichier CSV ou Excel (.xlsx).
+          <br /><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">matricule</code> est optionnel : s'il est vide, il est généré automatiquement.
         </>
       }
       createdHeading={(n) => `${n} élève(s) créé(s)`}
