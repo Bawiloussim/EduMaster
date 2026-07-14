@@ -17,7 +17,10 @@ const cloudinaryStorage = new CloudinaryStorage({
     const isPdf = file.mimetype === 'application/pdf';
     return {
       folder: 'edumaster',
-      resource_type: isPdf ? 'raw' : 'image',
+      // PDFs must go through resource_type 'image' rather than 'raw' — Cloudinary
+      // blocks public delivery of raw PDF/ZIP files by default (security setting),
+      // but delivers PDFs uploaded as 'image' normally since they're page-rendered.
+      resource_type: 'image',
       allowed_formats: isPdf ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp', 'gif'],
       transformation: isPdf ? [] : [{ quality: 'auto', fetch_format: 'auto' }],
     };
@@ -33,6 +36,9 @@ const localDiskStorage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
+  // Busboy decodes the multipart filename header as latin1 by default, while
+  // browsers send it UTF-8-encoded — re-decode so accented names aren't mojibake.
+  file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
   const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
   if (allowed.includes(file.mimetype)) return cb(null, true);
   cb(new Error('Format non supporté. Utilisez JPG, PNG, WEBP, GIF ou PDF.'));

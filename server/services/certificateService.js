@@ -55,7 +55,9 @@ exports.generateCompletion = async (studentId, course) => {
       const dataUri = `data:application/pdf;base64,${b64}`;
       const uploaded = await cloudinary.uploader.upload(dataUri, {
         folder: 'edumaster/attestations',
-        resource_type: 'raw',
+        // 'image' (not 'raw') — Cloudinary blocks public delivery of raw PDFs by
+        // default; see middlewares/upload.js for the same fix on lesson PDFs.
+        resource_type: 'image',
         public_id: `attestation_${uniqueId}`,
       });
       pdfUrl = uploaded.secure_url;
@@ -99,7 +101,9 @@ exports.generate = async (userRef, course, exam, result) => {
       const dataUri = `data:application/pdf;base64,${b64}`;
       const uploaded = await cloudinary.uploader.upload(dataUri, {
         folder: 'edumaster/certificates',
-        resource_type: 'raw',
+        // 'image' (not 'raw') — Cloudinary blocks public delivery of raw PDFs by
+        // default; see middlewares/upload.js for the same fix on lesson PDFs.
+        resource_type: 'image',
         public_id: `cert_${uniqueId}`,
       });
       pdfUrl = uploaded.secure_url;
