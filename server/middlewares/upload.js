@@ -53,7 +53,16 @@ const upload = multer({
 // Returns the public URL of an uploaded file
 const getFileUrl = (file) => {
   if (!file) return '';
-  if (useCloudinary) return file.secure_url || file.path;
+  if (useCloudinary) {
+    const url = file.secure_url || file.path;
+    // Cloudinary defaults PDF delivery to Content-Disposition: attachment even
+    // under resource_type 'image' — force inline so students can read it in
+    // the browser's viewer instead of it being downloaded automatically.
+    if (file.mimetype === 'application/pdf' && url.includes('/upload/')) {
+      return url.replace('/upload/', '/upload/fl_attachment:false/');
+    }
+    return url;
+  }
   // Local: serve via /uploads/filename
   return `/uploads/${file.filename}`;
 };
