@@ -299,9 +299,14 @@ export default function CoursePlayer() {
     queryFn: () => api.get(`/courses/${id}`).then(r => r.data.data),
   });
 
-  const { data: enrollment } = useQuery({
+  const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
     queryKey: ['enrollment', id],
-    queryFn: () => api.get(`/enrollments/course/${id}`).then(r => r.data.data).catch(() => null),
+    // Only a confirmed 404 means "not enrolled" — any other failure (expired
+    // token mid-refresh, network blip) must not be read as a real negative.
+    queryFn: () => api.get(`/enrollments/course/${id}`).then(r => r.data.data).catch((err) => {
+      if (err.response?.status === 404) return null;
+      throw err;
+    }),
   });
 
   const lessons = courseData?.lessons || [];
@@ -324,8 +329,8 @@ export default function CoursePlayer() {
   const prev = lessons[currentIndex - 1];
   const next = lessons[currentIndex + 1];
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
-  if (!courseData?.isEnrolled) return (
+  if (isLoading || enrollmentLoading) return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
+  if (!courseData?.isEnrolled && !enrollment) return (
     <div className="flex h-screen items-center justify-center flex-col gap-4">
       <p className="text-gray-600">Vous n'êtes pas inscrit à ce cours.</p>
       <Button onClick={() => navigate(`/courses/${id}`)}>Voir le cours</Button>
