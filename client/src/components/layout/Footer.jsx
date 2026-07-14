@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, Phone, MapPin, School as SchoolIcon } from 'lucide-react';
+import { GraduationCap, Mail, Phone, MapPin } from 'lucide-react';
 import { CLASSES } from '../../utils/schoolData';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -20,20 +20,12 @@ export default function Footer() {
         <div>
           {hasSchool ? (
             <>
-              <div className="flex items-center gap-3 mb-3">
-                {school.logo ? (
-                  <img
-                    src={school.logo}
-                    alt={school.name}
-                    className="h-11 w-11 rounded-lg object-cover bg-white/10 shrink-0"
-                  />
-                ) : (
-                  <div className="h-11 w-11 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
-                    <SchoolIcon className="h-5 w-5 text-white" />
-                  </div>
-                )}
-                <span className="font-extrabold text-white text-lg leading-tight">{school.name}</span>
-              </div>
+              <span className="font-extrabold text-white text-lg leading-tight block mb-1">{school.name}</span>
+              {school.email && (
+                <a href={`mailto:${school.email}`} className="flex items-center gap-2 text-sm mb-3 hover:text-brand transition-colors">
+                  <Mail className="h-4 w-4 shrink-0" /> {school.email}
+                </a>
+              )}
               {school.slogan && (
                 <p className="text-sm italic mb-2" style={accentStyle}>{school.slogan}</p>
               )}
