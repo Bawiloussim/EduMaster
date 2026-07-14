@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Users, BookOpen, BarChart, Award, GraduationCap, Trash2, Eye, Upload, Layers, Trophy, Megaphone, BookMarked } from 'lucide-react';
+import { Users, BookOpen, BarChart, Award, GraduationCap, Trash2, Eye, Upload, Layers, Trophy, Megaphone, BookMarked, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../../services/api';
 import Skeleton, { SkeletonStatRow, SkeletonTable } from '../../../components/ui/Skeleton';
@@ -20,6 +20,7 @@ import AnnouncementsTab from './tabs/AnnouncementsTab';
 import ImportCoursesModal from './tabs/ImportCoursesModal';
 import TeachersManager from '../../../components/shared/TeachersManager';
 import StudentsManager from '../../../components/shared/StudentsManager';
+import SchoolSettingsForm from '../../../components/shared/SchoolSettingsForm';
 
 const ROLE_LABELS = {
   student: 'Étudiant',
@@ -37,12 +38,16 @@ const TAB_TITLES = {
   subjects: 'Matières',
   palmares: 'Palmarès',
   announcements: 'Annonces',
+  settings: 'Paramètres',
 };
 
 const SIDEBAR_SECTIONS = [
   {
     label: 'Général',
-    items: [{ id: 'overview', label: "Vue d'ensemble", icon: BarChart }],
+    items: [
+      { id: 'overview', label: "Vue d'ensemble", icon: BarChart },
+      { id: 'settings', label: 'Paramètres', icon: Settings },
+    ],
   },
   {
     label: 'Gestion',
@@ -301,6 +306,7 @@ export default function AdminDashboard() {
           <SchoolBanner school={user?.school} />
           <SetupChecklist />
           {activeTab === 'overview' && <OverviewTab />}
+          {activeTab === 'settings' && <SchoolSettingsForm />}
           {activeTab === 'instructors' && <InstructorsTab />}
           {activeTab === 'students' && <StudentsTab />}
           {activeTab === 'courses' && <CoursesTab />}
