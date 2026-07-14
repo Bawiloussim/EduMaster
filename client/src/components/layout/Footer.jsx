@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail } from 'lucide-react';
+import { GraduationCap, Mail, Phone, MapPin } from 'lucide-react';
 import { CLASSES } from '../../utils/schoolData';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function Footer() {
+  const { user } = useAuthStore();
+  const school = user?.school;
+  const hasSchoolContact = !!(school && (school.email || school.phone || school.address));
+
   return (
     <footer className="bg-primary text-brand-light">
       <div className="max-w-7xl mx-auto px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
@@ -44,9 +49,30 @@ export default function Footer() {
 
         <div>
           <h3 className="text-white font-bold text-sm mb-4">Contact</h3>
-          <a href="mailto:contact@edumaster.app" className="flex items-center gap-2 text-sm hover:text-brand transition-colors">
-            <Mail className="h-4 w-4" /> contact@edumaster.app
-          </a>
+          {hasSchoolContact ? (
+            <div className="space-y-2 text-sm">
+              <p className="font-semibold text-white">{school.name}</p>
+              {school.email && (
+                <a href={`mailto:${school.email}`} className="flex items-center gap-2 hover:text-brand transition-colors">
+                  <Mail className="h-4 w-4 shrink-0" /> {school.email}
+                </a>
+              )}
+              {school.phone && (
+                <a href={`tel:${school.phone}`} className="flex items-center gap-2 hover:text-brand transition-colors">
+                  <Phone className="h-4 w-4 shrink-0" /> {school.phone}
+                </a>
+              )}
+              {school.address && (
+                <p className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 shrink-0" /> {school.address}
+                </p>
+              )}
+            </div>
+          ) : (
+            <a href="mailto:contact@edumaster.app" className="flex items-center gap-2 text-sm hover:text-brand transition-colors">
+              <Mail className="h-4 w-4" /> contact@edumaster.app
+            </a>
+          )}
         </div>
       </div>
 

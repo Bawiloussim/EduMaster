@@ -69,7 +69,13 @@ export default function SchoolSettingsForm({ onSaved, dashboardButton = false })
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const syncUserSchool = (updatedSchool) => {
-    setUser({ ...user, school: { _id: updatedSchool._id, name: updatedSchool.name, status: updatedSchool.status } });
+    setUser({
+      ...user,
+      school: {
+        _id: updatedSchool._id, name: updatedSchool.name, status: updatedSchool.status,
+        logo: updatedSchool.logo, phone: updatedSchool.phone, email: updatedSchool.email, address: updatedSchool.address,
+      },
+    });
   };
 
   const saveMutation = useMutation({

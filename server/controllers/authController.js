@@ -128,7 +128,7 @@ exports.google = async (req, res) => {
   }
 
   const email = payload.email.toLowerCase();
-  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status logo');
+  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status logo phone email address');
 
   if (existing) {
     if (!existing.googleId) {
@@ -174,7 +174,7 @@ exports.login = async (req, res) => {
   if (!email || !password) {
     return res.status(422).json({ success: false, message: 'Email et mot de passe requis' });
   }
-  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status logo');
+  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status logo phone email address');
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
   }

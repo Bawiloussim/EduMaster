@@ -17,7 +17,7 @@ const protect = async (req, res, next) => {
   } catch {
     return res.status(401).json({ success: false, message: 'Token invalide ou expiré' });
   }
-  req.user = await User.findById(decoded.id).populate('school', 'name status logo');
+  req.user = await User.findById(decoded.id).populate('school', 'name status logo phone email address');
   if (!req.user) {
     return res.status(401).json({ success: false, message: 'Utilisateur introuvable' });
   }
