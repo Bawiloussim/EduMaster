@@ -7,7 +7,7 @@ const Notification = require('../models/Notification');
 const emailService = require('../services/emailService');
 const { getFileUrl } = require('../middlewares/upload');
 const { canManageCourse } = require('../utils/schoolAuth');
-const { generateExerciseStatement } = require('../services/aiContentService');
+const { generateExerciseStatement, extractExercisesFromPdf } = require('../services/aiContentService');
 
 exports.createForLesson = async (req, res) => {
   const lesson = await Lesson.findById(req.params.lessonId);
@@ -29,6 +29,28 @@ exports.createForLesson = async (req, res) => {
     order: order !== undefined ? order : (await Exercise.countDocuments({ lesson: lesson._id })),
   });
   res.status(201).json({ success: true, data: exercise });
+};
+
+// Reads an uploaded PDF exercise sheet and extracts every exercise it finds —
+// returned as a draft list for the formateur to review/edit before import.
+exports.importFromPdf = async (req, res) => {
+  const lesson = await Lesson.findById(req.params.lessonId);
+  if (!lesson) return res.status(404).json({ success: false, message: 'Leçon introuvable' });
+
+  const course = await Course.findById(lesson.course);
+  if (!canManageCourse(course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  if (!req.file) return res.status(422).json({ success: false, message: 'Fichier PDF requis' });
+
+  try {
+    const exercises = await extractExercisesFromPdf({
+      pdfBuffer: req.file.buffer, subject: course.subject, classe: course.classe, serie: course.serie,
+    });
+    res.json({ success: true, data: { exercises } });
+  } catch (e) {
+    res.status(502).json({ success: false, message: e.message || 'Échec de l\'extraction' });
+  }
 };
 
 // Drafts an exercise statement from the formateur's key points — returned for

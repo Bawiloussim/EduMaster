@@ -3,11 +3,12 @@ const router = express.Router();
 const ec = require('../controllers/exerciseController');
 const { protect } = require('../middlewares/auth');
 const requireRole = require('../middlewares/role');
-const { optionalUpload } = require('../middlewares/upload');
+const { optionalUpload, uploadMemory } = require('../middlewares/upload');
 
 // Instructor
 router.post('/lessons/:lessonId', protect, requireRole('instructor', 'admin'), ec.createForLesson);
 router.post('/lessons/:lessonId/generate-statement', protect, requireRole('instructor', 'admin'), ec.generateStatement);
+router.post('/lessons/:lessonId/import-pdf', protect, requireRole('instructor', 'admin'), uploadMemory.single('pdf'), ec.importFromPdf);
 router.get('/lessons/:lessonId', protect, ec.listForLesson);
 router.put('/:id', protect, requireRole('instructor', 'admin'), ec.update);
 router.delete('/:id', protect, requireRole('instructor', 'admin'), ec.delete);

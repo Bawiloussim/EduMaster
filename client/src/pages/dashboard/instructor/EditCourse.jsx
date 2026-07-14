@@ -143,11 +143,52 @@ function ExercisesTab({ lessonId, courseId }) {
   const [editingId, setEditingId] = useState(null);
   const [newEx, setNewEx] = useState({ statement: '', type: 'open', options: ['', '', '', ''], correctOption: 0 });
   const [exPoints, setExPoints] = useState('');
+  const [pdfFile, setPdfFile] = useState(null);
+  const [imported, setImported] = useState(null); // extracted exercises, awaiting review
+  const [selected, setSelected] = useState({});
 
   const generateMutation = useMutation({
     mutationFn: () => api.post(`/exercises/lessons/${lessonId}/generate-statement`, { points: exPoints, type: newEx.type }),
     onSuccess: (res) => { setNewEx(f => ({ ...f, statement: res.data.data.statement })); toast.success('Énoncé généré — relisez-le avant d\'ajouter'); },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur de génération'),
+  });
+
+  const importPdfMutation = useMutation({
+    mutationFn: () => {
+      const fd = new FormData();
+      fd.append('pdf', pdfFile);
+      return api.post(`/exercises/lessons/${lessonId}/import-pdf`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    onSuccess: (res) => {
+      const exs = res.data.data.exercises;
+      if (!exs.length) return toast.error('Aucun exercice trouvé dans ce PDF');
+      setImported(exs);
+      setSelected(Object.fromEntries(exs.map((_, i) => [i, true])));
+      toast.success(`${exs.length} exercice(s) trouvé(s) — relisez avant d'importer`);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Erreur d'import"),
+  });
+
+  const setImportedItem = (i) => (updater) => setImported(arr => arr.map((it, idx) => idx === i ? updater(it) : it));
+
+  const bulkImportMutation = useMutation({
+    mutationFn: async () => {
+      const toAdd = imported.filter((_, i) => selected[i]);
+      for (const ex of toAdd) {
+        await api.post(`/exercises/lessons/${lessonId}`, {
+          statement: ex.statement,
+          type: ex.type,
+          options: ex.type === 'qcm' ? ex.options.filter(o => o.trim()) : [],
+          correctOption: ex.type === 'qcm' ? (ex.correctOption ?? 0) : null,
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success('Exercices importés');
+      qc.invalidateQueries(['exercises', lessonId]);
+      setImported(null); setSelected({}); setPdfFile(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
   const { data, isLoading } = useQuery({
@@ -193,6 +234,51 @@ function ExercisesTab({ lessonId, courseId }) {
             onDelete={() => window.confirm('Supprimer ?') && deleteMutation.mutate(ex._id)} />
         )
       ))}
+
+      {!imported && (
+        <div className="flex items-center gap-2 bg-white border border-dashed border-gray-200 rounded-xl p-3">
+          <FileText className="h-4 w-4 text-gray-400 shrink-0" />
+          <span className="text-xs text-gray-500 flex-1">
+            {pdfFile ? pdfFile.name : 'Importer des exercices depuis un PDF'}
+          </span>
+          <label className="text-xs font-medium text-brand-dark hover:underline cursor-pointer shrink-0">
+            Choisir un fichier
+            <input type="file" accept=".pdf,application/pdf" className="hidden"
+              onChange={e => setPdfFile(e.target.files[0] || null)} />
+          </label>
+          {pdfFile && (
+            <Button size="sm" variant="secondary" loading={importPdfMutation.isPending} onClick={() => importPdfMutation.mutate()}>
+              <Sparkles className="h-3.5 w-3.5" /> Extraire les exercices
+            </Button>
+          )}
+        </div>
+      )}
+
+      {imported && (
+        <div className="bg-brand/10 border border-brand/15 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+            {imported.length} exercice(s) extrait(s) du PDF — relisez et cochez ceux à importer
+          </p>
+          {imported.map((ex, i) => (
+            <div key={i} className="bg-white border border-brand/15 rounded-xl p-3 space-y-2">
+              <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={!!selected[i]} onChange={e => setSelected(s => ({ ...s, [i]: e.target.checked }))} className="accent-brand" />
+                Importer cet exercice
+                {ex.type === 'qcm' && ex.correctOption == null && (
+                  <span className="text-warning">⚠ bonne réponse non détectée — à vérifier</span>
+                )}
+              </label>
+              <ExerciseFormFields value={ex} onChange={setImportedItem(i)} />
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => { setImported(null); setSelected({}); setPdfFile(null); }}>Annuler</Button>
+            <Button size="sm" disabled={!Object.values(selected).some(Boolean)} loading={bulkImportMutation.isPending} onClick={() => bulkImportMutation.mutate()}>
+              Importer les exercices sélectionnés
+            </Button>
+          </div>
+        </div>
+      )}
 
       {adding && (
         <div className="bg-brand/10 border border-brand/15 rounded-xl p-4 space-y-3">

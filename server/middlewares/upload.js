@@ -50,6 +50,17 @@ const upload = multer({
   fileFilter,
 });
 
+// For files we only need to read once (e.g. a PDF handed to Claude for
+// extraction) and never store — kept in memory, never touches Cloudinary/disk.
+const uploadMemory = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') return cb(null, true);
+    cb(new Error('Seuls les fichiers PDF sont acceptés.'));
+  },
+});
+
 // Returns the public URL of an uploaded file
 const getFileUrl = (file) => {
   if (!file) return '';
@@ -89,4 +100,4 @@ const optionalUploadMultiple = (field, maxCount = 10) => (req, res, next) => {
   next();
 };
 
-module.exports = { upload, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple, useCloudinary };
+module.exports = { upload, uploadMemory, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple, useCloudinary };

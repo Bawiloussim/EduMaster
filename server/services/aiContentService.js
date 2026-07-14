@@ -51,3 +51,56 @@ exports.generateExerciseStatement = async ({ lessonTitle, subject, classe, serie
   const text = message.content.find((b) => b.type === 'text')?.text || '';
   return text.trim();
 };
+
+const EXERCISES_SCHEMA = {
+  type: 'object',
+  properties: {
+    exercises: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          statement: { type: 'string' },
+          type: { type: 'string', enum: ['open', 'qcm'] },
+          options: { type: 'array', items: { type: 'string' } },
+          correctOption: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+        },
+        required: ['statement', 'type', 'options', 'correctOption'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['exercises'],
+  additionalProperties: false,
+};
+
+// Reads an uploaded PDF (an exercise sheet) and extracts every exercise it
+// contains as structured data, for the formateur to review before import.
+exports.extractExercisesFromPdf = async ({ pdfBuffer, subject, classe, serie }) => {
+  ensureConfigured();
+
+  const level = serie ? `${classe} — Série ${serie}` : classe;
+  const message = await callClaude({
+    model: 'claude-opus-4-8',
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    output_config: { format: { type: 'json_schema', schema: EXERCISES_SCHEMA } },
+    system: 'Tu extrais les exercices contenus dans un document PDF pour une plateforme scolaire en ligne, '
+      + `matière ${subject}, niveau ${level}. Pour chaque exercice trouvé : reproduis l'énoncé exactement `
+      + "(corrige uniquement les erreurs évidentes d'extraction OCR), classe-le en \"qcm\" s'il propose des choix de "
+      + 'réponse, sinon en "open". Pour un QCM, liste les options dans l\'ordre et indique correctOption (index de la '
+      + "bonne réponse, en commençant à 0) uniquement si elle est identifiable dans le document — sinon mets null. "
+      + "Pour une question ouverte, options doit être un tableau vide et correctOption doit être null.",
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdfBuffer.toString('base64') } },
+        { type: 'text', text: 'Extrais tous les exercices de ce document.' },
+      ],
+    }],
+  });
+
+  const text = message.content.find((b) => b.type === 'text')?.text || '{"exercises":[]}';
+  const parsed = JSON.parse(text);
+  return parsed.exercises || [];
+};
