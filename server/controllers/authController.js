@@ -70,17 +70,6 @@ async function createAccountAndRespond(res, { name, email, password, googleId, e
 
   if (userData.classe) await syncClassEnrollments(user._id, school._id, userData.classe, userData.serie);
 
-  // A principal must verify their email before logging in (checked in `login`,
-  // never here) — issuing a token immediately would let them skip that gate,
-  // since register never goes through the login controller's own check.
-  if (isPrincipal && !emailVerified) {
-    res.status(201).json({
-      success: true,
-      message: 'Compte créé — vérifiez votre email puis connectez-vous pour créer votre établissement.',
-    });
-    return;
-  }
-
   const accessToken = signAccess(user._id);
   const refreshToken = signRefresh(user._id);
   user.refreshToken = refreshToken;
@@ -180,9 +169,6 @@ exports.login = async (req, res) => {
   }
   if (user.status !== 'active') {
     return res.status(403).json({ success: false, message: STATUS_MESSAGES[user.status] || 'Compte inactif' });
-  }
-  if (user.role === 'admin' && !user.emailVerified) {
-    return res.status(403).json({ success: false, code: 'EMAIL_NOT_VERIFIED', message: 'Vérifiez votre email avant de vous connecter' });
   }
   if (user.school && user.school.status === 'suspended') {
     return res.status(403).json({ success: false, message: 'Votre établissement a été suspendu' });

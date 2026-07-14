@@ -22,12 +22,12 @@ describe('POST /api/auth/register', () => {
     expect(res.body.accessToken).toBeDefined();
   });
 
-  test('un chef d\'établissement s\'inscrit sans école et ne reçoit pas de session avant vérification', async () => {
+  test('un chef d\'établissement s\'inscrit sans école et reçoit une session immédiatement', async () => {
     const res = await request(app).post('/api/auth/register').send({
       name: 'Mallory', email: 'mallory@example.com', password: 'Test1234!', role: 'admin',
     });
     expect(res.status).toBe(201);
-    expect(res.body.accessToken).toBeUndefined();
+    expect(res.body.accessToken).toBeDefined();
 
     const created = await require('../models/User').findOne({ email: 'mallory@example.com' });
     expect(created.school).toBeNull();
@@ -83,13 +83,13 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(401);
   });
 
-  test('bloque un chef d\'établissement dont l\'email n\'est pas vérifié', async () => {
+  test('un chef d\'établissement peut se connecter sans avoir vérifié son email', async () => {
     const user = await createUser({ role: 'admin', school: null, status: 'active', emailVerified: false, password: 'Test1234!' });
     const res = await request(app).post('/api/auth/login').send({
       email: user.email, password: 'Test1234!',
     });
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe('EMAIL_NOT_VERIFIED');
+    expect(res.status).toBe(200);
+    expect(res.body.accessToken).toBeDefined();
   });
 });
 
