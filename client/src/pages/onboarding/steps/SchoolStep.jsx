@@ -9,7 +9,28 @@ import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import FileInput from '../../../components/ui/FileInput';
 
-const CURRENCIES = ['XAF', 'XOF', 'EUR', 'USD'];
+const CURRENCIES = [
+  { code: 'XAF', label: 'XAF — Franc CFA (CEMAC)' },
+  { code: 'XOF', label: 'XOF — Franc CFA (UEMOA)' },
+  { code: 'GHS', label: 'GHS — Cedi ghanéen' },
+  { code: 'NGN', label: 'NGN — Naira nigérian' },
+  { code: 'GNF', label: 'GNF — Franc guinéen' },
+  { code: 'CDF', label: 'CDF — Franc congolais' },
+  { code: 'RWF', label: 'RWF — Franc rwandais' },
+  { code: 'KES', label: 'KES — Shilling kenyan' },
+  { code: 'UGX', label: 'UGX — Shilling ougandais' },
+  { code: 'TZS', label: 'TZS — Shilling tanzanien' },
+  { code: 'ZAR', label: 'ZAR — Rand sud-africain' },
+  { code: 'MAD', label: 'MAD — Dirham marocain' },
+  { code: 'DZD', label: 'DZD — Dinar algérien' },
+  { code: 'TND', label: 'TND — Dinar tunisien' },
+  { code: 'EGP', label: 'EGP — Livre égyptienne' },
+  { code: 'EUR', label: 'EUR — Euro' },
+  { code: 'USD', label: 'USD — Dollar américain' },
+  { code: 'GBP', label: 'GBP — Livre sterling' },
+  { code: 'CAD', label: 'CAD — Dollar canadien' },
+  { code: 'CHF', label: 'CHF — Franc suisse' },
+];
 const EMPTY = { name: '', city: '', address: '', phone: '', email: '', currency: 'XAF' };
 
 export default function SchoolStep() {
@@ -122,7 +143,7 @@ export default function SchoolStep() {
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">Devise</label>
             <select value={form.currency} onChange={set('currency')} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
-              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
             </select>
           </div>
         </div>

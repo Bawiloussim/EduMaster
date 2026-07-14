@@ -148,52 +148,88 @@ function LyceeTable({ rows, instructors, onAssign, onDelete }) {
   );
 }
 
-function CreateClassModal({ open, onClose, existing, onCreated }) {
-  const [classe, setClasse] = useState('');
-  const [serie, setSerie] = useState('');
+function comboKey(classe, serie) { return `${classe}|${serie || ''}`; }
 
-  const createMutation = useMutation({
-    mutationFn: () => api.post('/classes', { classe, serie: requiresSerie(classe) ? serie : null }),
-    onSuccess: () => {
-      toast.success('Classe créée');
-      setClasse(''); setSerie('');
+function CreateClassModal({ open, onClose, existing, onCreated }) {
+  const [selected, setSelected] = useState(new Set());
+
+  const bulkCreateMutation = useMutation({
+    mutationFn: async (combos) => Promise.allSettled(
+      combos.map(({ classe, serie }) => api.post('/classes', { classe, serie }))
+    ),
+    onSuccess: (results) => {
+      const ok = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.length - ok;
+      if (ok) toast.success(`${ok} classe(s) créée(s)`);
+      if (failed) toast.error(`${failed} classe(s) non créée(s) (déjà existante(s) ou erreur)`);
+      setSelected(new Set());
       onCreated();
     },
-    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
   const isTaken = (c, s) => existing.some((e) => e.classe === c && e.serie === (requiresSerie(c) ? s : null));
 
+  const combos = CLASSES.flatMap((c) => (
+    requiresSerie(c)
+      ? SERIES.map((s) => ({ classe: c, serie: s, label: `${c} ${s}` }))
+      : [{ classe: c, serie: null, label: c }]
+  )).filter((combo) => !isTaken(combo.classe, combo.serie));
+
+  const college = combos.filter((c) => !requiresSerie(c.classe));
+  const lycee = combos.filter((c) => requiresSerie(c.classe));
+
+  const toggle = (key) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+
   const submit = (e) => {
     e.preventDefault();
-    if (!classe) return toast.error('Choisissez une classe');
-    if (requiresSerie(classe) && !serie) return toast.error('Choisissez une série');
-    if (isTaken(classe, serie)) return toast.error('Cette classe existe déjà');
-    createMutation.mutate();
+    if (!selected.size) return toast.error('Choisissez au moins une classe');
+    const chosen = combos.filter((c) => selected.has(comboKey(c.classe, c.serie)));
+    bulkCreateMutation.mutate(chosen);
   };
 
+  const renderGroup = (title, rows) => rows.length > 0 && (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</span>
+      <div className="flex flex-wrap gap-2">
+        {rows.map((combo) => {
+          const key = comboKey(combo.classe, combo.serie);
+          const active = selected.has(key);
+          return (
+            <button
+              type="button"
+              key={key}
+              onClick={() => toggle(key)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${active ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-300 hover:border-brand'}`}
+            >
+              {combo.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
-    <Modal open={open} onClose={onClose} title="Nouvelle classe">
+    <Modal open={open} onClose={onClose} title="Nouvelles classes">
       <form onSubmit={submit} className="space-y-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Classe</label>
-          <select value={classe} onChange={(e) => { setClasse(e.target.value); setSerie(''); }} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand">
-            <option value="">Choisir…</option>
-            {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        {requiresSerie(classe) && (
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Série</label>
-            <select value={serie} onChange={(e) => setSerie(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand">
-              <option value="">Choisir…</option>
-              {SERIES.filter((s) => !existing.some((e) => e.classe === classe && e.serie === s)).map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        )}
+        <p className="text-sm text-gray-500">Sélectionnez une ou plusieurs classes à créer d'un clic.</p>
+        {combos.length === 0
+          ? <p className="text-sm text-gray-400 text-center py-4">Toutes les classes existent déjà</p>
+          : (
+            <div className="space-y-4">
+              {renderGroup('Collège', college)}
+              {renderGroup('Lycée', lycee)}
+            </div>
+          )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
-          <Button type="submit" loading={createMutation.isPending}>Créer</Button>
+          <Button type="submit" loading={bulkCreateMutation.isPending} disabled={!selected.size}>
+            Créer ({selected.size})
+          </Button>
         </div>
       </form>
     </Modal>

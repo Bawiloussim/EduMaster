@@ -11,6 +11,8 @@ import { ALL_SUBJECTS } from '../../utils/schoolData';
 function SubjectCatalogue() {
   const qc = useQueryClient();
   const [name, setName] = useState('');
+  const [filter, setFilter] = useState('');
+  const [checked, setChecked] = useState(new Set());
 
   const { data: subjects, isLoading } = useQuery({
     queryKey: ['school-subjects'],
@@ -25,6 +27,18 @@ function SubjectCatalogue() {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
+  const bulkCreateMutation = useMutation({
+    mutationFn: async (names) => Promise.allSettled(names.map((n) => api.post('/subjects', { name: n }))),
+    onSuccess: (results) => {
+      const ok = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.length - ok;
+      if (ok) toast.success(`${ok} matière(s) ajoutée(s)`);
+      if (failed) toast.error(`${failed} matière(s) non ajoutée(s) (déjà existante(s) ou erreur)`);
+      setChecked(new Set());
+      invalidate();
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/subjects/${id}`),
     onSuccess: () => { toast.success('Matière supprimée'); invalidate(); },
@@ -37,15 +51,60 @@ function SubjectCatalogue() {
     createMutation.mutate();
   };
 
+  const existingNames = new Set((subjects || []).map((s) => s.name.toLowerCase()));
+  const suggestions = ALL_SUBJECTS.filter((s) =>
+    !existingNames.has(s.toLowerCase()) && s.toLowerCase().includes(filter.trim().toLowerCase()));
+
+  const toggle = (s) => setChecked((prev) => {
+    const next = new Set(prev);
+    if (next.has(s)) next.delete(s); else next.add(s);
+    return next;
+  });
+
+  const addSelected = () => { if (checked.size) bulkCreateMutation.mutate([...checked]); };
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <h2 className="text-base font-bold text-gray-900 mb-4">Matières de l'établissement</h2>
+
+      <div className="mb-4">
+        <p className="text-sm text-gray-500 mb-2">Sélectionnez une ou plusieurs matières à ajouter d'un clic.</p>
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Rechercher une matière…"
+          className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+        />
+        <div className="max-h-48 overflow-y-auto flex flex-wrap gap-2 p-1">
+          {suggestions.length === 0
+            ? <p className="text-sm text-gray-400 py-2">Aucune suggestion</p>
+            : suggestions.map((s) => {
+              const active = checked.has(s);
+              return (
+                <button
+                  type="button"
+                  key={s}
+                  onClick={() => toggle(s)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${active ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-300 hover:border-brand'}`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+        </div>
+        <div className="flex justify-end mt-2">
+          <Button type="button" size="sm" onClick={addSelected} loading={bulkCreateMutation.isPending} disabled={!checked.size}>
+            <Plus className="h-4 w-4" /> Ajouter la sélection ({checked.size})
+          </Button>
+        </div>
+      </div>
+
       <form onSubmit={submit} className="flex gap-2 mb-4">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           list="subject-suggestions"
-          placeholder="Ex : Mathématiques"
+          placeholder="Autre matière (non listée)"
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
         <datalist id="subject-suggestions">
