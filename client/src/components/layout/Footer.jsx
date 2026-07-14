@@ -15,7 +15,7 @@ export default function Footer() {
   const accentStyle = hasSchool && school.secondaryColor ? { color: school.secondaryColor } : undefined;
 
   return (
-    <footer className={`${hasSchool ? 'text-white/80' : 'bg-primary text-brand-light'}`} style={footerStyle}>
+    <footer className={`bg-primary ${hasSchool ? 'text-white/80' : 'text-brand-light'}`} style={footerStyle}>
       <div className="max-w-7xl mx-auto px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           {hasSchool ? (
