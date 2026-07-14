@@ -6,6 +6,8 @@ const Certificate = require('../models/Certificate');
 const User = require('../models/User');
 const Enrollment = require('../models/Enrollment');
 const Lesson = require('../models/Lesson');
+const School = require('../models/School');
+const { loadImageBuffer } = require('../utils/pdfImage');
 
 // Generate a course-completion attestation (no exam required)
 exports.generateCompletion = async (studentId, course) => {
@@ -24,6 +26,9 @@ exports.generateCompletion = async (studentId, course) => {
   const instructorId = course.instructor?._id || course.instructor;
   const instructor = instructorId ? await User.findById(instructorId).select('name email').lean() : null;
 
+  const schoolId = course.school?._id || course.school;
+  const school = schoolId ? await School.findById(schoolId).select('name logo').lean() : null;
+
   // The DB record (and any Cloudinary upload) only needs to happen once, but the
   // PDF bytes must be rebuilt on every call — the caller always needs them to
   // stream back a download, whether or not a Certificate row already exists.
@@ -31,10 +36,11 @@ exports.generateCompletion = async (studentId, course) => {
   const verifyHash = existing?.verifyHash || crypto.createHash('sha256').update(uniqueId).digest('hex');
   const verifyUrl = `${process.env.CLIENT_URL}/certificates/verify/${verifyHash}`;
 
-  const pdfBuffer = await generateCompletionPDF(
-    student.name, course.title, course.subject, course.classe, course.serie, lessonTitles,
-    instructor, existing?.issuedAt || new Date(), uniqueId, verifyUrl
-  );
+  const pdfBuffer = await generateCompletionPDF({
+    studentName: student.name, courseTitle: course.title, subject: course.subject,
+    classe: course.classe, serie: course.serie, lessonTitles, instructor, school,
+    date: existing?.issuedAt || new Date(), certId: uniqueId, verifyUrl,
+  });
 
   if (existing) {
     existing._pdfBuffer = pdfBuffer;
@@ -114,11 +120,14 @@ exports.generate = async (userRef, course, exam, result) => {
   return cert;
 };
 
-function generateCompletionPDF(studentName, courseTitle, subject, classe, serie, lessonTitles, instructor, date, certId, verifyUrl) {
+function generateCompletionPDF({ studentName, courseTitle, subject, classe, serie, lessonTitles, instructor, school, date, certId, verifyUrl }) {
   return new Promise(async (resolve, reject) => {
     try {
-      const qrBuffer = await QRCode.toBuffer(verifyUrl, { width: 100 });
-      const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 60 });
+      const [qrBuffer, logoBuffer] = await Promise.all([
+        QRCode.toBuffer(verifyUrl, { width: 90, margin: 1 }),
+        loadImageBuffer(school?.logo),
+      ]);
+      const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
       const chunks = [];
       doc.on('data', (c) => chunks.push(c));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -127,75 +136,99 @@ function generateCompletionPDF(studentName, courseTitle, subject, classe, serie,
       const W = doc.page.width;
       const H = doc.page.height;
 
-      doc.rect(0, 0, W, H).fill('#f0f7ff');
-      doc.rect(20, 20, W - 40, H - 40).lineWidth(3).stroke('#003580');
-      doc.rect(30, 30, W - 60, H - 60).lineWidth(1).stroke('#0ea5e9');
+      const INK = '#1f2937';
+      const GRAY = '#6b7280';
+      const GOLD = '#c9a227';
+      const GOLD_LIGHT = '#e3c567';
+      const TEAL = '#0f766e';
+      const MAROON = '#7a1f3d';
 
-      doc.fillColor('#003580').fontSize(40).font('Helvetica-Bold')
-        .text('ATTESTATION DE RÉUSSITE', 0, 80, { align: 'center' });
+      // ── Background + corner decorations ────────────────────────────────────
+      doc.rect(0, 0, W, H).fill('#fffdf8');
 
-      doc.fillColor('#0ea5e9').fontSize(15).font('Helvetica')
-        .text('EduMaster — Plateforme d\'apprentissage en ligne', 0, 133, { align: 'center' });
+      // Top-left ribbon: dark base, gold band, thin teal edge
+      doc.polygon([0, 0], [W * 0.30, 0], [0, H * 0.42]).fill('#1c1c1c');
+      doc.polygon([0, 0], [W * 0.22, 0], [0, H * 0.30]).fill(GOLD);
+      doc.polygon([0, 0], [W * 0.13, 0], [0, H * 0.17]).fill(TEAL);
 
-      doc.moveTo(100, 163).lineTo(W - 100, 163).lineWidth(1).stroke('#d1d5db');
+      // Top-right ribbon: maroon base with a gold edge
+      doc.polygon([W, 0], [W - W * 0.26, 0], [W, H * 0.36]).fill(MAROON);
+      doc.polygon([W, 0], [W - W * 0.10, 0], [W, H * 0.14]).fill(GOLD_LIGHT);
 
-      doc.fillColor('#374151').fontSize(17).font('Helvetica')
-        .text('Cette attestation certifie que', 0, 183, { align: 'center' });
+      // Gold seal badge, sitting over the maroon corner
+      const sealCx = W - 95, sealCy = 78;
+      doc.circle(sealCx, sealCy, 46).fill(GOLD);
+      doc.circle(sealCx, sealCy, 37).fill('#fffdf8');
+      doc.circle(sealCx, sealCy, 30).fill(GOLD);
+      doc.fillColor('#fffdf8').fontSize(7).font('Helvetica-Bold')
+        .text('• • •', sealCx - 30, sealCy - 20, { width: 60, align: 'center' });
+      doc.fontSize(9).text('CERTIFIÉ', sealCx - 30, sealCy - 8, { width: 60, align: 'center' });
+      doc.fontSize(8).text('ORIGINAL', sealCx - 30, sealCy + 4, { width: 60, align: 'center' });
 
-      doc.fillColor('#003580').fontSize(30).font('Helvetica-Bold')
-        .text(studentName, 0, 213, { align: 'center' });
-
-      doc.fillColor('#374151').fontSize(17).font('Helvetica')
-        .text('a complété avec succès le cours', 0, 258, { align: 'center' });
-
-      doc.fillColor('#111827').fontSize(23).font('Helvetica-Bold')
-        .text(`"${courseTitle}"`, 0, 286, { align: 'center' });
-
-      let y = 320;
-      if (subject && subject !== courseTitle) {
-        doc.fillColor('#0ea5e9').fontSize(14).font('Helvetica')
-          .text(`Matière : ${subject}`, 0, y, { align: 'center' });
-        y += 22;
+      // ── School identity ─────────────────────────────────────────────────────
+      let headY = 44;
+      if (logoBuffer) {
+        try { doc.image(logoBuffer, W / 2 - 24, headY, { width: 48, height: 48, fit: [48, 48] }); } catch { /* skip corrupt image */ }
+        headY += 54;
       }
+      doc.fillColor(INK).fontSize(14).font('Helvetica-Bold')
+        .text(school?.name || 'Établissement', 0, headY, { align: 'center', width: W });
+      headY += 30;
 
-      if (classe) {
-        doc.fillColor('#0ea5e9').fontSize(13).font('Helvetica-Bold')
-          .text(`${classe}${serie ? ' — Série ' + serie : ''}`, 0, y, { align: 'center' });
-        y += 20;
+      // ── Title ────────────────────────────────────────────────────────────────
+      doc.fillColor(INK).fontSize(38).font('Helvetica-Bold')
+        .text('ATTESTATION', 0, headY, { align: 'center', width: W, characterSpacing: 3 });
+      headY = doc.y;
+      doc.fillColor(GOLD).fontSize(16).font('Helvetica-Bold')
+        .text('DE RÉUSSITE', 0, headY, { align: 'center', width: W, characterSpacing: 4 });
+      headY = doc.y + 18;
+
+      doc.fillColor(GRAY).fontSize(11).font('Helvetica-Bold')
+        .text('CETTE ATTESTATION EST FIÈREMENT DÉCERNÉE À :', 0, headY, { align: 'center', width: W, characterSpacing: 1 });
+      headY = doc.y + 14;
+
+      // ── Student name ─────────────────────────────────────────────────────────
+      doc.fillColor(MAROON).fontSize(32).font('Times-BoldItalic')
+        .text(studentName, 0, headY, { align: 'center', width: W });
+      headY = doc.y + 4;
+      doc.moveTo(W / 2 - 160, headY).lineTo(W / 2 + 160, headY).lineWidth(1).strokeColor(GOLD).stroke();
+      headY += 14;
+
+      // ── Description ──────────────────────────────────────────────────────────
+      doc.fillColor(INK).fontSize(13).font('Helvetica')
+        .text('A complété avec succès le cours', 0, headY, { align: 'center', width: W });
+      headY = doc.y + 2;
+      doc.fillColor(INK).fontSize(15).font('Helvetica-Bold')
+        .text(`« ${courseTitle} »`, 0, headY, { align: 'center', width: W });
+      headY = doc.y + 6;
+
+      const details = [subject && subject !== courseTitle ? subject : null, classe ? `${classe}${serie ? ' — Série ' + serie : ''}` : null]
+        .filter(Boolean).join('  •  ');
+      if (details) {
+        doc.fillColor(TEAL).fontSize(11).font('Helvetica-Bold')
+          .text(details, 0, headY, { align: 'center', width: W });
+        headY = doc.y + 4;
       }
-
-      doc.fillColor('#374151').fontSize(13).font('Helvetica')
-        .text(`Délivrée le : ${date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, 0, y, { align: 'center' });
-      y += 24;
-
       if (lessonTitles.length) {
-        doc.fillColor('#6b7280').fontSize(11).font('Helvetica-Bold')
-          .text('Leçons complétées', 0, y, { align: 'center' });
-        y += 15;
-
-        const maxShown = 3;
-        doc.fillColor('#374151').fontSize(9).font('Helvetica');
-        lessonTitles.slice(0, maxShown).forEach((title) => {
-          doc.text(`• ${title}`, 100, y, { width: W - 200, align: 'center' });
-          y += 13;
-        });
-        if (lessonTitles.length > maxShown) {
-          doc.fillColor('#9ca3af').fontSize(8).font('Helvetica-Oblique')
-            .text(`+ ${lessonTitles.length - maxShown} autre(s)`, 0, y, { align: 'center' });
-          y += 13;
-        }
+        doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+          .text(`${lessonTitles.length} leçon(s) complétée(s)`, 0, headY, { align: 'center', width: W });
+        headY = doc.y + 4;
       }
+      doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+        .text(`Délivrée le ${date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, 0, headY, { align: 'center', width: W });
 
       if (instructor) {
-        y += 6;
-        doc.fillColor('#9ca3af').fontSize(9).font('Helvetica')
-          .text(`Formateur : ${instructor.name}${instructor.email ? ' — ' + instructor.email : ''}`, 0, y, { align: 'center' });
+        doc.fillColor(GRAY).fontSize(9).font('Helvetica-Oblique')
+          .text(`Formateur : ${instructor.name}`, 0, doc.y + 8, { align: 'center', width: W });
       }
 
-      doc.fillColor('#6b7280').fontSize(9)
-        .text(`ID : ${certId}`, 0, H - 78, { align: 'center' });
-
-      doc.image(qrBuffer, W - 138, H - 138, { width: 100 });
+      // ── Footer: QR + certificate id (bottom-left) ────────────────────────────
+      const qrX = 55, qrY = H - 118;
+      doc.fillColor(GRAY).fontSize(8).font('Helvetica-Bold')
+        .text('IDENTIFIANT DE CERTIFICAT VALIDE', qrX - 5, qrY - 16, { width: 130 });
+      doc.image(qrBuffer, qrX, qrY, { width: 90 });
+      doc.fillColor(GRAY).fontSize(7).font('Helvetica')
+        .text(certId, qrX - 5, qrY + 94, { width: 130 });
 
       doc.end();
     } catch (e) { reject(e); }

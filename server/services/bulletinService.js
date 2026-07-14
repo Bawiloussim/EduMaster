@@ -1,38 +1,6 @@
-const fs = require('fs/promises');
-const path = require('path');
-const http = require('http');
-const https = require('https');
 const PDFDocument = require('pdfkit');
 const { getAppreciation } = require('../utils/appreciation');
-
-// Global fetch() (undici) throws "Promise.withResolvers is not a function"
-// on some Node 20.x builds — use the plain http/https client instead.
-function fetchBuffer(url) {
-  return new Promise((resolve) => {
-    const client = url.startsWith('https:') ? https : http;
-    client.get(url, (res) => {
-      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', () => resolve(null));
-    }).on('error', () => resolve(null));
-  });
-}
-
-// School logo is stored as either a Cloudinary URL or a local "/uploads/xxx"
-// path (see middlewares/upload.js#getFileUrl) — fetch either into a buffer
-// pdfkit's doc.image() can embed. Returns null (never throws) so a school
-// without a logo, or a broken/unreachable one, just renders without one.
-async function loadLogoBuffer(logoUrl) {
-  if (!logoUrl) return null;
-  try {
-    if (/^https?:\/\//i.test(logoUrl)) return await fetchBuffer(logoUrl);
-    return await fs.readFile(path.join(__dirname, '../uploads', path.basename(logoUrl)));
-  } catch {
-    return null;
-  }
-}
+const { loadImageBuffer } = require('../utils/pdfImage');
 
 /**
  * Generate a school bulletin PDF (A4 portrait).
@@ -51,7 +19,7 @@ async function loadLogoBuffer(logoUrl) {
  */
 async function generateBulletinPDF(data) {
   const { trimestre, bulletin, moyenneGenerale, studentName, school } = data;
-  const logoBuffer = await loadLogoBuffer(school?.logo);
+  const logoBuffer = await loadImageBuffer(school?.logo);
 
   return new Promise((resolve, reject) => {
     try {
@@ -120,13 +88,14 @@ async function generateBulletinPDF(data) {
       // resizing one column never requires re-deriving every one after it. The
       // last column (appréciation) absorbs whatever width remains.
       const COLUMN_SPECS = [
-        { key: 'subject',      label: 'Matière',      w: 95 },
+        { key: 'subject',      label: 'Matière',      w: 85 },
         { key: 'interro1',     label: 'Interro 1',    w: 42 },
         { key: 'interro2',     label: 'Interro 2',    w: 42 },
         { key: 'devoir',       label: 'Devoir',       w: 42 },
+        { key: 'moyClasse',    label: 'Moy. Cl.',     w: 42 },
         { key: 'compos',       label: 'Compos.',      w: 48 },
         { key: 'moyenne',      label: 'Moy./20',      w: 48 },
-        { key: 'professeur',   label: 'Professeur',   w: 90 },
+        { key: 'professeur',   label: 'Professeur',   w: 78 },
         { key: 'appreciation', label: 'Appréciation', w: null },
       ];
       const cols = {};
@@ -160,12 +129,24 @@ async function generateBulletinPDF(data) {
           if (ev.score20 !== null && ev.score20 !== undefined) return ev.score20.toFixed(2);
           return '-';
         };
+        const getScoreValue = (type, seq) => {
+          const ev = (row.evaluations || []).find(e => e.type === type && e.sequence === seq);
+          return ev && ev.score20 !== null && ev.score20 !== undefined ? ev.score20 : null;
+        };
+
+        // "Moyenne de classe" — average of the continuous-assessment grades
+        // (2 interros + 1 devoir) before the composition is factored in.
+        const ccScores = [getScoreValue('interrogation', 1), getScoreValue('interrogation', 2), getScoreValue('devoir', 1)];
+        const moyClasseText = ccScores.every(s => s !== null)
+          ? (ccScores.reduce((a, b) => a + b, 0) / 3).toFixed(2)
+          : '-';
 
         const cells = [
           { key: 'subject',      text: (row.course && row.course.subject) || '-' },
           { key: 'interro1',     text: getScore('interrogation', 1) },
           { key: 'interro2',     text: getScore('interrogation', 2) },
           { key: 'devoir',       text: getScore('devoir', 1) },
+          { key: 'moyClasse',    text: moyClasseText },
           { key: 'compos',       text: getScore('composition', 1) },
           { key: 'moyenne',      text: row.moyenne !== null && row.moyenne !== undefined ? String(row.moyenne) : '-' },
         ];
@@ -219,7 +200,7 @@ async function generateBulletinPDF(data) {
       doc.rect(LEFT, TABLE_TOP, PAGE_W, tableHeight).lineWidth(1).strokeColor(NAVY).stroke();
 
       // Vertical lines
-      ['interro1', 'interro2', 'devoir', 'compos', 'moyenne', 'professeur', 'appreciation'].forEach(key => {
+      ['interro1', 'interro2', 'devoir', 'moyClasse', 'compos', 'moyenne', 'professeur', 'appreciation'].forEach(key => {
         const col = cols[key];
         doc.moveTo(col.x, TABLE_TOP).lineTo(col.x, TABLE_TOP + tableHeight).lineWidth(0.5).strokeColor('#9ca3af').stroke();
       });
