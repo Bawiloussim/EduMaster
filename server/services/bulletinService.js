@@ -114,33 +114,34 @@ async function generateBulletinPDF(data) {
       // ── Table ─────────────────────────────────────────────────────────────────
       const TABLE_TOP = headY + 12;
       const HEADER_ROW_H = 22;
-      const ROW_H = 34; // taller than the header — the appréciation cell stacks the formateur's name above the appréciation itself
+      const ROW_H = 42; // tall enough for the professeur column's name + signature line
 
-      // Column widths (total = PAGE_W)
-      const cols = {
-        subject:      { x: LEFT,        w: 120 },
-        interro1:     { x: LEFT + 120,  w: 52 },
-        interro2:     { x: LEFT + 172,  w: 52 },
-        devoir:       { x: LEFT + 224,  w: 52 },
-        compos:       { x: LEFT + 276,  w: 52 },
-        moyenne:      { x: LEFT + 328,  w: 60 },
-        appreciation: { x: LEFT + 388,  w: PAGE_W - 348 },
-      };
+      // Column widths — declared in order, x positions computed cumulatively so
+      // resizing one column never requires re-deriving every one after it. The
+      // last column (appréciation) absorbs whatever width remains.
+      const COLUMN_SPECS = [
+        { key: 'subject',      label: 'Matière',      w: 95 },
+        { key: 'interro1',     label: 'Interro 1',    w: 42 },
+        { key: 'interro2',     label: 'Interro 2',    w: 42 },
+        { key: 'devoir',       label: 'Devoir',       w: 42 },
+        { key: 'compos',       label: 'Compos.',      w: 48 },
+        { key: 'moyenne',      label: 'Moy./20',      w: 48 },
+        { key: 'professeur',   label: 'Professeur',   w: 90 },
+        { key: 'appreciation', label: 'Appréciation', w: null },
+      ];
+      const cols = {};
+      let runningX = LEFT;
+      COLUMN_SPECS.forEach(({ key, w }) => {
+        const width = w ?? (PAGE_W - (runningX - LEFT));
+        cols[key] = { x: runningX, w: width };
+        runningX += width;
+      });
 
       // Header row
       doc.rect(LEFT, TABLE_TOP, PAGE_W, HEADER_ROW_H).fill(NAVY);
       doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
 
-      const headers = [
-        { key: 'subject',      label: 'Matière' },
-        { key: 'interro1',     label: 'Interro 1' },
-        { key: 'interro2',     label: 'Interro 2' },
-        { key: 'devoir',       label: 'Devoir' },
-        { key: 'compos',       label: 'Compos.' },
-        { key: 'moyenne',      label: 'Moy./20' },
-        { key: 'appreciation', label: 'Appréciation' },
-      ];
-      headers.forEach(({ key, label }) => {
+      COLUMN_SPECS.forEach(({ key, label }) => {
         const col = cols[key];
         doc.text(label, col.x + 3, TABLE_TOP + 7, { width: col.w - 6, align: 'center' });
       });
@@ -176,12 +177,20 @@ async function generateBulletinPDF(data) {
           doc.text(text, col.x + 3, y + (ROW_H - 9) / 2, { width: col.w - 6, align });
         });
 
-        // Appréciation cell — formateur name (signature) above the appréciation itself
+        // Professeur cell — name, then a blank line left for the actual
+        // handwritten/stamped signature on the printed document.
+        const profCol = cols.professeur;
+        doc.fillColor(BLACK).fontSize(8).font('Helvetica')
+          .text(row.instructorName || '-', profCol.x + 3, y + 5, { width: profCol.w - 6, align: 'center' });
+        doc.moveTo(profCol.x + 8, y + ROW_H - 13).lineTo(profCol.x + profCol.w - 8, y + ROW_H - 13)
+          .lineWidth(0.5).strokeColor('#9ca3af').stroke();
+        doc.fillColor(GRAY).fontSize(6).font('Helvetica-Oblique')
+          .text('Signature', profCol.x + 3, y + ROW_H - 10, { width: profCol.w - 6, align: 'center' });
+
+        // Appréciation cell
         const apprCol = cols.appreciation;
-        doc.fillColor(GRAY).fontSize(7).font('Helvetica-Oblique')
-          .text(row.instructorName ? `— ${row.instructorName}` : '', apprCol.x + 3, y + 5, { width: apprCol.w - 6, align: 'left' });
         doc.fillColor(BLACK).fontSize(9).font('Helvetica-Bold')
-          .text(row.appreciation || '', apprCol.x + 3, y + 18, { width: apprCol.w - 6, align: 'left' });
+          .text(row.appreciation || '', apprCol.x + 3, y + (ROW_H - 9) / 2, { width: apprCol.w - 6, align: 'left' });
 
         // Row bottom border
         doc.moveTo(LEFT, y + ROW_H).lineTo(LEFT + PAGE_W, y + ROW_H).lineWidth(0.3).strokeColor('#d1d5db').stroke();
@@ -210,7 +219,7 @@ async function generateBulletinPDF(data) {
       doc.rect(LEFT, TABLE_TOP, PAGE_W, tableHeight).lineWidth(1).strokeColor(NAVY).stroke();
 
       // Vertical lines
-      ['interro1', 'interro2', 'devoir', 'compos', 'moyenne', 'appreciation'].forEach(key => {
+      ['interro1', 'interro2', 'devoir', 'compos', 'moyenne', 'professeur', 'appreciation'].forEach(key => {
         const col = cols[key];
         doc.moveTo(col.x, TABLE_TOP).lineTo(col.x, TABLE_TOP + tableHeight).lineWidth(0.5).strokeColor('#9ca3af').stroke();
       });
