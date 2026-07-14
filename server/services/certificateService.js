@@ -29,9 +29,11 @@ exports.generateCompletion = async (studentId, course) => {
   const schoolId = course.school?._id || course.school;
   const school = schoolId ? await School.findById(schoolId).select('name logo').lean() : null;
 
-  // The DB record (and any Cloudinary upload) only needs to happen once, but the
-  // PDF bytes must be rebuilt on every call — the caller always needs them to
-  // stream back a download, whether or not a Certificate row already exists.
+  // The DB record only needs to be created once, but the PDF bytes must be
+  // rebuilt on every call — the caller always needs them to stream back a
+  // download, whether or not a Certificate row already exists. No Cloudinary
+  // upload here: it's always regenerated server-side for download/verify, so
+  // storing a copy elsewhere just adds an unreliable external dependency.
   const uniqueId = existing?.uniqueId || uuidv4();
   const verifyHash = existing?.verifyHash || crypto.createHash('sha256').update(uniqueId).digest('hex');
   const verifyUrl = `${process.env.CLIENT_URL}/certificates/verify/${verifyHash}`;
@@ -47,30 +49,12 @@ exports.generateCompletion = async (studentId, course) => {
     return existing;
   }
 
-  let pdfUrl = '';
-  try {
-    const { cloudinary } = require('../middlewares/upload');
-    if (process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
-      const b64 = pdfBuffer.toString('base64');
-      const dataUri = `data:application/pdf;base64,${b64}`;
-      const uploaded = await cloudinary.uploader.upload(dataUri, {
-        folder: 'edumaster/attestations',
-        // 'image' (not 'raw') — Cloudinary blocks public delivery of raw PDFs by
-        // default; see middlewares/upload.js for the same fix on lesson PDFs.
-        resource_type: 'image',
-        public_id: `attestation_${uniqueId}`,
-      });
-      pdfUrl = uploaded.secure_url;
-    }
-  } catch {}
-
   const cert = await Certificate.create({
     student: studentId,
     course: course._id,
     type: 'completion',
     uniqueId,
     verifyHash,
-    pdfUrl,
   });
   cert._pdfBuffer = pdfBuffer;
   return cert;
@@ -93,23 +77,6 @@ exports.generate = async (userRef, course, exam, result) => {
     return existing;
   }
 
-  let pdfUrl = '';
-  try {
-    const { cloudinary } = require('../middlewares/upload');
-    if (process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name') {
-      const b64 = pdfBuffer.toString('base64');
-      const dataUri = `data:application/pdf;base64,${b64}`;
-      const uploaded = await cloudinary.uploader.upload(dataUri, {
-        folder: 'edumaster/certificates',
-        // 'image' (not 'raw') — Cloudinary blocks public delivery of raw PDFs by
-        // default; see middlewares/upload.js for the same fix on lesson PDFs.
-        resource_type: 'image',
-        public_id: `cert_${uniqueId}`,
-      });
-      pdfUrl = uploaded.secure_url;
-    }
-  } catch {}
-
   const cert = await Certificate.create({
     student: result.student,
     course: course._id,
@@ -117,7 +84,6 @@ exports.generate = async (userRef, course, exam, result) => {
     result: result._id,
     uniqueId,
     verifyHash,
-    pdfUrl,
   });
 
   cert._pdfBuffer = pdfBuffer;

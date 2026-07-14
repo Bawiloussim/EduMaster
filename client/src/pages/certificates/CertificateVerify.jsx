@@ -5,6 +5,8 @@ import api from '../../services/api';
 import Spinner from '../../components/ui/Spinner';
 import PageWrapper from '../../components/layout/PageWrapper';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export default function CertificateVerify() {
   const { hash } = useParams();
 
@@ -59,12 +61,10 @@ export default function CertificateVerify() {
               </div>
             </div>
 
-            {cert.pdfUrl && (
-              <a href={cert.pdfUrl} target="_blank" rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 text-sm text-brand-dark hover:underline">
-                <ExternalLink className="h-4 w-4" /> Télécharger le certificat PDF
-              </a>
-            )}
+            <a href={`${API_BASE}/certificates/verify/${hash}/download`} target="_blank" rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-brand-dark hover:underline">
+              <ExternalLink className="h-4 w-4" /> Télécharger le certificat PDF
+            </a>
           </div>
         )}
       </div>
