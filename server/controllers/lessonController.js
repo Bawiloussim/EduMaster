@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const { getFileUrl, cloudinary, useCloudinary } = require('../middlewares/upload');
 const { canManageCourse } = require('../utils/schoolAuth');
+const { generateLessonContent } = require('../services/aiContentService');
 
 // Recovers { resourceType, publicId } from a plain Cloudinary delivery URL —
 // needed for lesson PDFs uploaded before we started storing publicId
@@ -74,6 +75,26 @@ exports.update = async (req, res) => {
 
   await lesson.save();
   res.json({ success: true, data: lesson });
+};
+
+// Drafts the written lesson content from the formateur's key points — the
+// result is returned for review/editing, not saved until the lesson itself is.
+exports.generateContent = async (req, res) => {
+  const { lesson, error } = await checkOwner(req.params.id, req.user);
+  if (error) return res.status(404).json({ success: false, message: error });
+
+  const { points } = req.body;
+  if (!points?.trim()) return res.status(422).json({ success: false, message: 'Les points clés sont requis' });
+
+  const course = await Course.findById(lesson.course);
+  try {
+    const content = await generateLessonContent({
+      title: lesson.title, subject: course.subject, classe: course.classe, serie: course.serie, points,
+    });
+    res.json({ success: true, data: { content } });
+  } catch (e) {
+    res.status(502).json({ success: false, message: e.message || 'Échec de la génération' });
+  }
 };
 
 exports.delete = async (req, res) => {

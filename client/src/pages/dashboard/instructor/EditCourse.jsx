@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Plus, Trash2, Save, ChevronLeft, BookOpen, HelpCircle,
   ChevronDown, ChevronUp, Video, FileText, AlignLeft,
-  ClipboardList, BarChart2, Upload, Check, X, Eye, Pencil, Users
+  ClipboardList, BarChart2, Upload, Check, X, Eye, Pencil, Users, Sparkles
 } from 'lucide-react';
 import api from '../../../services/api';
 import Spinner from '../../../components/ui/Spinner';
@@ -31,10 +31,17 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
   const [tab, setTab] = useState('content'); // 'content' | 'exercises'
   const [form, setForm] = useState({ videoUrl: lesson.videoUrl || '', pdfUrls: lesson.pdfUrls || [], content: lesson.content || '', isFreePreview: lesson.isFreePreview || false });
   const [pdfFiles, setPdfFiles] = useState([]);
+  const [points, setPoints] = useState('');
   const qc = useQueryClient();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const removeExistingPdf = (i) => set('pdfUrls', form.pdfUrls.filter((_, idx) => idx !== i));
   const removePendingPdf = (i) => setPdfFiles(fs => fs.filter((_, idx) => idx !== i));
+
+  const generateMutation = useMutation({
+    mutationFn: () => api.post(`/lessons/${lesson._id}/generate-content`, { points }),
+    onSuccess: (res) => { set('content', res.data.data.content); toast.success('Contenu généré — relisez-le avant de sauvegarder'); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur de génération'),
+  });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -120,9 +127,19 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
                 </label>
               </div>
 
+              <div className="space-y-2 bg-brand/10 border border-brand/15 rounded-xl p-3">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><Sparkles className="h-3.5 w-3.5 text-brand-dark" /> Générer le cours avec l'IA</label>
+                <textarea rows={3} value={points} onChange={e => setPoints(e.target.value)}
+                  placeholder="Listez les points clés à développer (un par ligne)…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
+                <Button size="sm" variant="secondary" disabled={!points.trim()} loading={generateMutation.isPending} onClick={() => generateMutation.mutate()}>
+                  <Sparkles className="h-3.5 w-3.5" /> Générer le cours
+                </Button>
+              </div>
+
               <div className="space-y-1">
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><AlignLeft className="h-3.5 w-3.5 text-success" /> Cours écrit</label>
-                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
+                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici, ou générez-le ci-dessus…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
               </div>
 
               <div className="flex items-center justify-between">
@@ -148,6 +165,13 @@ function ExercisesTab({ lessonId, courseId }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [newEx, setNewEx] = useState({ statement: '', type: 'open', options: ['', '', '', ''], correctOption: 0 });
+  const [exPoints, setExPoints] = useState('');
+
+  const generateMutation = useMutation({
+    mutationFn: () => api.post(`/exercises/lessons/${lessonId}/generate-statement`, { points: exPoints, type: newEx.type }),
+    onSuccess: (res) => { setNewEx(f => ({ ...f, statement: res.data.data.statement })); toast.success('Énoncé généré — relisez-le avant d\'ajouter'); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur de génération'),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['exercises', lessonId],
@@ -195,6 +219,15 @@ function ExercisesTab({ lessonId, courseId }) {
 
       {adding && (
         <div className="bg-brand/10 border border-brand/15 rounded-xl p-4 space-y-3">
+          <div className="space-y-2 bg-white border border-brand/15 rounded-xl p-3">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><Sparkles className="h-3.5 w-3.5 text-brand-dark" /> Générer l'énoncé avec l'IA</label>
+            <textarea rows={2} value={exPoints} onChange={e => setExPoints(e.target.value)}
+              placeholder="Listez les points clés à couvrir…"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
+            <Button size="sm" variant="secondary" disabled={!exPoints.trim()} loading={generateMutation.isPending} onClick={() => generateMutation.mutate()}>
+              <Sparkles className="h-3.5 w-3.5" /> Générer l'énoncé
+            </Button>
+          </div>
           <ExerciseFormFields value={newEx} onChange={setNewEx} />
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={() => setAdding(false)}>Annuler</Button>

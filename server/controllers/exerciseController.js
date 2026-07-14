@@ -7,6 +7,7 @@ const Notification = require('../models/Notification');
 const emailService = require('../services/emailService');
 const { getFileUrl } = require('../middlewares/upload');
 const { canManageCourse } = require('../utils/schoolAuth');
+const { generateExerciseStatement } = require('../services/aiContentService');
 
 exports.createForLesson = async (req, res) => {
   const lesson = await Lesson.findById(req.params.lessonId);
@@ -28,6 +29,30 @@ exports.createForLesson = async (req, res) => {
     order: order !== undefined ? order : (await Exercise.countDocuments({ lesson: lesson._id })),
   });
   res.status(201).json({ success: true, data: exercise });
+};
+
+// Drafts an exercise statement from the formateur's key points — returned for
+// review/editing, not saved until the exercise itself is created.
+exports.generateStatement = async (req, res) => {
+  const lesson = await Lesson.findById(req.params.lessonId);
+  if (!lesson) return res.status(404).json({ success: false, message: 'Leçon introuvable' });
+
+  const course = await Course.findById(lesson.course);
+  if (!canManageCourse(course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+
+  const { points, type } = req.body;
+  if (!points?.trim()) return res.status(422).json({ success: false, message: 'Les points clés sont requis' });
+
+  try {
+    const statement = await generateExerciseStatement({
+      lessonTitle: lesson.title, subject: course.subject, classe: course.classe, serie: course.serie, points, type,
+    });
+    res.json({ success: true, data: { statement } });
+  } catch (e) {
+    res.status(502).json({ success: false, message: e.message || 'Échec de la génération' });
+  }
 };
 
 exports.listForLesson = async (req, res) => {

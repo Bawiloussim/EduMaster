@@ -7,6 +7,7 @@ const { optionalUpload } = require('../middlewares/upload');
 
 // Instructor
 router.post('/lessons/:lessonId', protect, requireRole('instructor', 'admin'), ec.createForLesson);
+router.post('/lessons/:lessonId/generate-statement', protect, requireRole('instructor', 'admin'), ec.generateStatement);
 router.get('/lessons/:lessonId', protect, ec.listForLesson);
 router.put('/:id', protect, requireRole('instructor', 'admin'), ec.update);
 router.delete('/:id', protect, requireRole('instructor', 'admin'), ec.delete);

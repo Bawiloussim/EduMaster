@@ -14,6 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
@@ -33,6 +34,7 @@
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.19.1",
     "qrcode": "^1.5.4",
+    "undici": "^7.28.0",
     "uuid": "^14.0.1"
   },
   "devDependencies": {
