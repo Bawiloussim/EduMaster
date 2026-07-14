@@ -10,9 +10,6 @@ export const useAuth = () => {
     return data.data;
   };
 
-  // A principal (chef d'établissement) registering with a password gets no
-  // session yet — they must verify their email first, then log in explicitly
-  // to start the onboarding wizard (see authController.createAccountAndRespond).
   const register = async (payload) => {
     const { data } = await api.post('/auth/register', payload);
     if (!data.accessToken) return { requiresVerification: true, message: data.message };

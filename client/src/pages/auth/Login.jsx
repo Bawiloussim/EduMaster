@@ -4,10 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { GraduationCap, BookOpen, Award, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -69,27 +72,44 @@ function PassRateDonut() {
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, registerWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
   const [rememberMe, setRememberMe] = useState(true);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema) });
 
   // Dashboard roots are role-gated (see AppRouter); a stale `from` pointing into
   // another role's area must not be trusted just because the user is now authenticated.
   const ROLE_RESTRICTED_ROOTS = ['/admin', '/superadmin', '/instructor', '/student', '/choose-class'];
 
+  const redirectAfterLogin = (user) => {
+    toast.success(`Bienvenue, ${user.name} !`);
+    const defaultRedirects = { admin: '/admin', superadmin: '/superadmin', instructor: '/instructor', student: '/home' };
+    const dashLink = defaultRedirects[user.role] || '/home';
+    const fromIsRestricted = from && ROLE_RESTRICTED_ROOTS.some((root) => from.startsWith(root)) && !from.startsWith(dashLink);
+    navigate(fromIsRestricted ? dashLink : from || dashLink);
+  };
+
   const onSubmit = async (data) => {
     try {
       const user = await login(data.email, data.password);
-      toast.success(`Bienvenue, ${user.name} !`);
-      const defaultRedirects = { admin: '/admin', superadmin: '/superadmin', instructor: '/instructor', student: '/home' };
-      const dashLink = defaultRedirects[user.role] || '/home';
-      const fromIsRestricted = from && ROLE_RESTRICTED_ROOTS.some((root) => from.startsWith(root)) && !from.startsWith(dashLink);
-      navigate(fromIsRestricted ? dashLink : from || dashLink);
+      redirectAfterLogin(user);
     } catch (e) {
       toast.error(e.response?.data?.message || 'Identifiants incorrects');
+    }
+  };
+
+  const onGoogleSuccess = async (credentialResponse) => {
+    setGoogleLoading(true);
+    try {
+      const user = await registerWithGoogle({ credential: credentialResponse.credential });
+      redirectAfterLogin(user);
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Connexion Google impossible');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -131,6 +151,27 @@ export default function Login() {
 
           <h2 className="text-2xl font-bold text-gray-900">Connexion à votre compte</h2>
           <p className="text-sm text-gray-500 mt-1 mb-6">Accédez à votre espace EduMaster</p>
+
+          {GOOGLE_CLIENT_ID && (
+            <>
+              <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <div className="flex justify-center [&>div]:w-full">
+                  <GoogleLogin
+                    onSuccess={onGoogleSuccess}
+                    onError={() => toast.error('Connexion Google impossible')}
+                    text="signin_with"
+                    width="336"
+                  />
+                </div>
+              </GoogleOAuthProvider>
+              {googleLoading && <p className="text-center text-xs text-gray-400 mt-2">Connexion…</p>}
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400">ou avec un mot de passe</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+            </>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input label="Adresse email" type="email" placeholder="vous@exemple.com" error={errors.email?.message} {...register('email')} />
