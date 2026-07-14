@@ -1,29 +1,62 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, Phone, MapPin } from 'lucide-react';
+import { GraduationCap, Mail, Phone, MapPin, School as SchoolIcon } from 'lucide-react';
 import { CLASSES } from '../../utils/schoolData';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function Footer() {
   const { user } = useAuthStore();
   const school = user?.school;
-  const hasSchoolContact = !!(school && (school.email || school.phone || school.address));
+  const hasSchool = !!school;
+
+  const location = hasSchool ? [school.city, school.country].filter(Boolean).join(', ') : '';
+  const hasSchoolContact = hasSchool && (school.email || school.phone || school.address || location);
+
+  const footerStyle = hasSchool && school.primaryColor ? { backgroundColor: school.primaryColor } : undefined;
+  const accentStyle = hasSchool && school.secondaryColor ? { color: school.secondaryColor } : undefined;
 
   return (
-    <footer className="bg-primary text-brand-light">
+    <footer className={`${hasSchool ? 'text-white/80' : 'bg-primary text-brand-light'}`} style={footerStyle}>
       <div className="max-w-7xl mx-auto px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Link to="/" className="flex items-center gap-2 mb-3">
-            <div className="h-9 w-9 bg-white/10 rounded-lg flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-brand" />
-            </div>
-            <div className="leading-tight">
-              <span className="font-extrabold text-white text-lg leading-none block">Edu</span>
-              <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>
-            </div>
-          </Link>
-          <p className="text-sm leading-relaxed">
-            La plateforme scolaire du secondaire, gratuite et accessible partout dans le monde.
-          </p>
+          {hasSchool ? (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                {school.logo ? (
+                  <img
+                    src={school.logo}
+                    alt={school.name}
+                    className="h-11 w-11 rounded-lg object-cover bg-white/10 shrink-0"
+                  />
+                ) : (
+                  <div className="h-11 w-11 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+                    <SchoolIcon className="h-5 w-5 text-white" />
+                  </div>
+                )}
+                <span className="font-extrabold text-white text-lg leading-tight">{school.name}</span>
+              </div>
+              {school.slogan && (
+                <p className="text-sm italic mb-2" style={accentStyle}>{school.slogan}</p>
+              )}
+              {school.description && (
+                <p className="text-sm leading-relaxed">{school.description}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <Link to="/" className="flex items-center gap-2 mb-3">
+                <div className="h-9 w-9 bg-white/10 rounded-lg flex items-center justify-center">
+                  <GraduationCap className="h-5 w-5 text-brand" />
+                </div>
+                <div className="leading-tight">
+                  <span className="font-extrabold text-white text-lg leading-none block">Edu</span>
+                  <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>
+                </div>
+              </Link>
+              <p className="text-sm leading-relaxed">
+                La plateforme scolaire du secondaire, gratuite et accessible partout dans le monde.
+              </p>
+            </>
+          )}
         </div>
 
         <div>
@@ -51,7 +84,6 @@ export default function Footer() {
           <h3 className="text-white font-bold text-sm mb-4">Contact</h3>
           {hasSchoolContact ? (
             <div className="space-y-2 text-sm">
-              <p className="font-semibold text-white">{school.name}</p>
               {school.email && (
                 <a href={`mailto:${school.email}`} className="flex items-center gap-2 hover:text-brand transition-colors">
                   <Mail className="h-4 w-4 shrink-0" /> {school.email}
@@ -62,9 +94,14 @@ export default function Footer() {
                   <Phone className="h-4 w-4 shrink-0" /> {school.phone}
                 </a>
               )}
-              {school.address && (
-                <p className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 shrink-0" /> {school.address}
+              {(school.address || location) && (
+                <p className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    {school.address}
+                    {school.address && location && <br />}
+                    {location}
+                  </span>
                 </p>
               )}
             </div>
@@ -78,7 +115,9 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 text-xs text-white/40 text-center">
-          © {new Date().getFullYear()} EduMaster · Cours du secondaire gratuits · Accessible partout dans le monde
+          {hasSchool
+            ? <>© {new Date().getFullYear()} {school.name} · Propulsé par EduMaster</>
+            : <>© {new Date().getFullYear()} EduMaster · Cours du secondaire gratuits · Accessible partout dans le monde</>}
         </div>
       </div>
     </footer>

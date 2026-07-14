@@ -78,7 +78,7 @@ async function createAccountAndRespond(res, { name, email, password, googleId, e
   res.cookie('refreshToken', refreshToken, cookieOpts);
   res.status(201).json({
     success: true,
-    data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: school ? { _id: school._id, name: school.name, status: school.status, logo: school.logo } : null, avatar: user.avatar, classe: user.classe, serie: user.serie },
+    data: { _id: user._id, name: user.name, email: user.email, role: user.role, school: school ? { _id: school._id, name: school.name, status: school.status, logo: school.logo, phone: school.phone, email: school.email, address: school.address, city: school.city, country: school.country, slogan: school.slogan, description: school.description, primaryColor: school.primaryColor, secondaryColor: school.secondaryColor } : null, avatar: user.avatar, classe: user.classe, serie: user.serie },
     accessToken,
   });
 }
@@ -117,7 +117,7 @@ exports.google = async (req, res) => {
   }
 
   const email = payload.email.toLowerCase();
-  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status logo phone email address');
+  const existing = await User.findOne({ email }).select('+refreshToken').populate('school', 'name status logo phone email address city country slogan description primaryColor secondaryColor');
 
   if (existing) {
     if (!existing.googleId) {
@@ -163,7 +163,7 @@ exports.login = async (req, res) => {
   if (!email || !password) {
     return res.status(422).json({ success: false, message: 'Email et mot de passe requis' });
   }
-  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status logo phone email address');
+  const user = await User.findOne({ email }).select('+password +refreshToken').populate('school', 'name status logo phone email address city country slogan description primaryColor secondaryColor');
   if (!user || !(await user.comparePassword(password))) {
     return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
   }

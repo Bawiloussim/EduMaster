@@ -28,10 +28,10 @@ exports.createMySchool = async (req, res) => {
   if (resolveSchoolId(req.user)) {
     return res.status(409).json({ success: false, message: 'Vous avez déjà un établissement' });
   }
-  const { name, city, address, phone, email, currency } = req.body;
+  const { name, city, address, country, phone, email, currency, slogan, description, primaryColor, secondaryColor } = req.body;
   if (!name) return res.status(422).json({ success: false, message: "Le nom de l'établissement est requis" });
 
-  const school = await School.create({ name, city, address, phone, email, currency });
+  const school = await School.create({ name, city, address, country, phone, email, currency, slogan, description, primaryColor, secondaryColor });
   await User.findByIdAndUpdate(req.user._id, { school: school._id });
   res.status(201).json({ success: true, data: school });
 };
@@ -40,7 +40,7 @@ exports.updateMySchool = async (req, res) => {
   const id = resolveSchoolId(req.user);
   if (!id) return res.status(404).json({ success: false, message: "Aucun établissement à modifier" });
 
-  const fields = ['name', 'city', 'address', 'phone', 'email', 'currency', 'academicYearLabel', 'academicYearStart', 'academicYearEnd'];
+  const fields = ['name', 'city', 'address', 'country', 'phone', 'email', 'currency', 'slogan', 'description', 'primaryColor', 'secondaryColor', 'academicYearLabel', 'academicYearStart', 'academicYearEnd'];
   const updates = {};
   fields.forEach((f) => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
 

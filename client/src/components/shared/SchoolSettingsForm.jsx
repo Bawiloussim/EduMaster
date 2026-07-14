@@ -31,7 +31,10 @@ const CURRENCIES = [
   { code: 'CAD', label: 'CAD — Dollar canadien' },
   { code: 'CHF', label: 'CHF — Franc suisse' },
 ];
-const EMPTY = { name: '', city: '', address: '', phone: '', email: '', currency: 'XAF' };
+const EMPTY = {
+  name: '', city: '', address: '', country: '', phone: '', email: '', currency: 'XAF',
+  slogan: '', description: '', primaryColor: '', secondaryColor: '',
+};
 
 // Shared by the onboarding wizard's school step and the admin dashboard's
 // "Paramètres" tab — a chef d'établissement can create the school once here,
@@ -53,8 +56,10 @@ export default function SchoolSettingsForm({ onSaved, dashboardButton = false })
   useEffect(() => {
     if (!school) return;
     setForm({
-      name: school.name || '', city: school.city || '', address: school.address || '',
+      name: school.name || '', city: school.city || '', address: school.address || '', country: school.country || '',
       phone: school.phone || '', email: school.email || '', currency: school.currency || 'XAF',
+      slogan: school.slogan || '', description: school.description || '',
+      primaryColor: school.primaryColor || '', secondaryColor: school.secondaryColor || '',
     });
     setLogoPreview(school.logo || '');
   }, [school]);
@@ -74,6 +79,8 @@ export default function SchoolSettingsForm({ onSaved, dashboardButton = false })
       school: {
         _id: updatedSchool._id, name: updatedSchool.name, status: updatedSchool.status,
         logo: updatedSchool.logo, phone: updatedSchool.phone, email: updatedSchool.email, address: updatedSchool.address,
+        city: updatedSchool.city, country: updatedSchool.country, slogan: updatedSchool.slogan,
+        description: updatedSchool.description, primaryColor: updatedSchool.primaryColor, secondaryColor: updatedSchool.secondaryColor,
       },
     });
   };
@@ -141,19 +148,52 @@ export default function SchoolSettingsForm({ onSaved, dashboardButton = false })
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Nom de l'établissement" value={form.name} onChange={set('name')} required />
-          <Input label="Ville" value={form.city} onChange={set('city')} />
+          <Input label="Devise ou slogan" value={form.slogan} onChange={set('slogan')} placeholder="Ex : Excellence, discipline, réussite" />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            value={form.description}
+            onChange={set('description')}
+            rows={3}
+            placeholder="Brève description de l'établissement"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white resize-none"
+          />
         </div>
 
         <Input label="Adresse" value={form.address} onChange={set('address')} />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input label="Ville" value={form.city} onChange={set('city')} />
+          <Input label="Pays" value={form.country} onChange={set('country')} />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input label="Téléphone" value={form.phone} onChange={set('phone')} />
           <Input label="Email de contact" type="email" value={form.email} onChange={set('email')} />
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Devise</label>
+            <label className="text-sm font-medium text-gray-700">Devise (monnaie)</label>
             <select value={form.currency} onChange={set('currency')} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
               {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
             </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">Couleur principale (optionnel)</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={form.primaryColor || '#003580'} onChange={set('primaryColor')} className="h-9 w-12 rounded border border-gray-300 cursor-pointer" />
+              <Input value={form.primaryColor} onChange={set('primaryColor')} placeholder="#003580" className="flex-1" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">Couleur secondaire (optionnel)</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={form.secondaryColor || '#0ea5e9'} onChange={set('secondaryColor')} className="h-9 w-12 rounded border border-gray-300 cursor-pointer" />
+              <Input value={form.secondaryColor} onChange={set('secondaryColor')} placeholder="#0ea5e9" className="flex-1" />
+            </div>
           </div>
         </div>
 
