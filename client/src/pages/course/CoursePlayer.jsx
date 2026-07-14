@@ -17,7 +17,10 @@ const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://lo
 function parseVideoUrl(url) {
   if (!url) return null;
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/\s]+)/);
-  if (yt) return { platform: 'youtube', embedSrc: `https://www.youtube.com/embed/${yt[1]}?rel=0&modestbranding=1`, original: url };
+  // youtube-nocookie.com (privacy-enhanced mode) skips most of the tracking/
+  // analytics calls that ad blockers target — those blocked calls are a common
+  // cause of the iframe player's "an error occurred" message.
+  if (yt) return { platform: 'youtube', embedSrc: `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&modestbranding=1`, original: url };
   const vi = url.match(/vimeo\.com\/(\d+)/);
   if (vi) return { platform: 'vimeo', embedSrc: `https://player.vimeo.com/video/${vi[1]}`, original: url };
   if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) return { platform: 'direct', embedSrc: url, original: url };
