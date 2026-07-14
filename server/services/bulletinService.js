@@ -1,5 +1,38 @@
+const fs = require('fs/promises');
+const path = require('path');
+const http = require('http');
+const https = require('https');
 const PDFDocument = require('pdfkit');
 const { getAppreciation } = require('../utils/appreciation');
+
+// Global fetch() (undici) throws "Promise.withResolvers is not a function"
+// on some Node 20.x builds — use the plain http/https client instead.
+function fetchBuffer(url) {
+  return new Promise((resolve) => {
+    const client = url.startsWith('https:') ? https : http;
+    client.get(url, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', () => resolve(null));
+    }).on('error', () => resolve(null));
+  });
+}
+
+// School logo is stored as either a Cloudinary URL or a local "/uploads/xxx"
+// path (see middlewares/upload.js#getFileUrl) — fetch either into a buffer
+// pdfkit's doc.image() can embed. Returns null (never throws) so a school
+// without a logo, or a broken/unreachable one, just renders without one.
+async function loadLogoBuffer(logoUrl) {
+  if (!logoUrl) return null;
+  try {
+    if (/^https?:\/\//i.test(logoUrl)) return await fetchBuffer(logoUrl);
+    return await fs.readFile(path.join(__dirname, '../uploads', path.basename(logoUrl)));
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Generate a school bulletin PDF (A4 portrait).
@@ -13,12 +46,15 @@ const { getAppreciation } = require('../utils/appreciation');
  * @param {string}   data.bulletin[].appreciation
  * @param {number}   data.moyenneGenerale
  * @param {string}   data.studentName
+ * @param {Object}   [data.school]          — {name, logo, city, address}
  * @returns {Promise<Buffer>}
  */
-function generateBulletinPDF(data) {
+async function generateBulletinPDF(data) {
+  const { trimestre, bulletin, moyenneGenerale, studentName, school } = data;
+  const logoBuffer = await loadLogoBuffer(school?.logo);
+
   return new Promise((resolve, reject) => {
     try {
-      const { trimestre, bulletin, moyenneGenerale, studentName } = data;
       const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margin: 40 });
       const chunks = [];
       doc.on('data', (c) => chunks.push(c));
@@ -32,30 +68,51 @@ function generateBulletinPDF(data) {
       const PAGE_W = doc.page.width - 80; // usable width (margins: 40 each side)
       const LEFT = 40;
 
-      // ── Header ────────────────────────────────────────────────────────────────
-      doc.fillColor(NAVY).fontSize(24).font('Helvetica-Bold')
-        .text('EduMaster', LEFT, 40, { continued: false });
+      // ── Header — school identity ───────────────────────────────────────────────
+      const LOGO_SIZE = 56;
+      const logoTop = 40;
+      const textX = logoBuffer ? LEFT + LOGO_SIZE + 12 : LEFT;
+      const textW = PAGE_W - (logoBuffer ? LOGO_SIZE + 12 : 0);
+
+      if (logoBuffer) {
+        try { doc.image(logoBuffer, LEFT, logoTop, { width: LOGO_SIZE, height: LOGO_SIZE, fit: [LOGO_SIZE, LOGO_SIZE] }); } catch { /* corrupt/unsupported image — skip it */ }
+      }
 
       doc.fillColor(NAVY).fontSize(16).font('Helvetica-Bold')
-        .text('BULLETIN SCOLAIRE', LEFT, 70, { align: 'center', width: PAGE_W });
+        .text(school?.name || 'Établissement', textX, logoTop + 4, { width: textW });
+
+      const addressLine = [school?.address, school?.city].filter(Boolean).join(', ');
+      if (addressLine) {
+        doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+          .text(addressLine, textX, doc.y + 2, { width: textW });
+      }
+
+      let headY = Math.max(logoTop + LOGO_SIZE, doc.y) + 14;
+
+      doc.fillColor(NAVY).fontSize(16).font('Helvetica-Bold')
+        .text('BULLETIN SCOLAIRE', LEFT, headY, { align: 'center', width: PAGE_W });
+      headY = doc.y + 4;
 
       doc.fillColor(GRAY).fontSize(11).font('Helvetica')
-        .text(`Trimestre : ${trimestre}`, LEFT, 95, { align: 'center', width: PAGE_W });
+        .text(`Trimestre : ${trimestre}`, LEFT, headY, { align: 'center', width: PAGE_W });
+      headY = doc.y + 2;
 
       doc.fillColor(BLACK).fontSize(12).font('Helvetica-Bold')
-        .text(`Élève : ${studentName || 'N/A'}`, LEFT, 115, { align: 'center', width: PAGE_W });
+        .text(`Élève : ${studentName || 'N/A'}`, LEFT, headY, { align: 'center', width: PAGE_W });
+      headY = doc.y + 2;
 
       doc.fillColor(GRAY).fontSize(10).font('Helvetica')
         .text(
           `Généré le : ${new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`,
-          LEFT, 132, { align: 'center', width: PAGE_W }
+          LEFT, headY, { align: 'center', width: PAGE_W }
         );
+      headY = doc.y + 10;
 
       // Separator line
-      doc.moveTo(LEFT, 150).lineTo(LEFT + PAGE_W, 150).lineWidth(1.5).strokeColor(NAVY).stroke();
+      doc.moveTo(LEFT, headY).lineTo(LEFT + PAGE_W, headY).lineWidth(1.5).strokeColor(NAVY).stroke();
 
       // ── Table ─────────────────────────────────────────────────────────────────
-      const TABLE_TOP = 162;
+      const TABLE_TOP = headY + 12;
       const HEADER_ROW_H = 22;
       const ROW_H = 34; // taller than the header — the appréciation cell stacks the formateur's name above the appréciation itself
 
@@ -159,10 +216,15 @@ function generateBulletinPDF(data) {
       });
 
       // ── Footer ────────────────────────────────────────────────────────────────
-      const footerY = doc.page.height - 50;
+      // 20px above the bottom margin — not right at it, or pdfkit's own
+      // page-overflow check silently pushes this text onto a blank page 2.
+      const footerY = doc.page.height - doc.page.margins.bottom - 20;
       doc.moveTo(LEFT, footerY - 8).lineTo(LEFT + PAGE_W, footerY - 8).lineWidth(0.5).strokeColor('#d1d5db').stroke();
       doc.fillColor(GRAY).fontSize(9).font('Helvetica')
-        .text('Document généré automatiquement par EduMaster', LEFT, footerY, { align: 'center', width: PAGE_W });
+        .text(
+          school?.name ? `${school.name} — Document généré électroniquement` : 'Document généré électroniquement',
+          LEFT, footerY, { align: 'center', width: PAGE_W }
+        );
 
       doc.end();
     } catch (e) {

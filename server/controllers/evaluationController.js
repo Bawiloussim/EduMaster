@@ -3,6 +3,7 @@ const Grade = require('../models/Grade');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
+const School = require('../models/School');
 const Exercise = require('../models/Exercise');
 const ExerciseAnswer = require('../models/ExerciseAnswer');
 const Notification = require('../models/Notification');
@@ -406,6 +407,13 @@ async function computeStudentBulletin(studentId, trimestre) {
 }
 exports.computeStudentBulletin = computeStudentBulletin;
 
+// Shared by both PDF endpoints below — the bulletin PDF header shows the
+// school's own identity (logo, name, address) instead of the platform's.
+async function loadSchoolInfo(id) {
+  if (!id) return null;
+  return School.findById(id).select('name logo city address').lean();
+}
+
 exports.getBulletin = async (req, res) => {
   const { studentId, trimestre } = req.params;
   if (studentId !== req.user._id.toString() && req.user.role !== 'superadmin') {
@@ -434,6 +442,7 @@ exports.myBulletinPDF = async (req, res) => {
 
     const data = await computeStudentBulletin(studentId, trimestre);
     data.studentName = req.user.name || req.user.email || 'Élève';
+    data.school = await loadSchoolInfo(schoolId(req.user));
 
     const pdfBuffer = await bulletinService.generateBulletinPDF(data);
 
@@ -462,6 +471,7 @@ exports.getBulletinPDF = async (req, res) => {
 
     const data = await computeStudentBulletin(studentId, trimestre);
     data.studentName = student.name || student.email || 'Élève';
+    data.school = await loadSchoolInfo(student.school);
 
     const pdfBuffer = await bulletinService.generateBulletinPDF(data);
 
