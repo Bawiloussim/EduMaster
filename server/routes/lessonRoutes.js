@@ -6,7 +6,6 @@ const requireRole = require('../middlewares/role');
 const { optionalUploadMultiple } = require('../middlewares/upload');
 
 router.get('/:id/pdf/:index', protect, lc.streamPdf);
-router.post('/:id/generate-content', protect, requireRole('instructor', 'admin'), lc.generateContent);
 router.put('/:id', protect, requireRole('instructor', 'admin'), optionalUploadMultiple('pdfFiles', 10), lc.update);
 router.delete('/:id', protect, requireRole('instructor', 'admin'), lc.delete);
 router.patch('/reorder', protect, requireRole('instructor', 'admin'), lc.reorder);

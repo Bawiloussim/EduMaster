@@ -26,30 +26,6 @@ const callClaude = async (params) => {
   }
 };
 
-// Turns a formateur's bullet points into a full written lesson.
-exports.generateLessonContent = async ({ title, subject, classe, serie, points }) => {
-  ensureConfigured();
-
-  const level = serie ? `${classe} — Série ${serie}` : classe;
-  const message = await callClaude({
-    model: 'claude-opus-4-8',
-    max_tokens: 4096,
-    thinking: { type: 'adaptive' },
-    system: "Tu es un professeur qui rédige le contenu écrit d'une leçon pour une plateforme scolaire en ligne. "
-      + "Réponds uniquement avec le contenu de la leçon, rédigé en français, structuré avec des titres courts, "
-      + "des paragraphes clairs et des exemples quand c'est pertinent. N'ajoute ni préambule, ni conclusion du type "
-      + "\"voici le cours\", ni note sur ta propre génération.",
-    messages: [{
-      role: 'user',
-      content: `Rédige le cours complet pour la leçon « ${title} », matière ${subject}, niveau ${level}.\n\n`
-        + `Points clés à développer, fournis par le professeur :\n${points}`,
-    }],
-  });
-
-  const text = message.content.find((b) => b.type === 'text')?.text || '';
-  return text.trim();
-};
-
 // Turns a formateur's bullet points into a full exercise statement.
 exports.generateExerciseStatement = async ({ lessonTitle, subject, classe, serie, points, type }) => {
   ensureConfigured();

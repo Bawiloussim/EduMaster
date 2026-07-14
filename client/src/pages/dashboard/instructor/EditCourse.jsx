@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Trash2, Save, ChevronLeft, BookOpen, HelpCircle,
-  ChevronDown, ChevronUp, Video, FileText, AlignLeft,
+  ChevronDown, ChevronUp, Video, FileText,
   ClipboardList, BarChart2, Upload, Check, X, Eye, Pencil, Users, Sparkles
 } from 'lucide-react';
 import api from '../../../services/api';
@@ -29,19 +29,12 @@ const TABS = [
 function LessonRow({ lesson, courseId, onDelete, onSaved }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('content'); // 'content' | 'exercises'
-  const [form, setForm] = useState({ videoUrl: lesson.videoUrl || '', pdfUrls: lesson.pdfUrls || [], content: lesson.content || '', isFreePreview: lesson.isFreePreview || false });
+  const [form, setForm] = useState({ videoUrl: lesson.videoUrl || '', pdfUrls: lesson.pdfUrls || [], isFreePreview: lesson.isFreePreview || false });
   const [pdfFiles, setPdfFiles] = useState([]);
-  const [points, setPoints] = useState('');
   const qc = useQueryClient();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const removeExistingPdf = (i) => set('pdfUrls', form.pdfUrls.filter((_, idx) => idx !== i));
   const removePendingPdf = (i) => setPdfFiles(fs => fs.filter((_, idx) => idx !== i));
-
-  const generateMutation = useMutation({
-    mutationFn: () => api.post(`/lessons/${lesson._id}/generate-content`, { points }),
-    onSuccess: (res) => { set('content', res.data.data.content); toast.success('Contenu généré — relisez-le avant de sauvegarder'); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Erreur de génération'),
-  });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -50,7 +43,6 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
         pdfFiles.forEach((f) => fd.append('pdfFiles', f));
         fd.append('pdfUrls', JSON.stringify(form.pdfUrls));
         fd.append('videoUrl', form.videoUrl);
-        fd.append('content', form.content);
         fd.append('isFreePreview', form.isFreePreview);
         return api.put(`/lessons/${lesson._id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       }
@@ -65,7 +57,7 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
-  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-brand-light0" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-danger" />, form.content && <AlignLeft key="t" className="h-3 w-3 text-success" />].filter(Boolean);
+  const icons = [form.videoUrl && <Video key="v" className="h-3 w-3 text-brand-light0" />, (form.pdfUrls.length > 0 || pdfFiles.length > 0) && <FileText key="p" className="h-3 w-3 text-danger" />].filter(Boolean);
 
   return (
     <div className={`rounded-xl border transition-colors ${open ? 'border-brand/25 bg-brand/10/20' : 'border-gray-100 bg-white hover:bg-gray-50'}`}>
@@ -125,21 +117,6 @@ function LessonRow({ lesson, courseId, onDelete, onSaved }) {
                       e.target.value = '';
                     }} />
                 </label>
-              </div>
-
-              <div className="space-y-2 bg-brand/10 border border-brand/15 rounded-xl p-3">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><Sparkles className="h-3.5 w-3.5 text-brand-dark" /> Générer le cours avec l'IA</label>
-                <textarea rows={3} value={points} onChange={e => setPoints(e.target.value)}
-                  placeholder="Listez les points clés à développer (un par ligne)…"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
-                <Button size="sm" variant="secondary" disabled={!points.trim()} loading={generateMutation.isPending} onClick={() => generateMutation.mutate()}>
-                  <Sparkles className="h-3.5 w-3.5" /> Générer le cours
-                </Button>
-              </div>
-
-              <div className="space-y-1">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide"><AlignLeft className="h-3.5 w-3.5 text-success" /> Cours écrit</label>
-                <textarea rows={5} value={form.content} onChange={e => set('content', e.target.value)} placeholder="Rédigez le contenu de la leçon ici, ou générez-le ci-dessus…" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none" />
               </div>
 
               <div className="flex items-center justify-between">
