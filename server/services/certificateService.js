@@ -180,8 +180,16 @@ function generateCompletionPDF({ studentName, courseTitle, subject, classe, seri
         headY = doc.y + 4;
       }
       if (lessonTitles.length) {
-        doc.fillColor(GRAY).fontSize(10).font('Helvetica')
-          .text(`${lessonTitles.length} leçon(s) complétée(s)`, 0, headY, { align: 'center', width: W });
+        const MAX_SHOWN = 8;
+        const shown = lessonTitles.slice(0, MAX_SHOWN);
+        const extra = lessonTitles.length - shown.length;
+        const list = shown.join('  •  ') + (extra > 0 ? `  •  et ${extra} autre(s)` : '');
+
+        doc.fillColor(GRAY).fontSize(10).font('Helvetica-Bold')
+          .text(`${lessonTitles.length} leçon(s) complétée(s) :`, 0, headY, { align: 'center', width: W });
+        headY = doc.y + 2;
+        doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+          .text(list, 50, headY, { align: 'center', width: W - 100 });
         headY = doc.y + 4;
       }
       doc.fillColor(GRAY).fontSize(10).font('Helvetica')

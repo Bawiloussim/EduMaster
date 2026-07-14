@@ -89,4 +89,4 @@ const optionalUploadMultiple = (field, maxCount = 10) => (req, res, next) => {
   next();
 };
 
-module.exports = { upload, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple };
+module.exports = { upload, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple, useCloudinary };

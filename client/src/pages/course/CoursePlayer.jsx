@@ -1,6 +1,6 @@
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   CheckCircle, Circle, BookOpen, Play, FileText,
@@ -185,11 +185,49 @@ const PLATFORM_LABELS = {
   link: 'Vidéo externe',
 };
 
+// Fetches each lesson PDF through our authenticated proxy as a blob instead of
+// pointing <object> straight at a Cloudinary URL — Cloudinary's public CDN
+// blocks/force-downloads PDF delivery depending on account security settings,
+// but our own signed, authenticated proxy always works regardless of that.
+function useLessonPdfBlobs(lessonId, pdfUrls) {
+  const [items, setItems] = useState([]);
+  const urlsRef = useRef([]);
+
+  useEffect(() => {
+    urlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    urlsRef.current = [];
+
+    const list = pdfUrls || [];
+    setItems(list.map((p) => ({ name: p.name, url: null, loading: true, error: false })));
+    let cancelled = false;
+
+    list.forEach((_, i) => {
+      api.get(`/lessons/${lessonId}/pdf/${i}`, { responseType: 'blob' })
+        .then((res) => {
+          if (cancelled) return;
+          const blobUrl = URL.createObjectURL(res.data);
+          urlsRef.current.push(blobUrl);
+          setItems((cur) => cur.map((it, idx) => (idx === i ? { ...it, url: blobUrl, loading: false } : it)));
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setItems((cur) => cur.map((it, idx) => (idx === i ? { ...it, loading: false, error: true } : it)));
+        });
+    });
+
+    return () => { cancelled = true; };
+  }, [lessonId]);
+
+  useEffect(() => () => urlsRef.current.forEach((u) => URL.revokeObjectURL(u)), []);
+
+  return items;
+}
+
 // ─── Lesson content viewer ────────────────────────────────────────────────────
 function LessonContent({ lesson }) {
   const video = parseVideoUrl(lesson.videoUrl);
-  const pdfs = (lesson.pdfUrls || []).map(p => ({ ...p, href: getPdfUrl(p.url) })).filter(p => p.href);
-  const hasContent = video || pdfs.length > 0;
+  const pdfs = useLessonPdfBlobs(lesson._id, lesson.pdfUrls);
+  const hasContent = video || (lesson.pdfUrls?.length > 0);
 
   if (!hasContent) {
     return (
@@ -251,34 +289,47 @@ function LessonContent({ lesson }) {
 
       {/* PDF(s) */}
       {pdfs.map((pdf, i) => (
-        <div key={pdf.href}>
+        <div key={i}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1">
               <FileText className="h-3.5 w-3.5" /> {pdf.name || (pdfs.length > 1 ? `Document PDF ${i + 1}` : 'Document PDF')}
             </h3>
-            <a href={pdf.href} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-brand-dark hover:underline flex items-center gap-1">
-              Ouvrir dans un nouvel onglet <ExternalLink className="h-3 w-3" />
-            </a>
+            {pdf.url && (
+              <a href={pdf.url} target="_blank" rel="noopener noreferrer"
+                className="text-xs text-brand-dark hover:underline flex items-center gap-1">
+                Ouvrir dans un nouvel onglet <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
           </div>
           {/* <object> est plus fiable qu'<iframe> pour les PDFs cross-origin */}
           <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-gray-100" style={{ height: '80vh' }}>
-            <object
-              data={pdf.href}
-              type="application/pdf"
-              className="w-full h-full"
-              title={pdf.name || `PDF — ${lesson.title}`}
-            >
-              {/* Fallback si le navigateur ne peut pas afficher le PDF intégré */}
+            {pdf.loading && (
+              <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
+            )}
+            {pdf.error && (
               <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
                 <FileText className="h-16 w-16 opacity-30" />
-                <p className="text-sm">Votre navigateur ne peut pas afficher le PDF directement.</p>
-                <a href={pdf.href} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors">
-                  <ExternalLink className="h-4 w-4" /> Télécharger / Ouvrir le PDF
-                </a>
+                <p className="text-sm">Impossible de charger ce document.</p>
               </div>
-            </object>
+            )}
+            {pdf.url && (
+              <object
+                data={pdf.url}
+                type="application/pdf"
+                className="w-full h-full"
+                title={pdf.name || `PDF — ${lesson.title}`}
+              >
+                {/* Fallback si le navigateur ne peut pas afficher le PDF intégré */}
+                <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
+                  <FileText className="h-16 w-16 opacity-30" />
+                  <p className="text-sm">Votre navigateur ne peut pas afficher le PDF directement.</p>
+                  <a href={pdf.url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors">
+                    <ExternalLink className="h-4 w-4" /> Télécharger / Ouvrir le PDF
+                  </a>
+                </div>
+              </object>
+            )}
           </div>
         </div>
       ))}

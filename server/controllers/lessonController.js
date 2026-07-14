@@ -1,6 +1,7 @@
 const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
-const { getFileUrl } = require('../middlewares/upload');
+const Enrollment = require('../models/Enrollment');
+const { getFileUrl, cloudinary, useCloudinary } = require('../middlewares/upload');
 const { canManageCourse } = require('../utils/schoolAuth');
 
 const checkOwner = async (lessonId, user) => {
@@ -49,7 +50,9 @@ exports.update = async (req, res) => {
   }
   // Newly uploaded PDF files are appended to whatever survived above
   if (req.files?.length) {
-    const uploaded = req.files.map((f) => ({ url: getFileUrl(f), name: f.originalname }));
+    const uploaded = req.files.map((f) => ({
+      url: getFileUrl(f), name: f.originalname, publicId: useCloudinary ? f.filename : '',
+    }));
     lesson.pdfUrls = [...(lesson.pdfUrls || []), ...uploaded];
   }
 
@@ -68,4 +71,35 @@ exports.reorder = async (req, res) => {
   const { lessons } = req.body;
   await Promise.all(lessons.map(({ id, order }) => Lesson.findByIdAndUpdate(id, { order })));
   res.json({ success: true, message: 'Ordre mis à jour' });
+};
+
+// Streams a lesson PDF through our own server instead of the public Cloudinary
+// CDN link — Cloudinary blocks/forces-download public PDF delivery by default,
+// but an Admin-API signed download (authenticated with our API secret) isn't
+// subject to that restriction, so this always works regardless of that setting.
+exports.streamPdf = async (req, res) => {
+  const lesson = await Lesson.findById(req.params.id);
+  if (!lesson) return res.status(404).json({ success: false, message: 'Leçon introuvable' });
+  const pdf = lesson.pdfUrls[req.params.index];
+  if (!pdf) return res.status(404).json({ success: false, message: 'Document introuvable' });
+
+  const course = await Course.findById(lesson.course);
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+
+  const hasAccess = lesson.isFreePreview || canManageCourse(course, req.user) ||
+    !!(await Enrollment.findOne({ student: req.user._id, course: course._id }));
+  if (!hasAccess) return res.status(403).json({ success: false, message: 'Accès interdit' });
+
+  // Local storage (dev) or a legacy record with no publicId — already public/inline.
+  if (!pdf.publicId) return res.redirect(pdf.url);
+
+  const signedUrl = cloudinary.utils.private_download_url(pdf.publicId, 'pdf', {
+    resource_type: 'image',
+    type: 'upload',
+  });
+  const upstream = await fetch(signedUrl);
+  if (!upstream.ok) return res.status(502).json({ success: false, message: 'Document indisponible' });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.send(Buffer.from(await upstream.arrayBuffer()));
 };
