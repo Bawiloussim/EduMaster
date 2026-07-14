@@ -4,6 +4,22 @@ const Enrollment = require('../models/Enrollment');
 const { getFileUrl, cloudinary, useCloudinary } = require('../middlewares/upload');
 const { canManageCourse } = require('../utils/schoolAuth');
 
+// Recovers { resourceType, publicId } from a plain Cloudinary delivery URL —
+// needed for lesson PDFs uploaded before we started storing publicId
+// ourselves (including old resource_type 'raw' uploads, still blocked by
+// Cloudinary's public delivery restriction), so they don't require a re-upload.
+const parseCloudinaryUrl = (url) => {
+  if (!/^https?:\/\/res\.cloudinary\.com\//.test(url)) return null;
+  // Strip our own previously-injected transformation segment, if present,
+  // before parsing out the version/public_id.
+  const cleaned = url.replace('/upload/fl_attachment:false/', '/upload/');
+  const match = cleaned.match(/\/(image|raw|video)\/upload\/(?:v\d+\/)?(.+)$/);
+  if (!match) return null;
+  const resourceType = match[1];
+  const publicId = resourceType === 'raw' ? match[2] : match[2].replace(/\.[a-zA-Z0-9]+$/, '');
+  return { resourceType, publicId };
+};
+
 const checkOwner = async (lessonId, user) => {
   const lesson = await Lesson.findById(lessonId);
   if (!lesson) return { lesson: null, error: 'Leçon introuvable' };
@@ -90,11 +106,18 @@ exports.streamPdf = async (req, res) => {
     !!(await Enrollment.findOne({ student: req.user._id, course: course._id }));
   if (!hasAccess) return res.status(403).json({ success: false, message: 'Accès interdit' });
 
-  // Local storage (dev) or a legacy record with no publicId — already public/inline.
-  if (!pdf.publicId) return res.redirect(pdf.url);
+  let resourceType = 'image';
+  let publicId = pdf.publicId;
+  if (!publicId) {
+    const parsed = parseCloudinaryUrl(pdf.url);
+    // Not a Cloudinary URL at all — local storage (dev), already public/inline.
+    if (!parsed) return res.redirect(pdf.url);
+    resourceType = parsed.resourceType;
+    publicId = parsed.publicId;
+  }
 
-  const signedUrl = cloudinary.utils.private_download_url(pdf.publicId, 'pdf', {
-    resource_type: 'image',
+  const signedUrl = cloudinary.utils.private_download_url(publicId, resourceType === 'raw' ? undefined : 'pdf', {
+    resource_type: resourceType,
     type: 'upload',
   });
   const upstream = await fetch(signedUrl);
