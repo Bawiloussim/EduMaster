@@ -6,11 +6,11 @@ export const SERIE_LABELS = {
 };
 
 export const SUBJECTS_BY_SERIE = {
-  A4: ['Philosophie', 'Histoire-Géographie', 'Anglais', 'Français', 'Latin', 'Économie', 'Mathématiques'],
-  D:  ['Mathématiques', 'SVT', 'Physique', 'Chimie', 'Anglais', 'Français', 'Informatique'],
+  A4: ['Philosophie', 'Histoire-Géographie', 'Anglais', 'Français', 'Mathématiques'],
+  D:  ['Mathématiques', 'SVT', 'Physique-Chimie-Technologie', 'Anglais', 'Français', 'Informatique'],
 };
 
-export const SUBJECTS_COLLEGE = ['Français', 'Mathématiques', 'Histoire-Géographie', 'SVT', 'Anglais', 'EPS', 'Arts Plastiques', 'Éducation Musicale', 'Technologie'];
+export const SUBJECTS_COLLEGE = ['Français', 'Mathématiques', 'Histoire-Géographie', 'SVT', 'Anglais', 'EPS', 'Éducation Musicale','Physique-Chimie-Technologie'];
 
 // Broader catalogue of subjects taught in secondary schools around the world —
 // used only as suggestions when a school builds its own subject catalogue
