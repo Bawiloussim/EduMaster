@@ -104,3 +104,76 @@ exports.extractExercisesFromPdf = async ({ pdfBuffer, subject, classe, serie }) 
   const parsed = JSON.parse(text);
   return parsed.exercises || [];
 };
+
+// "Progression annuelle" documents are a table: one row per Mois/Semaine,
+// with a Thème, a Leçon and a Nb heures column — the Thème repeats across
+// several non-adjacent rows over the year (e.g. "Analyse" comes back every
+// couple of months). Claude just transcribes the rows in document order;
+// grouping same-theme rows into a single chapter happens in JS below, since
+// that's a deterministic string-match the model doesn't need to do.
+const PROGRAMME_SCHEMA = {
+  type: 'object',
+  properties: {
+    rows: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          theme: { type: 'string' },
+          lesson: { type: 'string' },
+          hours: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+        },
+        required: ['theme', 'lesson', 'hours'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['rows'],
+  additionalProperties: false,
+};
+
+// Reads an uploaded PDF (the official "progression annuelle" / curriculum)
+// and extracts its Thème > Leçon rows, grouped by theme, for the formateur
+// to review before turning each theme into a module and each lesson into
+// a lesson under it.
+exports.extractProgrammeFromPdf = async ({ pdfBuffer, subject, classe, serie }) => {
+  ensureConfigured();
+
+  const level = serie ? `${classe} — Série ${serie}` : classe;
+  const message = await callClaude({
+    model: 'claude-opus-4-8',
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    output_config: { format: { type: 'json_schema', schema: PROGRAMME_SCHEMA } },
+    system: 'Tu extrais la progression annuelle (programme scolaire officiel) fournie en PDF, '
+      + `matière ${subject}, niveau ${level}. Ce document est un tableau listant, ligne par ligne, un thème `
+      + "(colonne \"Thèmes\"), une leçon (colonne \"Leçons\") et un nombre d'heures (colonne \"Nb heures\"). "
+      + 'Extrais chaque ligne du tableau telle quelle et dans son ordre d\'apparition : reproduis les intitulés '
+      + "exacts (corrige uniquement les erreurs évidentes d'extraction OCR), et hours doit être le nombre "
+      + "d'heures de la ligne (ou null s'il est absent/illisible). N'invente aucune ligne absente du document, "
+      + "ne fusionne pas plusieurs lignes ensemble et ne regroupe pas les thèmes toi-même.",
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdfBuffer.toString('base64') } },
+        { type: 'text', text: 'Extrais toutes les lignes de cette progression annuelle.' },
+      ],
+    }],
+  });
+
+  const text = message.content.find((b) => b.type === 'text')?.text || '{"rows":[]}';
+  const { rows } = JSON.parse(text);
+
+  const chapters = [];
+  const byTheme = new Map();
+  (rows || []).forEach((row) => {
+    let chapter = byTheme.get(row.theme);
+    if (!chapter) {
+      chapter = { theme: row.theme, lessons: [] };
+      byTheme.set(row.theme, chapter);
+      chapters.push(chapter);
+    }
+    chapter.lessons.push({ title: row.lesson, hours: row.hours });
+  });
+  return chapters;
+};

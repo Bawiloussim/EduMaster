@@ -864,6 +864,9 @@ export default function EditCourse() {
   const [activeTab, setActiveTab] = useState('lessons');
   const [lessonModal, setLessonModal] = useState(false);
   const [moduleTitle, setModuleTitle] = useState('');
+  const [programmePdfFile, setProgrammePdfFile] = useState(null);
+  const [importedProgramme, setImportedProgramme] = useState(null); // extracted chapters, awaiting review
+  const [selectedProgramme, setSelectedProgramme] = useState({});
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course-edit', id],
@@ -887,6 +890,49 @@ export default function EditCourse() {
   const addModuleMutation = useMutation({
     mutationFn: () => api.post(`/courses/${id}/modules`, { title: moduleTitle }),
     onSuccess: () => { toast.success('Module ajouté'); setModuleTitle(''); qc.invalidateQueries(['course-edit', id]); },
+  });
+
+  const importProgrammeMutation = useMutation({
+    mutationFn: () => {
+      const fd = new FormData();
+      fd.append('pdf', programmePdfFile);
+      return api.post(`/courses/${id}/modules/import-pdf`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    onSuccess: (res) => {
+      const chapters = res.data.data.chapters; // [{ theme, lessons: [{ title, hours }] }]
+      if (!chapters.length) return toast.error('Aucun thème trouvé dans ce PDF');
+      setImportedProgramme(chapters);
+      const sel = {};
+      chapters.forEach((c, ci) => c.lessons.forEach((_, li) => { sel[`${ci}-${li}`] = true; }));
+      setSelectedProgramme(sel);
+      const lessonCount = chapters.reduce((n, c) => n + c.lessons.length, 0);
+      toast.success(`${chapters.length} thème(s), ${lessonCount} leçon(s) trouvé(s) — relisez avant d'importer`);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Erreur d'import"),
+  });
+
+  // One module per theme, one lesson per selected row under it — a theme
+  // with nothing checked is skipped entirely (no empty module created).
+  const bulkImportProgrammeMutation = useMutation({
+    mutationFn: async () => {
+      for (let ci = 0; ci < importedProgramme.length; ci++) {
+        const chapter = importedProgramme[ci];
+        const lessonsToAdd = chapter.lessons.filter((_, li) => selectedProgramme[`${ci}-${li}`]);
+        if (!lessonsToAdd.length) continue;
+        const moduleRes = await api.post(`/courses/${id}/modules`, { title: chapter.theme });
+        const modules = moduleRes.data.data.modules;
+        const moduleId = modules[modules.length - 1]._id;
+        for (const lesson of lessonsToAdd) {
+          await api.post(`/courses/${id}/lessons`, { title: lesson.title, moduleId, duration: lesson.hours || 0 });
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success('Programme importé');
+      qc.invalidateQueries(['course-edit', id]);
+      setImportedProgramme(null); setSelectedProgramme({}); setProgrammePdfFile(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
   });
 
   const deleteLessonMutation = useMutation({
@@ -982,6 +1028,64 @@ export default function EditCourse() {
                 <Input value={moduleTitle} onChange={e => setModuleTitle(e.target.value)} placeholder="Titre du nouveau module…" className="flex-1" />
                 <Button size="sm" variant="secondary" disabled={!moduleTitle.trim()} loading={addModuleMutation.isPending} onClick={() => addModuleMutation.mutate()}>+ Module</Button>
               </div>
+
+              {!importedProgramme && (
+                <div className="flex items-center gap-2 bg-white border border-dashed border-gray-200 rounded-xl p-3 mb-3">
+                  <FileText className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span className="text-xs text-gray-500 flex-1">
+                    {programmePdfFile ? programmePdfFile.name : 'Importer le programme depuis un PDF'}
+                  </span>
+                  <label className="text-xs font-medium text-brand-dark hover:underline cursor-pointer shrink-0">
+                    Choisir un fichier
+                    <input type="file" accept=".pdf,application/pdf" className="hidden"
+                      onChange={e => setProgrammePdfFile(e.target.files[0] || null)} />
+                  </label>
+                  {programmePdfFile && (
+                    <Button size="sm" variant="secondary" loading={importProgrammeMutation.isPending} onClick={() => importProgrammeMutation.mutate()}>
+                      <Sparkles className="h-3.5 w-3.5" /> Extraire le programme
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {importedProgramme && (
+                <div className="bg-brand/10 border border-brand/15 rounded-xl p-4 space-y-3 mb-3">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    {importedProgramme.length} thème(s) extrait(s) du programme — relisez et cochez les leçons à importer
+                  </p>
+                  {importedProgramme.map((chapter, ci) => (
+                    <div key={ci} className="bg-white border border-brand/15 rounded-xl p-3 space-y-2">
+                      <Input value={chapter.theme} placeholder="Thème (deviendra un module)"
+                        onChange={e => setImportedProgramme(arr => arr.map((c, idx) => idx === ci ? { ...c, theme: e.target.value } : c))} />
+                      <div className="space-y-1.5">
+                        {chapter.lessons.map((lesson, li) => {
+                          const key = `${ci}-${li}`;
+                          return (
+                            <label key={li} className="flex items-center gap-2 text-xs text-gray-700">
+                              <input type="checkbox" checked={!!selectedProgramme[key]}
+                                onChange={e => setSelectedProgramme(s => ({ ...s, [key]: e.target.checked }))}
+                                className="accent-brand shrink-0" />
+                              <input value={lesson.title}
+                                onChange={e => setImportedProgramme(arr => arr.map((c, cidx) => cidx === ci
+                                  ? { ...c, lessons: c.lessons.map((l, lidx) => lidx === li ? { ...l, title: e.target.value } : l) }
+                                  : c))}
+                                className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand" />
+                              {lesson.hours != null && <span className="text-gray-400 shrink-0">{lesson.hours}h</span>}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="secondary" onClick={() => { setImportedProgramme(null); setSelectedProgramme({}); setProgrammePdfFile(null); }}>Annuler</Button>
+                    <Button size="sm" disabled={!Object.values(selectedProgramme).some(Boolean)} loading={bulkImportProgrammeMutation.isPending} onClick={() => bulkImportProgrammeMutation.mutate()}>
+                      Importer le programme sélectionné
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {lessons.length === 0
                 ? <div className="text-center py-10 text-gray-400"><BookOpen className="h-10 w-10 mx-auto mb-2 opacity-30" /><p className="text-sm">Aucune leçon</p></div>
                 : lessons.map(l => <LessonRow key={l._id} lesson={l} courseId={id} onSaved={invalidate} onDelete={() => window.confirm('Supprimer ?') && deleteLessonMutation.mutate(l._id)} />)

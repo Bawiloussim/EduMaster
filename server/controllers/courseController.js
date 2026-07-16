@@ -4,6 +4,7 @@ const Enrollment = require('../models/Enrollment');
 const { syncCourseEnrollments } = require('./enrollmentController');
 const { requiresSerie } = require('../constants/academic');
 const { schoolId, canManageCourse } = require('../utils/schoolAuth');
+const { extractProgrammeFromPdf } = require('../services/aiContentService');
 
 exports.list = async (req, res) => {
   const { search, page = 1, limit = 12 } = req.query;
@@ -136,6 +137,27 @@ exports.addModule = async (req, res) => {
   course.modules.push({ title, order: order !== undefined ? order : course.modules.length });
   await course.save();
   res.json({ success: true, data: course });
+};
+
+// Reads an uploaded PDF (the official curriculum) and extracts the ordered
+// list of chapters it contains — returned as a draft for the formateur to
+// review before turning them into modules. Nothing is saved here.
+exports.importProgrammeFromPdf = async (req, res) => {
+  const course = await Course.findById(req.params.id);
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (!canManageCourse(course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  if (!req.file) return res.status(422).json({ success: false, message: 'Fichier PDF requis' });
+
+  try {
+    const chapters = await extractProgrammeFromPdf({
+      pdfBuffer: req.file.buffer, subject: course.subject, classe: course.classe, serie: course.serie,
+    });
+    res.json({ success: true, data: { chapters } });
+  } catch (e) {
+    res.status(502).json({ success: false, message: e.message || "Échec de l'extraction" });
+  }
 };
 
 exports.instructorCourses = async (req, res) => {

@@ -5,7 +5,7 @@ const lc = require('../controllers/lessonController');
 const { protect, optionalAuth } = require('../middlewares/auth');
 const requireRole = require('../middlewares/role');
 const { attachSchoolFilter } = require('../middlewares/school');
-const { optionalUpload } = require('../middlewares/upload');
+const { optionalUpload, uploadMemory } = require('../middlewares/upload');
 
 router.get('/', optionalAuth, cc.list);
 router.get('/mine', protect, requireRole('instructor', 'admin'), cc.instructorCourses);
@@ -16,6 +16,7 @@ router.put('/:id', protect, requireRole('instructor', 'admin'), optionalUpload('
 router.delete('/:id', protect, requireRole('instructor', 'admin'), cc.delete);
 router.patch('/:id/publish', protect, requireRole('instructor', 'admin'), cc.publish);
 router.post('/:id/modules', protect, requireRole('instructor', 'admin'), cc.addModule);
+router.post('/:id/modules/import-pdf', protect, requireRole('instructor', 'admin'), uploadMemory.single('pdf'), cc.importProgrammeFromPdf);
 
 router.post('/:courseId/lessons', protect, requireRole('instructor', 'admin'), optionalUpload('file'), lc.create);
 
