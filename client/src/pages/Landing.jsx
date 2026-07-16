@@ -1,23 +1,30 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight, Play, LayoutDashboard, Video, ClipboardCheck, BarChart3, School, UserPlus, Megaphone } from 'lucide-react';
+import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight, Play, LayoutDashboard, Video, ClipboardCheck, BarChart3, UserPlus, Megaphone, Menu, X, LogIn, Search, FileText, UploadCloud, Building2, Layers } from 'lucide-react';
 import { CLASSES } from '../utils/schoolData';
 import { useAuthStore } from '../store/useAuthStore';
 import Footer from '../components/layout/Footer';
 
-/* ── Per-role usage guide ────────────────────────────────────────── */
+/* ── Per-role usage guide ────────────────────────────────────────────────
+   Detailed enough that someone who has never seen the site (or knows
+   nothing about web apps) can follow it unassisted, from registration to
+   the last thing they'd do in their space. */
 const ROLE_GUIDES = {
   student: {
     label: 'Élève',
     emoji: '📚',
     color: 'bg-primary',
     registerRole: 'student',
-    tagline: 'Apprenez à votre rythme et suivez votre progression.',
+    tagline: "De l'inscription à l'attestation : tout ce qu'un élève peut faire sur EduMaster.",
     steps: [
-      { icon: BookOpen, title: 'Choisissez vos cours', desc: 'Parcourez le catalogue par classe et série, inscrivez-vous en un clic.' },
-      { icon: Play, title: 'Suivez les leçons', desc: 'Vidéos, PDF et exercices pour chaque leçon, accessibles à tout moment.' },
-      { icon: CheckCircle, title: 'Passez vos évaluations', desc: 'Interrogations, devoirs et compositions notés par votre formateur.' },
-      { icon: Award, title: 'Obtenez vos résultats', desc: 'Consultez vos bulletins trimestriels et téléchargez vos attestations.' },
+      { icon: LogIn, title: 'Créer votre compte', desc: 'Cliquez sur « S\'inscrire gratuitement » en haut de cette page, choisissez le profil « Apprenant », puis indiquez votre établissement (déjà inscrit sur EduMaster), votre classe et votre série si besoin.' },
+      { icon: LogIn, title: 'Vous connecter la prochaine fois', desc: 'Revenez sur cette page et cliquez sur « Connexion », entrez votre email et votre mot de passe (ou utilisez le bouton Google si votre établissement l\'a activé).' },
+      { icon: LayoutDashboard, title: 'Découvrir votre espace', desc: 'Une fois connecté, cliquez sur « Mon espace » en haut à droite : vous y retrouvez vos cours, vos notes et vos attestations en un seul endroit.' },
+      { icon: Search, title: 'Choisir vos cours', desc: 'Ouvrez le « Catalogue », parcourez les cours proposés pour votre classe et cliquez sur « S\'inscrire » pour ajouter un cours à votre espace.' },
+      { icon: Play, title: 'Suivre les leçons', desc: 'Dans un cours, ouvrez chaque leçon : vidéo à regarder, support PDF à consulter et exercices à faire, dans l\'ordre proposé par votre professeur.' },
+      { icon: FileText, title: 'Consulter le sujet d\'une évaluation', desc: 'Quand votre professeur publie une interrogation, un devoir ou une composition, ouvrez d\'abord le sujet PDF envoyé pour savoir ce qui est demandé.' },
+      { icon: UploadCloud, title: 'Envoyer votre copie', desc: 'Une fois le sujet lu, cliquez sur « Envoyer ma copie », choisissez votre réponse au format PDF sur votre appareil et validez avant la date limite.' },
+      { icon: Award, title: 'Suivre vos résultats', desc: 'Dès que votre professeur a corrigé, retrouvez vos notes, votre bulletin trimestriel et téléchargez votre attestation de réussite en fin de cours.' },
     ],
   },
   instructor: {
@@ -25,12 +32,16 @@ const ROLE_GUIDES = {
     emoji: '🎓',
     color: 'bg-brand',
     registerRole: 'instructor',
-    tagline: 'Créez vos cours et suivez vos élèves en temps réel.',
+    tagline: "De l'inscription à la correction des copies : le parcours complet d'un formateur.",
     steps: [
-      { icon: Video, title: 'Créez vos cours', desc: "Ajoutez leçons vidéo, supports PDF et générez des exercices avec l'IA." },
-      { icon: Users, title: 'Gérez vos classes', desc: 'Organisez vos élèves par classe et suivez leur progression au trimestre.' },
-      { icon: ClipboardCheck, title: 'Corrigez les copies', desc: 'Notez les devoirs et compositions, laissez des retours détaillés.' },
-      { icon: BarChart3, title: 'Analysez les résultats', desc: 'Visualisez les statistiques de réussite de chaque classe.' },
+      { icon: LogIn, title: 'Créer votre compte', desc: 'Cliquez sur « S\'inscrire gratuitement », choisissez le profil « Formateur » et sélectionnez l\'établissement qui vous a communiqué son nom.' },
+      { icon: LogIn, title: 'Vous connecter', desc: 'Revenez ensuite sur cette page et cliquez sur « Connexion » avec votre email et votre mot de passe pour retrouver votre espace à tout moment.' },
+      { icon: Users, title: 'Retrouver vos classes et matières', desc: 'Le chef d\'établissement vous affecte une ou plusieurs matières sur une ou plusieurs classes ; elles apparaissent automatiquement dans votre espace, sans rien à configurer.' },
+      { icon: Video, title: 'Créer un cours', desc: 'Pour chaque matière/classe affectée, créez un cours et ajoutez vos leçons : vidéo, support PDF, et exercices que l\'IA peut générer automatiquement pour vous.' },
+      { icon: CheckCircle, title: 'Publier le cours', desc: 'Quand votre cours est prêt, cliquez sur « Publier » pour le rendre visible aux élèves de la classe concernée.' },
+      { icon: ClipboardCheck, title: 'Créer une évaluation', desc: 'Ajoutez une interrogation, un devoir ou une composition, déposez le sujet en PDF : vos élèves doivent le consulter avant de pouvoir répondre.' },
+      { icon: FileText, title: 'Corriger les copies', desc: 'Consultez les copies PDF envoyées par vos élèves, attribuez une note et déposez la correction pour qu\'ils la consultent.' },
+      { icon: BarChart3, title: 'Suivre la progression', desc: 'Visualisez à tout moment les statistiques de réussite et l\'avancement de chacune de vos classes.' },
     ],
   },
   admin: {
@@ -38,12 +49,16 @@ const ROLE_GUIDES = {
     emoji: '🏫',
     color: 'bg-purple-600',
     registerRole: 'admin',
-    tagline: 'Administrez votre établissement de bout en bout.',
+    tagline: "De l'inscription à la gestion quotidienne : le parcours complet d'un chef d'établissement.",
     steps: [
-      { icon: School, title: 'Inscrivez votre école', desc: "Créez l'établissement et configurez classes, séries et matières." },
-      { icon: UserPlus, title: 'Invitez formateurs & élèves', desc: 'Ajoutez vos enseignants et élèves, ou importez-les en masse via CSV.' },
-      { icon: BarChart3, title: 'Suivez le palmarès', desc: 'Consultez les classements et statistiques de toutes les classes.' },
-      { icon: Megaphone, title: 'Gérez les annonces', desc: "Publiez des annonces et paramétrez les informations de l'école." },
+      { icon: LogIn, title: 'Créer votre compte', desc: 'Cliquez sur « S\'inscrire gratuitement », choisissez le profil « Chef d\'établissement » et remplissez vos informations personnelles — aucune école n\'est requise à cette étape.' },
+      { icon: Building2, title: 'Renseigner votre établissement', desc: 'Un assistant pas à pas s\'ouvre automatiquement : indiquez le nom de votre école, son logo et ses coordonnées, puis l\'année scolaire en cours.' },
+      { icon: Layers, title: 'Créer vos classes', desc: 'Toujours dans l\'assistant, cochez d\'un clic toutes les classes de votre établissement (collège et lycée, avec leurs séries si besoin) : elles sont créées d\'un coup.' },
+      { icon: UserPlus, title: 'Ajouter enseignants et élèves', desc: 'Ajoutez-les un par un avec un formulaire simple, ou importez toute une liste en une fois grâce à un fichier CSV.' },
+      { icon: BookOpen, title: 'Créer les matières et les affecter', desc: 'Ajoutez les matières enseignées, puis pour chaque enseignant, sélectionnez la matière et cochez toutes les classes où il enseigne : l\'affectation se fait pour toutes ces classes en un seul clic.' },
+      { icon: LayoutDashboard, title: 'Terminer l\'assistant', desc: 'Une fois ces étapes faites, cliquez sur « Terminer » pour accéder à votre tableau de bord complet — vous pourrez toujours revenir modifier chaque élément plus tard.' },
+      { icon: BarChart3, title: 'Suivre le palmarès et les statistiques', desc: 'Consultez à tout moment le classement des élèves et les statistiques de réussite de chaque classe.' },
+      { icon: Megaphone, title: 'Publier des annonces et régler les paramètres', desc: 'Informez toute l\'école d\'un événement en un message, et ajustez à tout moment le logo, les couleurs ou la devise de l\'établissement dans « Paramètres ».' },
     ],
   },
 };
@@ -53,7 +68,7 @@ function RoleGuide() {
   const guide = ROLE_GUIDES[active];
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-16">
+    <section id="guide" className="max-w-7xl mx-auto px-4 py-16 scroll-mt-16">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Guide d'utilisation</h2>
         <p className="text-gray-500 text-sm">Trois profils, chacun avec son propre espace</p>
@@ -71,22 +86,22 @@ function RoleGuide() {
         ))}
       </div>
 
-      {/* Active role content */}
-      <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 sm:p-8">
-        <p className="text-center text-gray-600 font-medium mb-6">{guide.tagline}</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Active role content — vertical numbered walkthrough */}
+      <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 sm:p-8 max-w-3xl mx-auto">
+        <p className="text-center text-gray-600 font-medium mb-8">{guide.tagline}</p>
+        <ol className="relative border-l-2 border-gray-200 ml-4 space-y-7">
           {guide.steps.map(({ icon: Icon, title, desc }, i) => (
-            <div key={title} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-              <div className={`h-10 w-10 rounded-lg flex items-center justify-center mb-3 ${guide.color}`}>
-                <Icon className="h-5 w-5 text-white" />
-              </div>
-              <div className="text-xs font-bold text-gray-400 mb-1">Étape {i + 1}</div>
+            <li key={title} className="relative pl-8">
+              <span className={`absolute left-[-1.15rem] top-0 h-8 w-8 rounded-full flex items-center justify-center ring-4 ring-gray-50 ${guide.color}`}>
+                <Icon className="h-4 w-4 text-white" />
+              </span>
+              <div className="text-xs font-bold text-gray-400 mb-0.5">Étape {i + 1}</div>
               <h3 className="font-bold text-gray-900 text-sm mb-1">{title}</h3>
-              <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
-            </div>
+              <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+            </li>
           ))}
-        </div>
-        <div className="text-center mt-7">
+        </ol>
+        <div className="text-center mt-9">
           <Link to={`/register?role=${guide.registerRole}`}
             className={`inline-flex items-center gap-2 text-white font-bold px-8 py-3 rounded-sm text-sm transition-colors ${guide.color} hover:opacity-90`}>
             Créer mon compte {guide.label} <ChevronRight className="h-4 w-4" />
@@ -134,17 +149,25 @@ function Stat({ value, label }) {
   );
 }
 
+const NAV_LINKS = [
+  { href: '#pourquoi', label: 'Pourquoi EduMaster' },
+  { href: '#comment-ca-marche', label: 'Comment ça marche' },
+  { href: '#guide', label: "Guide d'utilisation" },
+  { href: '/home', label: 'Catalogue des cours', isRoute: true },
+];
+
 export default function Landing() {
   const { user } = useAuthStore();
   const dashLink = user?.role === 'superadmin' ? '/superadmin' : user?.role === 'admin' ? '/admin' : user?.role === 'instructor' ? '/instructor' : '/student';
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
 
-      {/* ── Minimal header ───────────────────────────────────────────── */}
+      {/* ── Header with navigation menu ─────────────────────────────── */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-brand" />
             </div>
@@ -153,23 +176,80 @@ export default function Landing() {
               <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>
             </div>
           </Link>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <Link to={dashLink} className="flex items-center gap-2 text-sm font-bold bg-brand hover:bg-brand-dark text-white px-5 py-2 rounded-sm transition-colors">
-                <LayoutDashboard className="h-4 w-4" /> Mon espace
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map((l) => l.isRoute ? (
+              <Link key={l.href} to={l.href}
+                className="text-sm font-medium text-gray-600 hover:text-primary px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                {l.label}
               </Link>
             ) : (
-              <>
-                <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-primary px-3 py-1.5 rounded-lg transition-colors">
-                  Connexion
+              <a key={l.href} href={l.href}
+                className="text-sm font-medium text-gray-600 hover:text-primary px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                {l.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-3">
+              {user ? (
+                <Link to={dashLink} className="flex items-center gap-2 text-sm font-bold bg-brand hover:bg-brand-dark text-white px-5 py-2 rounded-sm transition-colors">
+                  <LayoutDashboard className="h-4 w-4" /> Mon espace
                 </Link>
-                <Link to="/register" className="text-sm font-bold bg-brand hover:bg-brand-dark text-white px-5 py-2 rounded-sm transition-colors">
-                  S'inscrire gratuitement
-                </Link>
-              </>
-            )}
+              ) : (
+                <>
+                  <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-primary px-3 py-1.5 rounded-lg transition-colors">
+                    Connexion
+                  </Link>
+                  <Link to="/register" className="text-sm font-bold bg-brand hover:bg-brand-dark text-white px-5 py-2 rounded-sm transition-colors">
+                    S'inscrire gratuitement
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu toggle */}
+            <button type="button" onClick={() => setMenuOpen((v) => !v)}
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" aria-label="Menu">
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile nav panel */}
+        {menuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1">
+            {NAV_LINKS.map((l) => l.isRoute ? (
+              <Link key={l.href} to={l.href} onClick={() => setMenuOpen(false)}
+                className="block text-sm font-medium text-gray-700 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                {l.label}
+              </Link>
+            ) : (
+              <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
+                className="block text-sm font-medium text-gray-700 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                {l.label}
+              </a>
+            ))}
+            <div className="flex flex-col gap-2 pt-2 mt-2 border-t border-gray-100">
+              {user ? (
+                <Link to={dashLink} onClick={() => setMenuOpen(false)} className="flex items-center justify-center gap-2 text-sm font-bold bg-brand hover:bg-brand-dark text-white px-5 py-2.5 rounded-sm transition-colors">
+                  <LayoutDashboard className="h-4 w-4" /> Mon espace
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setMenuOpen(false)} className="text-center text-sm font-medium text-gray-700 hover:text-primary px-3 py-2.5 rounded-lg border border-gray-200 transition-colors">
+                    Connexion
+                  </Link>
+                  <Link to="/register" onClick={() => setMenuOpen(false)} className="text-center text-sm font-bold bg-brand hover:bg-brand-dark text-white px-5 py-2.5 rounded-sm transition-colors">
+                    S'inscrire gratuitement
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
@@ -240,7 +320,7 @@ export default function Landing() {
       </section>
 
       {/* ── Why EduMaster ───────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
+      <section id="pourquoi" className="max-w-7xl mx-auto px-4 py-16 scroll-mt-16">
         <div className="text-center mb-10">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Pourquoi choisir EduMaster ?</h2>
           <p className="text-gray-500 text-sm">Une plateforme pensée pour les élèves et les professeurs du secondaire</p>
@@ -268,7 +348,7 @@ export default function Landing() {
       </section>
 
       {/* ── How it works ─────────────────────────────────────────────── */}
-      <section className="bg-gray-50 py-14">
+      <section id="comment-ca-marche" className="bg-gray-50 py-14 scroll-mt-14">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-10">Comment ça marche ?</h2>
           <div className="grid sm:grid-cols-3 gap-6">
