@@ -1,8 +1,101 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight, Play, LayoutDashboard } from 'lucide-react';
+import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight, Play, LayoutDashboard, Video, ClipboardCheck, BarChart3, School, UserPlus, Megaphone } from 'lucide-react';
 import { CLASSES } from '../utils/schoolData';
 import { useAuthStore } from '../store/useAuthStore';
 import Footer from '../components/layout/Footer';
+
+/* ── Per-role usage guide ────────────────────────────────────────── */
+const ROLE_GUIDES = {
+  student: {
+    label: 'Élève',
+    emoji: '📚',
+    color: 'bg-primary',
+    registerRole: 'student',
+    tagline: 'Apprenez à votre rythme et suivez votre progression.',
+    steps: [
+      { icon: BookOpen, title: 'Choisissez vos cours', desc: 'Parcourez le catalogue par classe et série, inscrivez-vous en un clic.' },
+      { icon: Play, title: 'Suivez les leçons', desc: 'Vidéos, PDF et exercices pour chaque leçon, accessibles à tout moment.' },
+      { icon: CheckCircle, title: 'Passez vos évaluations', desc: 'Interrogations, devoirs et compositions notés par votre formateur.' },
+      { icon: Award, title: 'Obtenez vos résultats', desc: 'Consultez vos bulletins trimestriels et téléchargez vos attestations.' },
+    ],
+  },
+  instructor: {
+    label: 'Formateur',
+    emoji: '🎓',
+    color: 'bg-brand',
+    registerRole: 'instructor',
+    tagline: 'Créez vos cours et suivez vos élèves en temps réel.',
+    steps: [
+      { icon: Video, title: 'Créez vos cours', desc: "Ajoutez leçons vidéo, supports PDF et générez des exercices avec l'IA." },
+      { icon: Users, title: 'Gérez vos classes', desc: 'Organisez vos élèves par classe et suivez leur progression au trimestre.' },
+      { icon: ClipboardCheck, title: 'Corrigez les copies', desc: 'Notez les devoirs et compositions, laissez des retours détaillés.' },
+      { icon: BarChart3, title: 'Analysez les résultats', desc: 'Visualisez les statistiques de réussite de chaque classe.' },
+    ],
+  },
+  admin: {
+    label: "Chef d'établissement",
+    emoji: '🏫',
+    color: 'bg-purple-600',
+    registerRole: 'admin',
+    tagline: 'Administrez votre établissement de bout en bout.',
+    steps: [
+      { icon: School, title: 'Inscrivez votre école', desc: "Créez l'établissement et configurez classes, séries et matières." },
+      { icon: UserPlus, title: 'Invitez formateurs & élèves', desc: 'Ajoutez vos enseignants et élèves, ou importez-les en masse via CSV.' },
+      { icon: BarChart3, title: 'Suivez le palmarès', desc: 'Consultez les classements et statistiques de toutes les classes.' },
+      { icon: Megaphone, title: 'Gérez les annonces', desc: "Publiez des annonces et paramétrez les informations de l'école." },
+    ],
+  },
+};
+
+function RoleGuide() {
+  const [active, setActive] = useState('student');
+  const guide = ROLE_GUIDES[active];
+
+  return (
+    <section className="max-w-7xl mx-auto px-4 py-16">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Guide d'utilisation</h2>
+        <p className="text-gray-500 text-sm">Trois profils, chacun avec son propre espace</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex justify-center gap-2 mb-8 flex-wrap">
+        {Object.entries(ROLE_GUIDES).map(([key, r]) => (
+          <button key={key} type="button" onClick={() => setActive(key)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold border transition-colors ${active === key
+              ? `${r.color} text-white border-transparent`
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+            <span>{r.emoji}</span> {r.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Active role content */}
+      <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 sm:p-8">
+        <p className="text-center text-gray-600 font-medium mb-6">{guide.tagline}</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {guide.steps.map(({ icon: Icon, title, desc }, i) => (
+            <div key={title} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div className={`h-10 w-10 rounded-lg flex items-center justify-center mb-3 ${guide.color}`}>
+                <Icon className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-xs font-bold text-gray-400 mb-1">Étape {i + 1}</div>
+              <h3 className="font-bold text-gray-900 text-sm mb-1">{title}</h3>
+              <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-7">
+          <Link to={`/register?role=${guide.registerRole}`}
+            className={`inline-flex items-center gap-2 text-white font-bold px-8 py-3 rounded-sm text-sm transition-colors ${guide.color} hover:opacity-90`}>
+            Créer mon compte {guide.label} <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /* ── Diamond education pattern (same as Home) ───────────────────── */
 function EduPattern({ opacity = '0.06' }) {
@@ -195,6 +288,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── Usage guide by profile ───────────────────────────────────── */}
+      <RoleGuide />
 
       {/* ── Final CTA ────────────────────────────────────────────────── */}
       <section className="relative bg-primary overflow-hidden">
