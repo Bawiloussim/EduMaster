@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import api from '../../services/api';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
@@ -133,11 +133,14 @@ function SubjectCatalogue() {
   );
 }
 
-function ClassAssignments() {
+function classLabel(c) { return `${c.classe}${requiresSerie(c.classe) ? ` ${c.serie}` : ''}`; }
+function comboKey(classe, serie) { return `${classe}|${serie || ''}`; }
+
+function SubjectAssignments() {
   const qc = useQueryClient();
-  const [classId, setClassId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [teacherId, setTeacherId] = useState('');
+  const [selectedClasses, setSelectedClasses] = useState(new Set());
 
   const { data: classes } = useQuery({
     queryKey: ['school-classes'],
@@ -151,83 +154,161 @@ function ClassAssignments() {
     queryKey: ['admin-instructors'],
     queryFn: () => api.get('/admin/instructors').then((r) => r.data.data),
   });
-  const { data: courses, isLoading: coursesLoading } = useQuery({
-    queryKey: ['class-courses', classId],
-    queryFn: () => api.get(`/classes/${classId}/courses`).then((r) => r.data.data),
-    enabled: !!classId,
+  const { data: allCourses, isLoading: coursesLoading } = useQuery({
+    queryKey: ['school-all-courses'],
+    queryFn: () => api.get('/courses/admin/all', { params: { limit: 1000 } }).then((r) => r.data.data),
   });
 
-  const invalidateCourses = () => {
-    qc.invalidateQueries({ queryKey: ['class-courses', classId] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['school-all-courses'] });
     qc.invalidateQueries({ queryKey: ['school-setup-status'] });
   };
 
+  // Assigning is idempotent server-side (POST returns the existing Course if
+  // one already matches), so firing one request per selected class is safe
+  // even if some of them already have this subject/teacher combo.
   const assignMutation = useMutation({
-    mutationFn: () => api.post(`/classes/${classId}/courses`, { subjectId, teacherId }),
-    onSuccess: () => { toast.success('Matière affectée'); setSubjectId(''); setTeacherId(''); invalidateCourses(); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+    mutationFn: (classIds) => Promise.allSettled(
+      classIds.map((classId) => api.post(`/classes/${classId}/courses`, { subjectId, teacherId }))
+    ),
+    onSuccess: (results) => {
+      const ok = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.length - ok;
+      if (ok) toast.success(`Matière affectée à ${ok} classe${ok > 1 ? 's' : ''}`);
+      if (failed) toast.error(`${failed} affectation(s) en échec`);
+      setSelectedClasses(new Set());
+      invalidate();
+    },
   });
 
   const unassignMutation = useMutation({
-    mutationFn: (courseId) => api.delete(`/classes/${classId}/courses/${courseId}`),
-    onSuccess: () => { toast.success('Affectation retirée'); invalidateCourses(); },
+    mutationFn: ({ classId, courseId }) => api.delete(`/classes/${classId}/courses/${courseId}`),
+    onSuccess: () => { toast.success('Affectation retirée'); invalidate(); },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur'),
+  });
+
+  const toggleClass = (id) => setSelectedClasses((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
   });
 
   const submit = (e) => {
     e.preventDefault();
     if (!subjectId || !teacherId) return toast.error('Choisissez une matière et un enseignant');
-    assignMutation.mutate();
+    if (!selectedClasses.size) return toast.error('Choisissez au moins une classe');
+    assignMutation.mutate([...selectedClasses]);
   };
+
+  const college = (classes || []).filter((c) => !requiresSerie(c.classe));
+  const lycee = (classes || []).filter((c) => requiresSerie(c.classe));
+
+  // Course docs only carry classe/serie strings — map them back to the
+  // Class._id the unassign endpoint expects.
+  const classIdByCombo = useMemo(() => {
+    const map = new Map();
+    (classes || []).forEach((c) => map.set(comboKey(c.classe, c.serie), c._id));
+    return map;
+  }, [classes]);
+
+  const groups = useMemo(() => {
+    const map = new Map();
+    (allCourses || []).forEach((c) => {
+      const key = `${c.subject}|${c.instructor?._id}`;
+      if (!map.has(key)) map.set(key, { subject: c.subject, instructor: c.instructor, courses: [] });
+      map.get(key).courses.push(c);
+    });
+    return [...map.values()].sort((a, b) => a.subject.localeCompare(b.subject));
+  }, [allCourses]);
+
+  const renderClassGroup = (title, rows) => rows.length > 0 && (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</span>
+      <div className="flex flex-wrap gap-2">
+        {rows.map((c) => {
+          const active = selectedClasses.has(c._id);
+          return (
+            <button
+              type="button"
+              key={c._id}
+              onClick={() => toggleClass(c._id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${active ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-300 hover:border-brand'}`}
+            >
+              {classLabel(c)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <h2 className="text-base font-bold text-gray-900 mb-4">Affecter une matière à une classe</h2>
+      <h2 className="text-base font-bold text-gray-900 mb-1">Affecter une matière à un enseignant</h2>
+      <p className="text-sm text-gray-500 mb-4">
+        Un même enseignant peut donner une matière dans plusieurs classes : sélectionnez toutes les classes concernées, l'affectation se fait en une fois.
+      </p>
 
-      <div className="flex flex-col gap-1 mb-4">
-        <label className="text-sm font-medium text-gray-700">Classe</label>
-        <select value={classId} onChange={(e) => setClassId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
-          <option value="">Choisir une classe…</option>
-          {(classes || []).map((c) => (
-            <option key={c._id} value={c._id}>{c.classe}{requiresSerie(c.classe) ? ` ${c.serie}` : ''}</option>
-          ))}
-        </select>
-      </div>
+      <form onSubmit={submit} className="space-y-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
+            <option value="">Matière…</option>
+            {(subjects || []).map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
+          </select>
+          <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
+            <option value="">Enseignant…</option>
+            {(instructors || []).map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+          </select>
+        </div>
 
-      {classId && (
-        <>
-          <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
-              <option value="">Matière…</option>
-              {(subjects || []).map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
-            </select>
-            <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
-              <option value="">Enseignant…</option>
-              {(instructors || []).map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
-            </select>
-            <Button type="submit" loading={assignMutation.isPending}>Affecter</Button>
-          </form>
+        {classes?.length ? (
+          <div className="space-y-4">
+            <label className="text-sm font-medium text-gray-700">Classes</label>
+            {renderClassGroup('Collège', college)}
+            {renderClassGroup('Lycée', lycee)}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">Aucune classe créée pour l'instant.</p>
+        )}
 
-          {coursesLoading ? (
-            <div className="flex justify-center py-6"><Spinner /></div>
-          ) : courses?.length ? (
-            <div className="divide-y divide-gray-100 border border-gray-100 rounded-lg overflow-hidden">
-              {courses.map((c) => (
-                <div key={c._id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-900">{c.subject}</span>
-                    <span className="text-gray-400"> · {c.instructor?.name}</span>
-                  </div>
-                  <button onClick={() => unassignMutation.mutate(c._id)} className="p-1.5 rounded-lg text-gray-400 hover:text-danger hover:bg-danger-light transition-colors">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+        <div className="flex justify-end">
+          <Button type="submit" loading={assignMutation.isPending} disabled={!subjectId || !teacherId || !selectedClasses.size}>
+            Affecter{selectedClasses.size ? ` à ${selectedClasses.size} classe${selectedClasses.size > 1 ? 's' : ''}` : ''}
+          </Button>
+        </div>
+      </form>
+
+      <h3 className="text-sm font-bold text-gray-700 mb-3">Affectations actuelles</h3>
+      {coursesLoading ? (
+        <div className="flex justify-center py-6"><Spinner /></div>
+      ) : groups.length ? (
+        <div className="space-y-3">
+          {groups.map((g) => (
+            <div key={`${g.subject}|${g.instructor?._id}`} className="border border-gray-100 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2 text-sm">
+                <span className="font-semibold text-gray-900">{g.subject}</span>
+                <span className="text-gray-400">· {g.instructor?.name}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {g.courses.map((c) => {
+                  const classId = classIdByCombo.get(comboKey(c.classe, c.serie));
+                  return (
+                    <span key={c._id} className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">
+                      {c.classe}{c.serie ? ` ${c.serie}` : ''}
+                      {classId && (
+                        <button type="button" onClick={() => unassignMutation.mutate({ classId, courseId: c._id })} className="hover:text-danger">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-4">Aucune matière affectée à cette classe</p>
-          )}
-        </>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 text-center py-4">Aucune matière affectée pour l'instant</p>
       )}
     </div>
   );
@@ -239,7 +320,7 @@ export default function SubjectsManager() {
   return (
     <div className="space-y-6">
       <SubjectCatalogue />
-      <ClassAssignments />
+      <SubjectAssignments />
     </div>
   );
 }
