@@ -11,6 +11,8 @@ const evaluationSchema = new mongoose.Schema({
   title: { type: String, default: '' },
   date: { type: Date, default: null },
   maxScore: { type: Number, default: 20 },
+  subjectUrl: { type: String, default: '' },  // PDF du sujet uploadé par le prof — l'élève doit le consulter avant d'envoyer sa copie
+  subjectName: { type: String, default: '' },
   correctionUrl: { type: String, default: '' },  // PDF corrigé uploadé par le prof
   isGraded: { type: Boolean, default: false },
   signed: { type: Boolean, default: false },

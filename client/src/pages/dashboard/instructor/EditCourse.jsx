@@ -547,6 +547,13 @@ function EvaluationsTab({ courseId }) {
                       : <span className="opacity-60 ml-auto">Pas de corrigé</span>}
                   </div>
 
+                  {/* Sujet — tant qu'il n'est pas envoyé, les élèves ne peuvent pas envoyer leur copie */}
+                  <div className="flex items-center gap-2 text-xs">
+                    {ev.subjectUrl
+                      ? <a href={pdfHref(ev.subjectUrl)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-current hover:underline"><Eye className="h-3 w-3" /> Voir le sujet</a>
+                      : <span className="opacity-60">Sujet non envoyé — les élèves ne peuvent pas encore répondre</span>}
+                  </div>
+
                   {/* Signature */}
                   <div className="flex items-center gap-2 text-xs">
                     {ev.signed ? (
@@ -567,7 +574,8 @@ function EvaluationsTab({ courseId }) {
                     )}
                   </div>
 
-                  {/* Upload correction */}
+                  {/* Upload sujet & correction */}
+                  <SubjectUpload evaluationId={ev._id} onUploaded={() => qc.invalidateQueries(['evaluations', courseId])} />
                   <CorrectionUpload evaluationId={ev._id} onUploaded={() => qc.invalidateQueries(['evaluations', courseId])} />
                 </div>
               )}
@@ -577,6 +585,39 @@ function EvaluationsTab({ courseId }) {
       </div>
 
       {gradesModal && <GradesModal evaluationId={gradesModal} onClose={() => setGradesModal(null)} onSaved={() => qc.invalidateQueries(['evaluations', courseId])} />}
+    </div>
+  );
+}
+
+function SubjectUpload({ evaluationId, onUploaded }) {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef();
+
+  const upload = async () => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('subjectFile', file);
+      await api.post(`/evaluations/${evaluationId}/subject`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Sujet envoyé aux élèves');
+      setFile(null);
+      onUploaded();
+    } catch (e) { toast.error(e.response?.data?.message || 'Erreur'); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <label className="flex items-center gap-1.5 text-xs px-2 py-1.5 bg-white/80 rounded-lg cursor-pointer hover:bg-white transition-colors border border-current/20">
+        <Upload className="h-3 w-3" />
+        {file ? file.name.slice(0, 20) + '…' : 'Uploader le sujet (PDF)'}
+        <input ref={inputRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={e => setFile(e.target.files[0])} />
+      </label>
+      {file && (
+        <Button size="sm" loading={uploading} onClick={upload} className="text-xs py-1 px-2">Envoyer</Button>
+      )}
     </div>
   );
 }

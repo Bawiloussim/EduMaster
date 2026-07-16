@@ -301,9 +301,12 @@ function BulletinTab() {
 }
 
 /* ── Envoi de copie pour une évaluation non signée ───────────────────── */
-function SubmissionUpload({ evaluationId, submissionUrl, submissionName, onUploaded }) {
+// Students must open the subject PDF before they're allowed to send their
+// answer — the upload control below only unlocks once `viewed` is true.
+function SubmissionUpload({ evaluationId, subjectUrl, subjectName, submissionUrl, submissionName, onUploaded }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [viewed, setViewed] = useState(false);
   const inputRef = useRef();
 
   const upload = async () => {
@@ -320,20 +323,36 @@ function SubmissionUpload({ evaluationId, submissionUrl, submissionName, onUploa
     finally { setUploading(false); }
   };
 
+  if (!subjectUrl) {
+    return (
+      <p className="mt-1 text-xs text-gray-400 italic">En attente du sujet envoyé par votre professeur</p>
+    );
+  }
+
+  const canSubmit = viewed || !!submissionUrl;
+
   return (
     <div className="flex items-center gap-2 mt-1 flex-wrap">
+      <a href={getPdfUrl(subjectUrl)} target="_blank" rel="noopener noreferrer" onClick={() => setViewed(true)}
+        className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+        <FileText className="h-3 w-3" /> Voir le sujet{subjectName ? ` (${subjectName})` : ''}
+      </a>
       {submissionUrl && (
         <a href={getPdfUrl(submissionUrl)} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs text-brand-dark hover:underline">
           <FileText className="h-3 w-3" /> {submissionName || 'Ma copie'}
         </a>
       )}
-      <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-brand-dark cursor-pointer">
-        <Upload className="h-3 w-3" />
-        {file ? file.name.slice(0, 18) + '…' : submissionUrl ? 'Remplacer' : 'Envoyer ma copie'}
-        <input ref={inputRef} type="file" accept="image/*,.pdf,application/pdf" className="hidden"
-          onChange={e => setFile(e.target.files[0] || null)} />
-      </label>
+      {canSubmit ? (
+        <label className="flex items-center gap-1 text-xs text-gray-400 hover:text-brand-dark cursor-pointer">
+          <Upload className="h-3 w-3" />
+          {file ? file.name.slice(0, 18) + '…' : submissionUrl ? 'Remplacer' : 'Envoyer ma copie'}
+          <input ref={inputRef} type="file" accept="image/*,.pdf,application/pdf" className="hidden"
+            onChange={e => setFile(e.target.files[0] || null)} />
+        </label>
+      ) : (
+        <span className="text-xs text-gray-300 italic">Consultez le sujet pour pouvoir envoyer votre copie</span>
+      )}
       {file && (
         <button onClick={upload} disabled={uploading}
           className="text-xs font-medium text-white bg-primary hover:bg-[#002a66] disabled:opacity-50 rounded-lg px-2 py-1">
@@ -411,6 +430,8 @@ function EvaluationsTab() {
                         {!ev.signed && (
                           <SubmissionUpload
                             evaluationId={ev._id}
+                            subjectUrl={ev.subjectUrl}
+                            subjectName={ev.subjectName}
                             submissionUrl={ev.submissionUrl}
                             submissionName={ev.submissionName}
                             onUploaded={() => qc.invalidateQueries(['my-evaluations', tri])}

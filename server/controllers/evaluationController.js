@@ -114,6 +114,22 @@ exports.uploadCorrection = async (req, res) => {
   res.json({ success: true, data: evaluation });
 };
 
+// Instructor: upload the PDF statement/subject for an evaluation — students
+// must be able to see this before they're allowed to send their answer.
+exports.uploadSubject = async (req, res) => {
+  const evaluation = await Evaluation.findById(req.params.id);
+  if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
+  const course = await Course.findById(evaluation.course);
+  if (!canManageCourse(course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  if (!req.file) return res.status(400).json({ success: false, message: 'Aucun fichier PDF envoyé' });
+  evaluation.subjectUrl = getFileUrl(req.file);
+  evaluation.subjectName = req.file.originalname;
+  await evaluation.save();
+  res.json({ success: true, data: evaluation });
+};
+
 exports.delete = async (req, res) => {
   const evaluation = await Evaluation.findById(req.params.id);
   if (!evaluation) return res.status(404).json({ success: false, message: 'Évaluation introuvable' });
@@ -139,6 +155,9 @@ exports.uploadSubmission = async (req, res) => {
 
   if (evaluation.signed) {
     return res.status(409).json({ success: false, message: 'Cette évaluation est déjà signée, vous ne pouvez plus envoyer de copie.' });
+  }
+  if (!evaluation.subjectUrl) {
+    return res.status(422).json({ success: false, message: "Le sujet n'a pas encore été envoyé par votre professeur." });
   }
   if (!req.file) return res.status(422).json({ success: false, message: 'Aucun fichier envoyé' });
 
@@ -310,6 +329,8 @@ exports.myEvaluations = async (req, res) => {
       date: ev.date,
       maxScore: ev.maxScore,
       coefficient: COEFF[ev.type] || 1,
+      subjectUrl: ev.subjectUrl,
+      subjectName: ev.subjectName,
       correctionUrl: ev.correctionUrl,
       isGraded: ev.isGraded,
       signed: !!ev.signed,

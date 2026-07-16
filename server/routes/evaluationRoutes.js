@@ -12,6 +12,7 @@ router.get('/course/:courseId/students-overview/:trimestre', protect, requireRol
 
 // Specific evaluation
 router.delete('/:id', protect, requireRole('instructor', 'admin'), ec.delete);
+router.post('/:id/subject', protect, requireRole('instructor', 'admin'), optionalUpload('subjectFile'), ec.uploadSubject);
 router.post('/:id/correction', protect, requireRole('instructor', 'admin'), optionalUpload('correctionFile'), ec.uploadCorrection);
 
 // Grades

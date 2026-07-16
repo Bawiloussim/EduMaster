@@ -15,7 +15,7 @@ afterAll(async () => testDb.closeDatabase());
 async function setupStudentAndEvaluation(overrides = {}) {
   const student = await createUser({ role: 'student' });
   const course = await createCourse();
-  const evaluation = await createEvaluation({ course: course._id, signed: false, ...overrides });
+  const evaluation = await createEvaluation({ course: course._id, signed: false, subjectUrl: '/uploads/sujet-test.pdf', ...overrides });
   await createEnrollment({ student: student._id, course: course._id });
   return { student, course, evaluation };
 }
@@ -43,6 +43,16 @@ describe('POST /api/evaluations/:id/submission', () => {
       .attach('submissionFile', Buffer.from('%PDF-1.4\ntest'), { filename: 'copie.pdf', contentType: 'application/pdf' });
 
     expect(res.status).toBe(403);
+  });
+
+  test("refuse si le sujet n'a pas encore été envoyé par le professeur", async () => {
+    const { student, evaluation } = await setupStudentAndEvaluation({ subjectUrl: '' });
+
+    const res = await request(app).post(`/api/evaluations/${evaluation._id}/submission`)
+      .set('Authorization', `Bearer ${getAuthToken(student)}`)
+      .attach('submissionFile', Buffer.from('%PDF-1.4\ntest'), { filename: 'copie.pdf', contentType: 'application/pdf' });
+
+    expect(res.status).toBe(422);
   });
 
   test('refuse si l\'évaluation est déjà signée', async () => {

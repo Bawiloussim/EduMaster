@@ -91,6 +91,7 @@ async function createEvaluation(overrides = {}) {
     title: overrides.title || 'Évaluation test',
     maxScore: overrides.maxScore || 20,
     signed: overrides.signed !== undefined ? overrides.signed : true,
+    subjectUrl: overrides.subjectUrl !== undefined ? overrides.subjectUrl : '',
   });
 }
 
