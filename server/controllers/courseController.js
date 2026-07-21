@@ -3,7 +3,7 @@ const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const { syncCourseEnrollments } = require('./enrollmentController');
 const { requiresSerie } = require('../constants/academic');
-const { schoolId, canManageCourse } = require('../utils/schoolAuth');
+const { schoolId, canManageCourse, isCourseOwner } = require('../utils/schoolAuth');
 const { extractProgrammeFromPdf } = require('../services/aiContentService');
 
 exports.list = async (req, res) => {
@@ -116,8 +116,8 @@ exports.delete = async (req, res) => {
 exports.publish = async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
-  if (!canManageCourse(course, req.user)) {
-    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  if (!isCourseOwner(course, req.user) && req.user.role !== 'superadmin') {
+    return res.status(403).json({ success: false, message: 'Seul le formateur propriétaire peut publier ce cours' });
   }
   course.status = course.status === 'published' ? 'draft' : 'published';
   await course.save();

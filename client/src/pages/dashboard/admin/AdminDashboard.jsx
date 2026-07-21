@@ -13,6 +13,7 @@ import SchoolBanner from '../../../components/layout/SchoolBanner';
 import SetupChecklist from '../../../components/layout/SetupChecklist';
 import Footer from '../../../components/layout/Footer';
 import { useAuthStore } from '../../../store/useAuthStore';
+import { CLASSES } from '../../../utils/schoolData';
 import PalmaresTab from './tabs/PalmaresTab';
 import ClassesTab from './tabs/ClassesTab';
 import SubjectsTab from './tabs/SubjectsTab';
@@ -201,11 +202,6 @@ function CoursesTab() {
     queryFn: () => api.get('/courses/admin/all').then(r => r.data),
   });
 
-  const publishMutation = useMutation({
-    mutationFn: (id) => api.patch(`/courses/${id}/publish`),
-    onSuccess: () => { toast.success('Statut mis à jour'); qc.invalidateQueries(['admin-courses']); },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/courses/${id}`),
     onSuccess: () => { toast.success('Cours supprimé'); qc.invalidateQueries(['admin-courses']); },
@@ -215,6 +211,21 @@ function CoursesTab() {
 
   const subjects = [...new Set((data?.data || []).map((c) => c.subject).filter(Boolean))];
   const rows = subjectFilter ? (data?.data || []).filter((c) => c.subject === subjectFilter) : (data?.data || []);
+
+  // Classé par classe, puis par matière — seul le formateur propriétaire peut
+  // publier un cours (voir CourseRow ci-dessous : pas de bouton Publier ici).
+  const groupsByClasse = CLASSES
+    .map((classe) => {
+      const inClasse = rows.filter((c) => c.classe === classe);
+      if (inClasse.length === 0) return null;
+      const bySubject = inClasse.reduce((acc, c) => {
+        const key = c.subject || 'Sans matière';
+        (acc[key] = acc[key] || []).push(c);
+        return acc;
+      }, {});
+      return { classe, subjectGroups: Object.entries(bySubject).sort(([a], [b]) => a.localeCompare(b)) };
+    })
+    .filter(Boolean);
 
   return (
     <>
@@ -240,50 +251,45 @@ function CoursesTab() {
           </select>
         </div>
       )}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
-              <th className="px-4 py-3 text-left font-semibold">Cours</th>
-              <th className="px-4 py-3 text-left font-semibold">Matière</th>
-              <th className="px-4 py-3 text-left font-semibold">Formateur</th>
-              <th className="px-4 py-3 text-center font-semibold">Niveau</th>
-              <th className="px-4 py-3 text-center font-semibold">Statut</th>
-              <th className="px-4 py-3 text-center font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map((c) => (
-              <tr key={c._id}>
-                <td className="px-4 py-3 font-medium text-gray-900">{c.title}</td>
-                <td className="px-4 py-3 text-gray-500">{c.subject || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{c.instructor?.name || '—'}</td>
-                <td className="px-4 py-3 text-center text-xs text-gray-500">{c.classe}{c.serie ? ` · Série ${c.serie}` : ''}</td>
-                <td className="px-4 py-3 text-center">
-                  <Badge color={c.status === 'published' ? 'green' : 'gray'}>
-                    {c.status === 'published' ? 'Publié' : 'Brouillon'}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-center gap-2">
-                    <Link to={`/courses/${c._id}`} target="_blank"><Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button></Link>
-                    <Button size="sm" variant={c.status === 'published' ? 'secondary' : 'outline'}
-                      loading={publishMutation.isPending} onClick={() => publishMutation.mutate(c._id)}>
-                      {c.status === 'published' ? 'Dépublier' : 'Publier'}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-danger hover:bg-danger-light"
-                      onClick={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(c._id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+      <div className="space-y-6">
+        {groupsByClasse.map(({ classe, subjectGroups }) => (
+          <div key={classe} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 font-semibold text-gray-900">{classe}</div>
+            {subjectGroups.map(([subject, courses]) => (
+              <div key={subject} className="border-b border-gray-50 last:border-b-0">
+                <div className="px-4 py-2 text-xs font-semibold uppercase text-gray-500">{subject}</div>
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-gray-50">
+                    {courses.map((c) => (
+                      <tr key={c._id}>
+                        <td className="px-4 py-3 font-medium text-gray-900 w-1/3">{c.title}</td>
+                        <td className="px-4 py-3 text-gray-500">{c.instructor?.name || '—'}</td>
+                        <td className="px-4 py-3 text-center text-xs text-gray-500 w-32">{c.serie ? `Série ${c.serie}` : '—'}</td>
+                        <td className="px-4 py-3 text-center w-32">
+                          <Badge color={c.status === 'published' ? 'green' : 'gray'}>
+                            {c.status === 'published' ? 'Publié' : 'Brouillon'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 w-24">
+                          <div className="flex items-center justify-center gap-2">
+                            <Link to={`/courses/${c._id}`} target="_blank"><Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button></Link>
+                            <Button size="sm" variant="ghost" className="text-danger hover:bg-danger-light"
+                              onClick={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(c._id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ))}
-            {rows.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Aucun cours</td></tr>
-            )}
-          </tbody>
-        </table>
+          </div>
+        ))}
+        {groupsByClasse.length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-100 px-4 py-8 text-center text-gray-400">Aucun cours</div>
+        )}
       </div>
     </>
   );

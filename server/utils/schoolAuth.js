@@ -13,4 +13,9 @@ const canManageCourse = (course, user) =>
   course.instructor.toString() === user._id.toString() ||
   (user.role === 'admin' && course.school.toString() === schoolId(user));
 
-module.exports = { schoolId, canManageCourse };
+// Publishing is reserved to the formateur who owns the course — the chef
+// d'établissement (admin) can manage a course in every other way but must not
+// be able to publish/unpublish a course they didn't create themselves.
+const isCourseOwner = (course, user) => course.instructor.toString() === user._id.toString();
+
+module.exports = { schoolId, canManageCourse, isCourseOwner };

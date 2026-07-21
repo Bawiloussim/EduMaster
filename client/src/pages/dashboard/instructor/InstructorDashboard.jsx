@@ -315,12 +315,19 @@ export default function InstructorDashboard() {
           <Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" /> Créer mon premier cours</Button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {data.courses.map((course) => (
-            <CourseRow key={course._id} course={course}
-              onPublish={() => publishMutation.mutate(course._id)}
-              onDelete={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(course._id)}
-              publishPending={publishMutation.isPending} />
+        <div className="space-y-6">
+          {CLASSES.filter((classe) => data.courses.some((c) => c.classe === classe)).map((classe) => (
+            <div key={classe}>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">{classe}</h3>
+              <div className="space-y-3">
+                {data.courses.filter((c) => c.classe === classe).map((course) => (
+                  <CourseRow key={course._id} course={course}
+                    onPublish={() => publishMutation.mutate(course._id)}
+                    onDelete={() => window.confirm('Supprimer ce cours ?') && deleteMutation.mutate(course._id)}
+                    publishPending={publishMutation.isPending} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
