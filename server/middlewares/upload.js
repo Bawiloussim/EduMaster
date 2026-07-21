@@ -18,10 +18,14 @@ const cloudinaryStorage = new CloudinaryStorage({
     const isPdf = file.mimetype === 'application/pdf';
     return {
       folder: 'edumaster',
-      // PDFs must go through resource_type 'image' rather than 'raw' — Cloudinary
-      // blocks public delivery of raw PDF/ZIP files by default (security setting),
-      // but delivers PDFs uploaded as 'image' normally since they're page-rendered.
-      resource_type: 'image',
+      // PDFs go through resource_type 'raw' rather than 'image' — 'image'
+      // asks Cloudinary to page-render the PDF, an extra processing step
+      // with its own failure modes for unusual-but-valid PDFs; 'raw' just
+      // stores the bytes. Either way delivery goes through our own signed
+      // proxy (see utils/pdfProxy.js), never the direct Cloudinary URL, and
+      // both are subject to the same account-wide per-file size cap (see the
+      // multer `limits` below).
+      resource_type: isPdf ? 'raw' : 'image',
       allowed_formats: isPdf ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp', 'gif'],
       transformation: isPdf ? [] : [{ quality: 'auto', fetch_format: 'auto' }],
     };
@@ -47,7 +51,10 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: useCloudinary ? cloudinaryStorage : localDiskStorage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  // Matches the Cloudinary account's own hard per-file cap — anything larger
+  // is rejected by Cloudinary itself regardless of resource_type or chunked
+  // upload, so reject it here instead of wasting an upload attempt on it.
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter,
 });
 
@@ -62,19 +69,13 @@ const uploadMemory = multer({
   },
 });
 
-// Returns the public URL of an uploaded file
+// Returns the public URL of an uploaded file. For PDFs (resource_type 'raw')
+// this direct URL is only ever a fallback identifier — actual reads always go
+// through the signed proxy in utils/pdfProxy.js, since raw delivery is
+// restricted by default just like image-rendered PDF delivery would be.
 const getFileUrl = (file) => {
   if (!file) return '';
-  if (useCloudinary) {
-    const url = file.secure_url || file.path;
-    // Cloudinary defaults PDF delivery to Content-Disposition: attachment even
-    // under resource_type 'image' — force inline so students can read it in
-    // the browser's viewer instead of it being downloaded automatically.
-    if (file.mimetype === 'application/pdf' && url.includes('/upload/')) {
-      return url.replace('/upload/', '/upload/fl_attachment:false/');
-    }
-    return url;
-  }
+  if (useCloudinary) return file.secure_url || file.path;
   // Local: serve via /uploads/filename
   return `/uploads/${file.filename}`;
 };
@@ -86,15 +87,12 @@ const getFileUrl = (file) => {
 const saveBuffer = (buffer, originalname) => {
   if (useCloudinary) {
     return new Promise((resolve, reject) => {
+      // resource_type 'raw', not 'image' — see cloudinaryStorage above.
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'edumaster', resource_type: 'image', allowed_formats: ['pdf'] },
+        { folder: 'edumaster', resource_type: 'raw', allowed_formats: ['pdf'] },
         (err, result) => {
           if (err) return reject(err);
-          resolve({
-            url: result.secure_url.replace('/upload/', '/upload/fl_attachment:false/'),
-            publicId: result.public_id,
-            name: originalname,
-          });
+          resolve({ url: result.secure_url, publicId: result.public_id, name: originalname });
         },
       );
       stream.end(buffer);

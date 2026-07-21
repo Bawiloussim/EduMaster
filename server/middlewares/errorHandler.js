@@ -15,6 +15,19 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ success: false, message: 'ID invalide' });
   }
 
+  if (err.name === 'MulterError') {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Fichier trop volumineux (10 Mo maximum)'
+      : 'Échec du téléversement du fichier';
+    return res.status(413).json({ success: false, message });
+  }
+
+  // Cloudinary SDK errors (upload rejected: bad format, over its own size cap,
+  // etc.) — shaped as { message, http_code }, not a standard Node Error.
+  if (err.http_code) {
+    return res.status(err.http_code === 400 ? 422 : err.http_code).json({ success: false, message: err.message || 'Échec du téléversement du fichier' });
+  }
+
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({ success: false, message: 'Token invalide' });
   }
