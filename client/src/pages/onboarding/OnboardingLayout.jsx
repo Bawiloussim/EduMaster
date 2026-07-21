@@ -1,9 +1,10 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { GraduationCap, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import api from '../../services/api';
 import Spinner from '../../components/ui/Spinner';
 import ProgressBar from '../../components/ui/ProgressBar';
+import LogoMark from '../../components/layout/Logo';
 
 const STEPS = [
   { path: 'school', label: 'Établissement', done: (s) => s.hasSchool },
@@ -47,9 +48,7 @@ export default function OnboardingLayout() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center gap-2 mb-4">
-            <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center shrink-0">
-              <GraduationCap className="h-5 w-5 text-brand" />
-            </div>
+            <LogoMark className="h-9 w-9" />
             <div className="leading-tight">
               <span className="font-extrabold text-primary text-base leading-none block">EduMaster</span>
               <span className="text-xs text-gray-400">Configuration de votre établissement</span>

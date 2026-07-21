@@ -5,10 +5,11 @@ import { z } from 'zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { GraduationCap, BookOpen, Award, ArrowLeft } from 'lucide-react';
+import { BookOpen, Award, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import LogoMark from '../../components/layout/Logo';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -140,9 +141,7 @@ export default function Login() {
         {/* Right panel — form */}
         <div className="p-8 sm:p-10 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-8">
-            <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
-              <GraduationCap className="h-5 w-5 text-brand" />
-            </div>
+            <LogoMark className="h-10 w-10" />
             <div className="leading-tight">
               <span className="font-extrabold text-primary text-base leading-none block">EduMaster</span>
               <span className="text-xs text-gray-400">Plateforme de formation</span>

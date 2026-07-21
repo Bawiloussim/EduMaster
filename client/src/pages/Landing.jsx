@@ -4,6 +4,7 @@ import { GraduationCap, BookOpen, Award, Users, CheckCircle, Globe, ChevronRight
 import { CLASSES } from '../utils/schoolData';
 import { useAuthStore } from '../store/useAuthStore';
 import Footer from '../components/layout/Footer';
+import LogoMark from '../components/layout/Logo';
 
 /* ── Per-role usage guide ────────────────────────────────────────────────
    Detailed enough that someone who has never seen the site (or knows
@@ -168,9 +169,7 @@ export default function Landing() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-brand" />
-            </div>
+            <LogoMark className="h-9 w-9" />
             <div className="leading-tight">
               <span className="font-extrabold text-primary text-lg leading-none block">Edu</span>
               <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>

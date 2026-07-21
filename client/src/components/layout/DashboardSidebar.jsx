@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { GraduationCap, User, LogOut, X } from 'lucide-react';
+import { User, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import LogoMark from './Logo';
 
 /**
  * Generic left sidebar shared by the admin, instructor and student spaces.
@@ -20,9 +21,7 @@ export default function DashboardSidebar({ subtitle, sections, activeId, onSelec
     <div className="flex flex-col h-full bg-[#04214a] text-brand-light">
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 h-16 shrink-0 border-b border-white/10">
-        <div className="h-9 w-9 bg-brand rounded-lg flex items-center justify-center shrink-0">
-          <GraduationCap className="h-5 w-5 text-white" />
-        </div>
+        <LogoMark className="h-9 w-9" />
         <div className="leading-tight min-w-0">
           <p className="font-bold text-white text-sm truncate">EduMaster</p>
           <p className="text-xs text-brand-light truncate">{subtitle}</p>

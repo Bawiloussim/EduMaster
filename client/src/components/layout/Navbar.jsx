@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Menu, X, ChevronDown, GraduationCap, BookOpen, LayoutDashboard, LogOut, User } from 'lucide-react';
+import { Search, Bell, Menu, X, ChevronDown, BookOpen, LayoutDashboard, LogOut, User } from 'lucide-react';
+import LogoMark from './Logo';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -60,10 +61,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to={user ? '/home' : '/'} className="flex items-center gap-2 shrink-0 mr-4">
-            <div className="h-9 w-9 bg-primary rounded-lg flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-brand" />
-              
-            </div>
+            <LogoMark className="h-9 w-9" />
             <div className="leading-tight hidden sm:block">
               <span className="font-extrabold text-primary text-lg leading-none block">Edu</span>
               <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>

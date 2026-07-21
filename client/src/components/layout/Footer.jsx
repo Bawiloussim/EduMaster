@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import LogoMark from './Logo';
 import { CLASSES } from '../../utils/schoolData';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -36,9 +37,7 @@ export default function Footer() {
           ) : (
             <>
               <Link to="/" className="flex items-center gap-2 mb-3">
-                <div className="h-9 w-9 bg-white/10 rounded-lg flex items-center justify-center">
-                  <GraduationCap className="h-5 w-5 text-brand" />
-                </div>
+                <LogoMark className="h-9 w-9" />
                 <div className="leading-tight">
                   <span className="font-extrabold text-white text-lg leading-none block">Edu</span>
                   <span className="font-extrabold text-brand text-lg leading-none block -mt-1">Master</span>

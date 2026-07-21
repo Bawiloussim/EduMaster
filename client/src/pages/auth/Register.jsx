@@ -6,10 +6,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { GraduationCap, ArrowLeft, MailCheck } from 'lucide-react';
+import { ArrowLeft, MailCheck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 import Button from '../../components/ui/Button';
+import LogoMark from '../../components/layout/Logo';
 import Input from '../../components/ui/Input';
 import { CLASSES, SERIES, SERIE_LABELS, requiresSerie } from '../../utils/schoolData';
 
@@ -178,9 +179,7 @@ export default function Register() {
         {/* Right panel — form */}
         <div className="p-8 sm:p-10 flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-6">
-            <div className="h-10 w-10 bg-primary rounded-lg flex items-center justify-center shrink-0">
-              <GraduationCap className="h-5 w-5 text-brand" />
-            </div>
+            <LogoMark className="h-10 w-10" />
             <div className="leading-tight">
               <span className="font-extrabold text-primary text-base leading-none block">EduMaster</span>
               <span className="text-xs text-gray-400">Plateforme de formation</span>
