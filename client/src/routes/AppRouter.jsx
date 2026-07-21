@@ -31,6 +31,7 @@ const Notifications = lazy(() => import('../pages/Notifications'));
 
 const EditCourse = lazy(() => import('../pages/dashboard/instructor/EditCourse'));
 const Grading = lazy(() => import('../pages/dashboard/instructor/Grading'));
+const BrowseCourses = lazy(() => import('../pages/dashboard/instructor/BrowseCourses'));
 const Home = lazy(() => import('../pages/Home'));
 const Landing = lazy(() => import('../pages/Landing'));
 
@@ -85,7 +86,6 @@ export default function AppRouter() {
         {/* Protected — Student (own sidebar layout, no global Navbar) */}
         <Route element={<ProtectedRoute roles={['student']} />}>
           <Route path="/choose-class" element={<ChooseClass />} />
-          <Route path="/courses/:id/learn" element={<CoursePlayer />} />
           <Route path="/exams/:examId" element={<Layout><ExamStart /></Layout>} />
           <Route path="/exams/:examId/session/:attemptId" element={<ExamSession />} />
           <Route path="/exams/:examId/result/:attemptId" element={<Layout><ExamResult /></Layout>} />
@@ -93,11 +93,18 @@ export default function AppRouter() {
           <Route path="/student/certificates" element={<StudentDashboard />} />
         </Route>
 
+        {/* Protected — course player: students (their own enrollments) and
+            instructors (read-only access to any published course from their school) */}
+        <Route element={<ProtectedRoute roles={['student', 'instructor']} />}>
+          <Route path="/courses/:id/learn" element={<CoursePlayer />} />
+        </Route>
+
         {/* Protected — Instructor (own sidebar layout, no global Navbar) */}
         <Route element={<ProtectedRoute roles={['instructor', 'admin']} />}>
           <Route path="/instructor" element={<InstructorLayout><InstructorDashboard /></InstructorLayout>} />
           <Route path="/instructor/courses/:id/edit" element={<InstructorLayout><EditCourse /></InstructorLayout>} />
           <Route path="/instructor/grading" element={<InstructorLayout><Grading /></InstructorLayout>} />
+          <Route path="/instructor/browse" element={<InstructorLayout><BrowseCourses /></InstructorLayout>} />
         </Route>
 
         {/* Protected — Admin / chef d'établissement (own sidebar layout, no global Navbar) */}

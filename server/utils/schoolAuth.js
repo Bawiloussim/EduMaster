@@ -18,4 +18,19 @@ const canManageCourse = (course, user) =>
 // be able to publish/unpublish a course they didn't create themselves.
 const isCourseOwner = (course, user) => course.instructor.toString() === user._id.toString();
 
-module.exports = { schoolId, canManageCourse, isCourseOwner };
+// Any instructor may read (view/download) a published course from their own
+// school even if they didn't create it — read-only, no enrollment/progress
+// tracking, distinct from canManageCourse which gates editing.
+const isColleagueInstructor = (course, user) =>
+  user?.role === 'instructor' &&
+  course.status === 'published' &&
+  course.instructor.toString() !== user._id.toString() &&
+  course.school.toString() === schoolId(user);
+
+// Programme PDFs are shared curriculum reference material, not gated course
+// content — any instructor from the same school can download one regardless
+// of whether the course itself is published yet.
+const isSameSchoolInstructor = (course, user) =>
+  user?.role === 'instructor' && course.school.toString() === schoolId(user);
+
+module.exports = { schoolId, canManageCourse, isCourseOwner, isColleagueInstructor, isSameSchoolInstructor };

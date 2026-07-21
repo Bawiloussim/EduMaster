@@ -15,6 +15,14 @@ const courseSchema = new mongoose.Schema({
   classe: { type: String, enum: CLASSES, required: true },
   serie: { type: String, enum: [...SERIES, null], default: null, required: function () { return requiresSerie(this.classe); } },
   coverImage: { type: String, default: '' },
+  // The official curriculum PDF a formateur imported to auto-fill this course's
+  // modules — kept around (unlike the ephemeral extraction step itself) so any
+  // instructor in the school can download the source document later.
+  programmePdf: {
+    url: { type: String, default: '' },
+    name: { type: String, default: '' },
+    publicId: { type: String, default: '' },
+  },
   status: { type: String, enum: ['draft', 'published'], default: 'draft' },
   price: { type: Number, default: 0 },
   tags: [String],

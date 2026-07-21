@@ -17,6 +17,7 @@ router.delete('/:id', protect, requireRole('instructor', 'admin'), cc.delete);
 router.patch('/:id/publish', protect, requireRole('instructor', 'admin'), cc.publish);
 router.post('/:id/modules', protect, requireRole('instructor', 'admin'), cc.addModule);
 router.post('/:id/modules/import-pdf', protect, requireRole('instructor', 'admin'), uploadMemory.single('pdf'), cc.importProgrammeFromPdf);
+router.get('/:id/programme-pdf', protect, cc.downloadProgramme);
 
 router.post('/:courseId/lessons', protect, requireRole('instructor', 'admin'), optionalUpload('file'), lc.create);
 

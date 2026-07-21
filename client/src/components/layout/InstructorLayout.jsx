@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { BarChart, ClipboardCheck } from 'lucide-react';
+import { BarChart, ClipboardCheck, Library } from 'lucide-react';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardTopbar from './DashboardTopbar';
 import Footer from './Footer';
@@ -11,6 +11,7 @@ const SIDEBAR_SECTIONS = [
     items: [
       { id: 'overview', label: "Vue d'ensemble", icon: BarChart, to: '/instructor', end: true },
       { id: 'grading', label: 'Corrections', icon: ClipboardCheck, to: '/instructor/grading' },
+      { id: 'browse', label: 'Cours des collègues', icon: Library, to: '/instructor/browse' },
     ],
   },
 ];
@@ -18,6 +19,7 @@ const SIDEBAR_SECTIONS = [
 function titleFor(pathname) {
   if (pathname.startsWith('/instructor/grading')) return 'Corrections';
   if (pathname.startsWith('/instructor/courses/')) return 'Édition du cours';
+  if (pathname.startsWith('/instructor/browse')) return 'Cours des collègues';
   return "Vue d'ensemble";
 }
 

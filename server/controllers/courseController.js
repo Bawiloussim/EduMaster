@@ -3,11 +3,13 @@ const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const { syncCourseEnrollments } = require('./enrollmentController');
 const { requiresSerie } = require('../constants/academic');
-const { schoolId, canManageCourse, isCourseOwner } = require('../utils/schoolAuth');
+const { schoolId, canManageCourse, isCourseOwner, isColleagueInstructor, isSameSchoolInstructor } = require('../utils/schoolAuth');
 const { extractProgrammeFromPdf } = require('../services/aiContentService');
+const { saveBuffer } = require('../middlewares/upload');
+const { streamPdf } = require('../utils/pdfProxy');
 
 exports.list = async (req, res) => {
-  const { search, page = 1, limit = 12 } = req.query;
+  const { search, page = 1, limit = 12, subject } = req.query;
   let { classe, serie } = req.query;
   // Students only ever see their own classe/serie, no matter what's requested
   if (req.user?.role === 'student' && req.user.classe && req.user.serie) {
@@ -25,6 +27,7 @@ exports.list = async (req, res) => {
   }
   if (classe) filter.classe = classe;
   if (serie) filter.serie = serie;
+  if (subject) filter.subject = subject;
   if (search) filter.$text = { $search: search };
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -56,14 +59,19 @@ exports.getOne = async (req, res) => {
     enrollment = await Enrollment.findOne({ student: req.user._id, course: course._id }).lean();
     isEnrolled = !!enrollment;
   }
+  // A colleague instructor (same school, published course, not the owner) can
+  // read the full course as well — no enrollment/progress involved, so it's
+  // tracked separately from isEnrolled.
+  const viewOnly = isColleagueInstructor(course, req.user);
+  const canSeeContent = isEnrolled || viewOnly;
 
   const lessonData = lessons.map((l) => ({
     ...l,
-    contentUrl: isEnrolled || l.isFreePreview ? l.contentUrl : undefined,
-    content: isEnrolled || l.isFreePreview ? l.content : undefined,
+    contentUrl: canSeeContent || l.isFreePreview ? l.contentUrl : undefined,
+    content: canSeeContent || l.isFreePreview ? l.content : undefined,
   }));
 
-  res.json({ success: true, data: { ...course.toObject(), lessons: lessonData, isEnrolled, enrollment } });
+  res.json({ success: true, data: { ...course.toObject(), lessons: lessonData, isEnrolled, enrollment, viewOnly } });
 };
 
 exports.create = async (req, res) => {
@@ -141,7 +149,9 @@ exports.addModule = async (req, res) => {
 
 // Reads an uploaded PDF (the official curriculum) and extracts the ordered
 // list of chapters it contains — returned as a draft for the formateur to
-// review before turning them into modules. Nothing is saved here.
+// review before turning them into modules. The source PDF itself is kept on
+// the course afterward so any instructor in the school can download it later
+// (see exports.downloadProgramme).
 exports.importProgrammeFromPdf = async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
@@ -154,10 +164,25 @@ exports.importProgrammeFromPdf = async (req, res) => {
     const chapters = await extractProgrammeFromPdf({
       pdfBuffer: req.file.buffer, subject: course.subject, classe: course.classe, serie: course.serie,
     });
-    res.json({ success: true, data: { chapters } });
+    course.programmePdf = await saveBuffer(req.file.buffer, req.file.originalname);
+    await course.save();
+    res.json({ success: true, data: { chapters, programmePdf: course.programmePdf } });
   } catch (e) {
     res.status(502).json({ success: false, message: e.message || "Échec de l'extraction" });
   }
+};
+
+// Any instructor from the same school can download the official programme PDF
+// attached to a course — read-only reference material, independent of course
+// ownership/publish status (see isSameSchoolInstructor).
+exports.downloadProgramme = async (req, res) => {
+  const course = await Course.findById(req.params.id);
+  if (!course) return res.status(404).json({ success: false, message: 'Cours introuvable' });
+  if (!course.programmePdf?.url) return res.status(404).json({ success: false, message: 'Aucun programme disponible pour ce cours' });
+  if (!canManageCourse(course, req.user) && !isSameSchoolInstructor(course, req.user)) {
+    return res.status(403).json({ success: false, message: 'Accès interdit' });
+  }
+  await streamPdf(res, course.programmePdf);
 };
 
 exports.instructorCourses = async (req, res) => {

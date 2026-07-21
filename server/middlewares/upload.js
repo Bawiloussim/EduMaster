@@ -1,5 +1,6 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 
@@ -78,6 +79,33 @@ const getFileUrl = (file) => {
   return `/uploads/${file.filename}`;
 };
 
+// Persists an in-memory PDF buffer the same way multer/CloudinaryStorage would
+// have — used when we need the raw bytes for something else first (e.g.
+// handing a programme PDF to Claude for extraction) and only decide to keep a
+// permanent, downloadable copy afterward, from that same single upload.
+const saveBuffer = (buffer, originalname) => {
+  if (useCloudinary) {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'edumaster', resource_type: 'image', allowed_formats: ['pdf'] },
+        (err, result) => {
+          if (err) return reject(err);
+          resolve({
+            url: result.secure_url.replace('/upload/', '/upload/fl_attachment:false/'),
+            publicId: result.public_id,
+            name: originalname,
+          });
+        },
+      );
+      stream.end(buffer);
+    });
+  }
+  const safe = originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filename = `${Date.now()}-${safe}`;
+  return fs.promises.writeFile(path.join(__dirname, '../uploads', filename), buffer)
+    .then(() => ({ url: `/uploads/${filename}`, publicId: '', name: originalname }));
+};
+
 // Middleware that runs multer only when the request is multipart
 const optionalUpload = (field) => (req, res, next) => {
   if (req.is('multipart/form-data')) {
@@ -100,4 +128,4 @@ const optionalUploadMultiple = (field, maxCount = 10) => (req, res, next) => {
   next();
 };
 
-module.exports = { upload, uploadMemory, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple, useCloudinary };
+module.exports = { upload, uploadMemory, cloudinary, getFileUrl, optionalUpload, optionalUploadMultiple, useCloudinary, saveBuffer };

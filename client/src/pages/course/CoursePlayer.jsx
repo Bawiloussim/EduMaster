@@ -11,6 +11,7 @@ import api from '../../services/api';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
 import ProgressBar from '../../components/ui/ProgressBar';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -346,12 +347,17 @@ export default function CoursePlayer() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: courseData, isLoading } = useQuery({
     queryKey: ['course-player', id],
     queryFn: () => api.get(`/courses/${id}`).then(r => r.data.data),
   });
+
+  // A colleague instructor reads a published course without an Enrollment —
+  // no progress tracking, no exercises, just the lesson content/PDFs.
+  const viewOnly = !!courseData?.viewOnly;
 
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
     queryKey: ['enrollment', id],
@@ -384,7 +390,7 @@ export default function CoursePlayer() {
   const next = lessons[currentIndex + 1];
 
   if (isLoading || enrollmentLoading) return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
-  if (!courseData?.isEnrolled && !enrollment) return (
+  if (!courseData?.isEnrolled && !viewOnly && !enrollment) return (
     <div className="flex h-screen items-center justify-center flex-col gap-4">
       <p className="text-gray-600">Vous n'êtes pas inscrit à ce cours.</p>
       <Button onClick={() => navigate(`/courses/${id}`)}>Voir le cours</Button>
@@ -400,7 +406,7 @@ export default function CoursePlayer() {
           <div className="flex items-center gap-2 mt-0.5 mb-3">
             <span className="text-xs text-gray-400">{courseData.classe}{courseData.serie ? ` — Série ${courseData.serie}` : ''}</span>
           </div>
-          <ProgressBar value={enrollment?.progress || 0} showLabel />
+          {!viewOnly && <ProgressBar value={enrollment?.progress || 0} showLabel />}
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           {lessons.map((lesson, i) => {
@@ -436,13 +442,13 @@ export default function CoursePlayer() {
           <button onClick={() => setSidebarOpen(v => !v)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
             {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
           </button>
-          <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-dark hover:bg-gray-100 px-2 py-1.5 rounded-lg shrink-0">
-            <ChevronLeft className="h-4 w-4" /> Mon espace
+          <button onClick={() => navigate(viewOnly ? '/instructor/browse' : '/student')} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-dark hover:bg-gray-100 px-2 py-1.5 rounded-lg shrink-0">
+            <ChevronLeft className="h-4 w-4" /> {viewOnly ? 'Cours des collègues' : 'Mon espace'}
           </button>
           <span className="text-sm font-semibold text-gray-800 flex-1 truncate uppercase">
             {currentLesson?.title}
           </span>
-          {isCompleted ? (
+          {viewOnly ? null : isCompleted ? (
             <span className="flex items-center gap-1.5 text-success text-sm font-medium bg-success-light px-3 py-1.5 rounded-lg">
               <CheckCircle className="h-4 w-4" /> Terminé
             </span>
@@ -459,7 +465,7 @@ export default function CoursePlayer() {
             {currentLesson
               ? <>
                   <LessonContent lesson={currentLesson} />
-                  <ExercisesSection lessonId={currentLesson._id} />
+                  {!viewOnly && <ExercisesSection lessonId={currentLesson._id} />}
                 </>
               : <div className="flex flex-col items-center justify-center py-24 text-gray-300">
                   <BookOpen className="h-16 w-16 mb-4 opacity-40" />
