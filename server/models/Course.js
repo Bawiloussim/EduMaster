@@ -22,6 +22,9 @@ const courseSchema = new mongoose.Schema({
     url: { type: String, default: '' },
     name: { type: String, default: '' },
     publicId: { type: String, default: '' },
+    // GridFS file id, for PDFs stored in MongoDB instead of Cloudinary (see
+    // middlewares/upload.js) — mutually exclusive with publicId.
+    gridfsId: { type: String, default: '' },
   },
   status: { type: String, enum: ['draft', 'published'], default: 'draft' },
   price: { type: Number, default: 0 },

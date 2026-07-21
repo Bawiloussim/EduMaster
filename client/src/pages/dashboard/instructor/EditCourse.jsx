@@ -14,9 +14,7 @@ import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
 import PageWrapper from '../../../components/layout/PageWrapper';
 import { CLASSES, SERIES, SUBJECTS_BY_SERIE, SUBJECTS_COLLEGE, requiresSerie } from '../../../utils/schoolData';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-const pdfHref = (url) => url?.startsWith('/uploads/') ? `${API_BASE}${url}` : url;
+import { resolveFileUrl as pdfHref } from '../../../utils/fileUrl';
 
 const TABS = [
   { id: 'lessons', label: 'Leçons & Exercices', icon: BookOpen },

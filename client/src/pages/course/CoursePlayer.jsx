@@ -12,8 +12,7 @@ import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
 import ProgressBar from '../../components/ui/ProgressBar';
 import { useAuthStore } from '../../store/useAuthStore';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+import { resolveFileUrl as getPdfUrl } from '../../utils/fileUrl';
 
 function parseVideoUrl(url) {
   if (!url) return null;
@@ -26,11 +25,6 @@ function parseVideoUrl(url) {
   if (vi) return { platform: 'vimeo', embedSrc: `https://player.vimeo.com/video/${vi[1]}`, original: url };
   if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) return { platform: 'direct', embedSrc: url, original: url };
   return { platform: 'link', embedSrc: null, original: url };
-}
-
-function getPdfUrl(url) {
-  if (!url) return null;
-  return url.startsWith('/uploads/') ? `${API_BASE}${url}` : url;
 }
 
 // ─── Exercises for students ───────────────────────────────────────────────────

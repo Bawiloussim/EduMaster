@@ -4,6 +4,7 @@ const Enrollment = require('../models/Enrollment');
 const { getFileUrl, useCloudinary } = require('../middlewares/upload');
 const { canManageCourse, isColleagueInstructor } = require('../utils/schoolAuth');
 const { streamPdf } = require('../utils/pdfProxy');
+const { streamFromGridFS } = require('../utils/gridfs');
 
 const checkOwner = async (lessonId, user) => {
   const lesson = await Lesson.findById(lessonId);
@@ -52,7 +53,7 @@ exports.update = async (req, res) => {
   // Newly uploaded PDF files are appended to whatever survived above
   if (req.files?.length) {
     const uploaded = req.files.map((f) => ({
-      url: getFileUrl(f), name: f.originalname, publicId: useCloudinary ? f.filename : '',
+      url: getFileUrl(f), name: f.originalname, publicId: useCloudinary ? f.filename : '', gridfsId: f.gridfsId || '',
     }));
     lesson.pdfUrls = [...(lesson.pdfUrls || []), ...uploaded];
   }
@@ -92,5 +93,6 @@ exports.streamPdf = async (req, res) => {
     !!(await Enrollment.findOne({ student: req.user._id, course: course._id }));
   if (!hasAccess) return res.status(403).json({ success: false, message: 'Accès interdit' });
 
+  if (pdf.gridfsId) return streamFromGridFS(res, pdf.gridfsId, 'application/pdf');
   await streamPdf(res, pdf);
 };

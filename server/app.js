@@ -41,6 +41,8 @@ app.use('/uploads', (req, res, next) => {
   next();
 }, express.static(path.join(__dirname, 'uploads')));
 
+app.use('/files', require('./routes/fileRoutes'));
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,

@@ -18,6 +18,7 @@ import DashboardSidebar from '../../../components/layout/DashboardSidebar';
 import DashboardTopbar from '../../../components/layout/DashboardTopbar';
 import SchoolBanner from '../../../components/layout/SchoolBanner';
 import Footer from '../../../components/layout/Footer';
+import { resolveFileUrl as getPdfUrl } from '../../../utils/fileUrl';
 
 const TAB_TITLES = {
   courses: 'Mes cours',
@@ -48,12 +49,6 @@ const APPRECIATION_COLOR = {
   Passable: 'text-warning bg-warning-light',
   Insuffisant: 'text-danger bg-danger-light',
   'Très insuffisant': 'text-danger bg-danger-light',
-};
-
-const getPdfUrl = (url) => {
-  if (!url) return null;
-  const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-  return url.startsWith('/uploads/') ? `${API_BASE}${url}` : url;
 };
 
 const TYPE_LABELS = { interrogation: 'Interrogation', devoir: 'Devoir', composition: 'Composition' };

@@ -17,7 +17,7 @@ const errorHandler = (err, req, res, next) => {
 
   if (err.name === 'MulterError') {
     const message = err.code === 'LIMIT_FILE_SIZE'
-      ? 'Fichier trop volumineux (10 Mo maximum)'
+      ? 'Fichier trop volumineux (40 Mo maximum)'
       : 'Échec du téléversement du fichier';
     return res.status(413).json({ success: false, message });
   }

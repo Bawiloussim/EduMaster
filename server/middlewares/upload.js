@@ -1,8 +1,8 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
+const { saveToGridFS, deleteFromGridFS } = require('../utils/gridfs');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -12,24 +12,14 @@ cloudinary.config({
 
 const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name';
 
+// Images only — PDFs never reach this storage engine (see HybridStorage).
 const cloudinaryStorage = new CloudinaryStorage({
   cloudinary,
-  params: async (req, file) => {
-    const isPdf = file.mimetype === 'application/pdf';
-    return {
-      folder: 'edumaster',
-      // PDFs go through resource_type 'raw' rather than 'image' — 'image'
-      // asks Cloudinary to page-render the PDF, an extra processing step
-      // with its own failure modes for unusual-but-valid PDFs; 'raw' just
-      // stores the bytes. Either way delivery goes through our own signed
-      // proxy (see utils/pdfProxy.js), never the direct Cloudinary URL, and
-      // both are subject to the same account-wide per-file size cap (see the
-      // multer `limits` below).
-      resource_type: isPdf ? 'raw' : 'image',
-      allowed_formats: isPdf ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-      transformation: isPdf ? [] : [{ quality: 'auto', fetch_format: 'auto' }],
-    };
-  },
+  params: async () => ({
+    folder: 'edumaster',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+  }),
 });
 
 const localDiskStorage = multer.diskStorage({
@@ -39,6 +29,38 @@ const localDiskStorage = multer.diskStorage({
     cb(null, `${Date.now()}-${safe}`);
   },
 });
+
+const imageStorage = useCloudinary ? cloudinaryStorage : localDiskStorage;
+
+// Routes every upload by mimetype: PDFs go to MongoDB (GridFS), which has no
+// per-file size cap worth worrying about here, since Cloudinary's own plan
+// caps any single upload at 10MB regardless of resource_type — confirmed
+// directly against the account, including with chunked uploads. Images stay
+// on Cloudinary (or local disk in dev), both well under that cap in practice.
+// GridFS files still count against the MongoDB Atlas cluster's own overall
+// storage quota, so this trades a per-file cap for an aggregate one instead.
+class HybridStorage {
+  _handleFile(req, file, cb) {
+    if (file.mimetype !== 'application/pdf') return imageStorage._handleFile(req, file, cb);
+
+    const chunks = [];
+    file.stream.on('data', (c) => chunks.push(c));
+    file.stream.on('error', cb);
+    file.stream.on('end', async () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+        const gridfsId = await saveToGridFS(buffer, file.originalname, 'application/pdf');
+        cb(null, { gridfsId, size: buffer.length });
+      } catch (e) { cb(e); }
+    });
+  }
+
+  _removeFile(req, file, cb) {
+    if (file.gridfsId) return deleteFromGridFS(file.gridfsId).then(() => cb(null)).catch(cb);
+    if (imageStorage._removeFile) return imageStorage._removeFile(req, file, cb);
+    cb(null);
+  }
+}
 
 const fileFilter = (req, file, cb) => {
   // Busboy decodes the multipart filename header as latin1 by default, while
@@ -50,11 +72,10 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: useCloudinary ? cloudinaryStorage : localDiskStorage,
-  // Matches the Cloudinary account's own hard per-file cap — anything larger
-  // is rejected by Cloudinary itself regardless of resource_type or chunked
-  // upload, so reject it here instead of wasting an upload attempt on it.
-  limits: { fileSize: 10 * 1024 * 1024 },
+  storage: new HybridStorage(),
+  // Generous enough for scanned course PDFs; images still effectively cap out
+  // around Cloudinary's own 10MB-per-file limit regardless of this number.
+  limits: { fileSize: 40 * 1024 * 1024 },
   fileFilter,
 });
 
@@ -62,46 +83,31 @@ const upload = multer({
 // extraction) and never store — kept in memory, never touches Cloudinary/disk.
 const uploadMemory = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 40 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') return cb(null, true);
     cb(new Error('Seuls les fichiers PDF sont acceptés.'));
   },
 });
 
-// Returns the public URL of an uploaded file. For PDFs (resource_type 'raw')
-// this direct URL is only ever a fallback identifier — actual reads always go
-// through the signed proxy in utils/pdfProxy.js, since raw delivery is
-// restricted by default just like image-rendered PDF delivery would be.
+// Returns the public URL of an uploaded file. GridFS-stored PDFs have no
+// public URL of their own — this points at our own authenticated proxy
+// instead (see routes/fileRoutes.js), same shape as the local-disk fallback.
 const getFileUrl = (file) => {
   if (!file) return '';
+  if (file.gridfsId) return `/files/pdf/${file.gridfsId}`;
   if (useCloudinary) return file.secure_url || file.path;
   // Local: serve via /uploads/filename
   return `/uploads/${file.filename}`;
 };
 
-// Persists an in-memory PDF buffer the same way multer/CloudinaryStorage would
-// have — used when we need the raw bytes for something else first (e.g.
-// handing a programme PDF to Claude for extraction) and only decide to keep a
-// permanent, downloadable copy afterward, from that same single upload.
-const saveBuffer = (buffer, originalname) => {
-  if (useCloudinary) {
-    return new Promise((resolve, reject) => {
-      // resource_type 'raw', not 'image' — see cloudinaryStorage above.
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'edumaster', resource_type: 'raw', allowed_formats: ['pdf'] },
-        (err, result) => {
-          if (err) return reject(err);
-          resolve({ url: result.secure_url, publicId: result.public_id, name: originalname });
-        },
-      );
-      stream.end(buffer);
-    });
-  }
-  const safe = originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const filename = `${Date.now()}-${safe}`;
-  return fs.promises.writeFile(path.join(__dirname, '../uploads', filename), buffer)
-    .then(() => ({ url: `/uploads/${filename}`, publicId: '', name: originalname }));
+// Persists an in-memory PDF buffer in GridFS — used when we need the raw
+// bytes for something else first (e.g. handing a programme PDF to Claude for
+// extraction) and only decide to keep a permanent, downloadable copy
+// afterward, from that same single upload.
+const saveBuffer = async (buffer, originalname) => {
+  const gridfsId = await saveToGridFS(buffer, originalname, 'application/pdf');
+  return { url: `/files/pdf/${gridfsId}`, gridfsId, publicId: '', name: originalname };
 };
 
 // Middleware that runs multer only when the request is multipart

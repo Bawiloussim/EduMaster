@@ -12,6 +12,9 @@ const lessonSchema = new mongoose.Schema({
     // Cloudinary public_id — lets the server fetch the file via a signed,
     // authenticated URL instead of the public CDN link (see lessonController.streamPdf).
     publicId: { type: String, default: '' },
+    // GridFS file id, for PDFs stored in MongoDB instead of Cloudinary (see
+    // middlewares/upload.js) — mutually exclusive with publicId.
+    gridfsId: { type: String, default: '' },
   }],
   content:  { type: String, default: '' },  // text / markdown
   order: { type: Number, default: 0 },

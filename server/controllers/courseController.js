@@ -7,6 +7,7 @@ const { schoolId, canManageCourse, isCourseOwner, isColleagueInstructor, isSameS
 const { extractProgrammeFromPdf } = require('../services/aiContentService');
 const { saveBuffer } = require('../middlewares/upload');
 const { streamPdf } = require('../utils/pdfProxy');
+const { streamFromGridFS } = require('../utils/gridfs');
 
 exports.list = async (req, res) => {
   const { search, page = 1, limit = 12, subject } = req.query;
@@ -182,6 +183,7 @@ exports.downloadProgramme = async (req, res) => {
   if (!canManageCourse(course, req.user) && !isSameSchoolInstructor(course, req.user)) {
     return res.status(403).json({ success: false, message: 'Accès interdit' });
   }
+  if (course.programmePdf.gridfsId) return streamFromGridFS(res, course.programmePdf.gridfsId, 'application/pdf');
   await streamPdf(res, course.programmePdf);
 };
 
